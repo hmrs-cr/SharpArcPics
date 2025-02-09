@@ -149,19 +149,31 @@ public class ArchiverCommand : BaseCommand
         WriteLine($"Total Files: {result.TotalFilesCount}");
         if (result.TotalFilesCount - result.InvalidFileCount > 0)
         {
-            WriteLine($"Valid: {result.TotalFilesCount - result.InvalidFileCount}");
+            Write("Valid: ");
+            WriteLine(ConsoleColor.White, $"{result.TotalFilesCount - result.InvalidFileCount}");
 
             if (result.CopiedFileCount > 0)
-                WriteLine($"Copied: {result.CopiedFileCount}");
+            {
+                Write("Copied: ");
+                WriteLine(ConsoleColor.Green, $"{result.CopiedFileCount}");
+            }
 
             if (result.MovedFilesCount > 0)
-                WriteLine($"Moved: {result.MovedFilesCount}");
+            {
+                Write("Moved: ");
+                WriteLine(ConsoleColor.Green, $"{result.MovedFilesCount}");
+            }
 
             if (result.UpdatedFilesCount > 0)
-                WriteLine($"Updated: {result.UpdatedFilesCount}");
-
+            {
+                Write("Updated: ");
+                WriteLine(ConsoleColor.Yellow, $"{result.UpdatedFilesCount}");
+            }
             if (result.DeletedFilesCount > 0)
-                WriteLine($"Deleted [SRC]: {result.DeletedFilesCount}");
+            {
+                Write("Deleted [SRC]: ");
+                WriteLine(ConsoleColor.Red, $"{result.DeletedFilesCount}");
+            }
 
             if (result.DuplicatedFileCount > 0)
                 WriteLine($"Duplicates: {result.DuplicatedFileCount}");
