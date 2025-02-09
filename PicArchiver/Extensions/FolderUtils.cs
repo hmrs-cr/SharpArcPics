@@ -8,37 +8,20 @@ public static class FolderUtils
     public static readonly ICollection<string> VideoFolders = ["private/M4ROOT/CLIP"]; 
     public static readonly ICollection<string> AllFolders = [..PictureFolders, ..VideoFolders];
 
-    public static ICollection<string> GetAllConnectedCameraFolders() => GetConnectedCameraFolders(AllFolders);
+    public static ICollection<string> GetAllConnectedCameraFolders() => GetConnectedCameraFolders(AllFolders).ToList();
     
-    public static ICollection<string> GetConnectedCameraFolders(params ICollection<string> subfolders)
+    public static IEnumerable<string> GetConnectedCameraFolders(params ICollection<string> subfolders)
     {
-        var process = ProcessExtensions.CreateProcessCommand("df", "-Ph");
-        if (process.StartAndWaitUntilExit() != 0) 
-            return Array.Empty<string>();
-        
-        List<string>? result = null;
-        Span<Range> ranges = stackalloc Range[6];
-        while (process.StandardOutput.ReadLine() is { } line)
+        foreach (var drive in DriveInfo.GetDrives())
         {
-            if (!line.StartsWith("/dev/") && !line.StartsWith("//"))
-                continue;
-                
-            var lineSpan = line.AsSpan();
-            var parts = lineSpan.SplitAny(ranges, Separators.AsSpan(), StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (parts != 6)
-                continue;
-
-            var mountPointPath = lineSpan[ranges[5]];
             foreach (var subfolder in subfolders)
             {
-                var cameraFolder = Path.Join(mountPointPath, subfolder.AsSpan());
+                var cameraFolder = Path.Join(drive.RootDirectory.FullName, subfolder.AsSpan());
                 if (Directory.Exists(cameraFolder))
                 {
-                    (result ??= []).Add(cameraFolder);
+                    yield return cameraFolder;
                 }
             }
         }
-
-        return result != null ? result : Array.Empty<string>();
     }
 }
