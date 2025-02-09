@@ -102,6 +102,9 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
     public string SourceFolder { get; }
     
     public ArchiveConfig Config { get; }
+    
+    private readonly EnumerationOptions _enumerationOptionsTopLevelOnly = new() { RecurseSubdirectories = false, IgnoreInaccessible = true };
+    private readonly EnumerationOptions _enumerationOptionsRecursive = new() { RecurseSubdirectories = true, IgnoreInaccessible = true };
 
     public FolderArchiver(string sourceFolder, ArchiveConfig config)
     {
@@ -112,17 +115,40 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
     public IEnumerable<FileArchiveContext> ArchiveTo(string destFolder)
     {
         var ts = Stopwatch.GetTimestamp();
-        var files = Directory.GetFiles(SourceFolder, "*", SearchOption.AllDirectories);
-        TotalFilesCount = files.Length;
+        TotalFilesCount = 0;
         
-        Directory.CreateDirectory(destFolder);
+        var files = EnumerateFiles(SourceFolder, Config.Recursive == true);
         foreach (var file in files)
         {
+            TotalFilesCount++;
             yield return InternalProcessFile(file, destFolder);
         }
         
         ElapsedTime = Stopwatch.GetElapsedTime(ts);
     }
+
+    public IEnumerable<string> EnumerateFiles(string folderPath, bool recurseSubdirectories)
+    {
+        var files = Directory.GetFiles(folderPath, "*", _enumerationOptionsTopLevelOnly).OrderBy(f => f);
+        foreach (var file in files)
+            yield return file;
+
+        if (recurseSubdirectories)
+        {
+            var directories = Directory.GetDirectories(folderPath, "*", _enumerationOptionsRecursive).OrderBy(d => d);
+            foreach (var directory in directories)
+            {
+                if (File.Exists(Path.Join(directory, "no_archive")))
+                    continue;
+                
+                files = Directory.GetFiles(directory, "*", _enumerationOptionsTopLevelOnly).OrderBy(f => f);
+                foreach (var file in files)
+                    yield return file;
+            }
+        }
+    }
+    
+    
     
     private FileArchiveContext InternalProcessFile(string sourceFileName, string destDirectory)
     {
@@ -170,6 +196,12 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
             }
             
             return context.SetResult(FileResult.Invalid);
+        }
+        
+        if (context.Config.Rotate == true || context.Config.MinDriveSize.HasValue)
+        {
+            var requiredSize = context.Config.MinDriveSize ?? context.SourceFileInfo.Length;
+            EnsureHasEnoughFreeSpace(destDirectory, requiredSize);
         }
 
         try
@@ -226,6 +258,11 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
         {
             return context.SetResult(FileResult.Error, exception: e);
         }
+    }
+
+    private void EnsureHasEnoughFreeSpace(string destFileFullPath, long configMinDriveSize)
+    {
+       // TODO> Implement
     }
 
     public void Dispose() => Config.MetadataLoaderInstances.Finalize(null);

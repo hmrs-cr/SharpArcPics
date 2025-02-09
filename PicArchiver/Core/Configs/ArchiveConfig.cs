@@ -12,7 +12,7 @@ public sealed class ArchiveConfig
 
     public bool? DryRun { get; init; }
 
-    public int? MinDriveSize { get; init; }
+    public long? MinDriveSize { get; init; }
     public bool? MoveFiles { get; init; }
     public bool? OverrideDestination { get; init; }
     public bool? IgnoreDuplicates { get; init; }
@@ -23,6 +23,8 @@ public sealed class ArchiveConfig
     
     public bool? Rotate { get; init; }
     public string? SourceFileNameRegExPattern { get; init; }
+    
+    public bool? Recursive { get; init; }
     
     public string? MetadaLoaders { get; init; }
     
@@ -73,6 +75,7 @@ public sealed class ArchiveConfig
         SourceFileNameRegExPattern = config1.SourceFileNameRegExPattern ?? SourceFileNameRegExPattern ?? config2?.SourceFileNameRegExPattern,
         TokenValues = config1.TokenValues ?? TokenValues ?? config2?.TokenValues,
         DryRun = config1.DryRun ?? DryRun ?? config2?.DryRun,
+        Recursive = config1.Recursive ?? Recursive ?? config2?.Recursive,
         
         MetadaLoaders = onlyFirstLevelConfigValues ? null : config1.MetadaLoaders ?? MetadaLoaders,
         MediaConfigs = onlyFirstLevelConfigValues ? null :MergeMediaConfigs(config1),
