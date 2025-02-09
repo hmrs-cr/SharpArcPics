@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PicArchiver", "PicArchiver\PicArchiver.csproj", "{7B323C81-0E8D-4B7E-BC0E-B0DB5ACCF3DF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IGArchiver.Test", "IGArchiver.Test\IGArchiver.Test.csproj", "{44964420-FB5B-47A4-A30D-D2B686010639}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7B323C81-0E8D-4B7E-BC0E-B0DB5ACCF3DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B323C81-0E8D-4B7E-BC0E-B0DB5ACCF3DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B323C81-0E8D-4B7E-BC0E-B0DB5ACCF3DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B323C81-0E8D-4B7E-BC0E-B0DB5ACCF3DF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44964420-FB5B-47A4-A30D-D2B686010639}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44964420-FB5B-47A4-A30D-D2B686010639}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44964420-FB5B-47A4-A30D-D2B686010639}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44964420-FB5B-47A4-A30D-D2B686010639}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
