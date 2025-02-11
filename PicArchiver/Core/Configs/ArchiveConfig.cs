@@ -78,13 +78,13 @@ public sealed class ArchiveConfig
         Recursive = config1.Recursive ?? Recursive ?? config2?.Recursive,
         
         MetadaLoaders = onlyFirstLevelConfigValues ? null : config1.MetadaLoaders ?? MetadaLoaders,
-        MediaConfigs = onlyFirstLevelConfigValues ? null :MergeMediaConfigs(config1),
+        MediaConfigs = onlyFirstLevelConfigValues ? null : MergeMediaConfigs(config1),
     };
 
     private Dictionary<string, ArchiveConfig>? MergeMediaConfigs(ArchiveConfig loadedConfig)
     {
         if (MediaConfigs is null)
-            return loadedConfig.MediaConfigs;
+            return loadedConfig.MediaConfigs?.ToDictionary(mc => mc.Key, mc => mc.Value.Merge(loadedConfig, this, true));
 
         if (loadedConfig.MediaConfigs?.Any(mc => mc.Value.MediaConfigs is not null || mc.Value.MetadaLoaders is not null) == true)
             throw new InvalidOperationException("Invalid config: Media specific configs cannot have other media specific configs or metadata loaders specified.");

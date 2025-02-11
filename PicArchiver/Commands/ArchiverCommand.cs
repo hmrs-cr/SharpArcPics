@@ -72,7 +72,7 @@ public class ArchiverCommand : BaseCommand
                 sourceFolders = [source];
             }
             
-            if (ArchiveConfig.Load(Path.Combine(destination, "config.json")) is { } destConfig)
+            if (ArchiveConfig.Load(Path.Combine(destination, "archive-config.json")) is { } destConfig)
                 config = config.Merge(destConfig);
 
             var results = new AggregatedFolderArchiverResult(sourceFolders.Count);
@@ -169,10 +169,17 @@ public class ArchiverCommand : BaseCommand
                 Write("Updated: ");
                 WriteLine(ConsoleColor.Yellow, $"{result.UpdatedFilesCount}");
             }
-            if (result.DeletedFilesCount > 0)
+            
+            if (result.SrcDeletedFilesCount > 0)
             {
                 Write("Deleted [SRC]: ");
-                WriteLine(ConsoleColor.Red, $"{result.DeletedFilesCount}");
+                WriteLine(ConsoleColor.Red, $"{result.SrcDeletedFilesCount} ({result.SrcDeleteBytes.ToHumanReadableByteSize()})");
+            }
+            
+            if (result.DestDeletedFilesCount > 0)
+            {
+                Write("Deleted [DST]: ");
+                WriteLine(ConsoleColor.Red, $"{result.DestDeletedFilesCount} ({result.DestDeleteBytes.ToHumanReadableByteSize()})");
             }
 
             if (result.DuplicatedFileCount > 0)
@@ -193,11 +200,11 @@ public class ArchiverCommand : BaseCommand
         WriteLine($"Elapsed time: {result.ElapsedTime.ToHumanReadableString()}");
     }
     
-    private void PrintResuls(FileArchiveContext result)
+    private void PrintResuls(FileArchiveResult result)
     {
         PrintResultAction(result.Result);
 
-        if (result.DryRun && result.Result != FileResult.Invalid)
+        if (result.Context.DryRun && result.Result != FileResult.Invalid)
         {
             Write(ConsoleColor.Red, "[DRY] ");
         }
@@ -208,20 +215,22 @@ public class ArchiverCommand : BaseCommand
             case FileResult.Moved:
             case FileResult.CopiedUpdated:
             case FileResult.MovedUpdated:
-                WriteLine($"'{result.SourceFileFullPath}' -> '{result.DestFileFullPath}'");
+                WriteLine($"'{result.Context.SourceFileFullPath}' -> '{result.Context.DestFileFullPath}'");
                 break;
-            
             case FileResult.SourceFileDeleted:
-                WriteLine($"'{result.SourceFileFullPath}'");
+                WriteLine($"'{result.Context.SourceFileFullPath}'");
+                break;
+            case FileResult.DestFileDeleted:
+                WriteLine(result.Message!);
                 break;
             case FileResult.Error:
-                WriteErrorLine($"ERROR: '{result.ResultException?.Message ?? "Unknown Error"}'");
+                WriteErrorLine($"ERROR: '{result.Exception?.Message ?? result.Message ?? "Unknown Error"}'");
                 break;
             case FileResult.AlreadyExists:
-                if (string.IsNullOrEmpty(result.ResultMessage))
-                    WriteLine($"'{result.SourceFileFullPath}' in '{result.DestinationFolderPath}'");
+                if (string.IsNullOrEmpty(result.Message))
+                    WriteLine($"'{result.Context.SourceFileFullPath}' in '{result.Context.DestinationFolderPath}'");
                 else    
-                    WriteLine($"'{result.SourceFileFullPath}' as '{result.ResultMessage}'");
+                    WriteLine($"'{result.Context.SourceFileFullPath}' as '{result.Message}'");
                 break;
             case FileResult.Invalid:
                 break;
@@ -247,6 +256,7 @@ public class ArchiverCommand : BaseCommand
                 Write(ConsoleColor.Yellow, "[DEST UPDATED]: ");
                 break;
             case FileResult.SourceFileDeleted:
+            case FileResult.DestFileDeleted:
                 Write(ConsoleColor.Yellow, "DELETED: ");
                 break;
             case FileResult.AlreadyExists: // Already exists in dest with another name.
