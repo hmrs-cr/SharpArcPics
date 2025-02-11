@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ "$1" = "docker" ]
+then
+    echo "Building using Docker"
+    docker build --output ./publish/ .
+  else
+     echo "Building using local Dotnet SDK"
+    dotnet publish ./PicArchiver/PicArchiver.csproj -c Release -o ./publish/macos 
+fi 
