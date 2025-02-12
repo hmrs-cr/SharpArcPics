@@ -9,6 +9,7 @@ public class FileArchiveContext : IDisposable
 {
     private FileInfo? _sourceFileInfo = null;
     private FileInfo? _destFileInfo = null;
+    private string? _destinationRootPath = null;
     
     public ArchiveConfig Config { get; }
 
@@ -17,6 +18,11 @@ public class FileArchiveContext : IDisposable
     public string SourceFileFullPath { get; }
     
     public string DestinationBasePath { get; }
+
+    public string DestinationRootPath =>
+        _destinationRootPath ??= OperatingSystem.IsWindows() ? 
+                                 Path.GetPathRoot(Path.GetFullPath(DestinationBasePath)) ?? DestinationBasePath : 
+                                 DestinationBasePath;
     
     public string DestFileFullPath { get; }
     

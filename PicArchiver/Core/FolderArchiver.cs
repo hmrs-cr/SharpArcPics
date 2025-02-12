@@ -310,14 +310,8 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
     private static IEnumerable<FileArchiveResult> EnsureDestDriveHasEnoughFreeSpace(FileArchiveContext context,
         long requiredFreeSpace)
     {
-        // TODO: Extract drive letter if in Windows.
-        var driveInfo = new DriveInfo(context.DestinationBasePath);
-        if (driveInfo.AvailableFreeSpace <= requiredFreeSpace)
-        {
-            return DeleteDestFiles(context, requiredFreeSpace);
-        }
-
-        return [];
+        var driveInfo = new DriveInfo(context.DestinationRootPath);
+        return driveInfo.AvailableFreeSpace <= requiredFreeSpace ? DeleteDestFiles(context, requiredFreeSpace) : [];
     }
     
     private static IEnumerable<FileArchiveResult> DeleteDestFiles(FileArchiveContext context, long bytesToDelete)
