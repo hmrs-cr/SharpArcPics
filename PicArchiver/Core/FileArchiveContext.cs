@@ -120,6 +120,7 @@ public readonly record struct FileArchiveResult
 
 public enum FileResult
 {
+    Undefined,
     Moved,
     Copied,
     CopiedUpdated,

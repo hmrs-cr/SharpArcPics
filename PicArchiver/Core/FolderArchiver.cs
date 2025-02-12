@@ -249,13 +249,17 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
             {
                 var requiredSize = context.Config.MinDriveSize ?? context.SourceFileInfo.Length;
                 var deleteResults = EnsureDestDriveHasEnoughFreeSpace(context, requiredSize);
+
+                var totalDeletedSize = 0L;
                 foreach (var delResult in deleteResults)
                 {
-                    if (context.Metadata[TotalDestDeleteSizeKey] is long totalDeletedSize) 
-                        DestDeleteBytes += totalDeletedSize;
+                    if (context.Metadata[TotalDestDeleteSizeKey] is long tdz)
+                        totalDeletedSize = tdz;
                     
                     yield return delResult;
                 }
+                
+                DestDeleteBytes += totalDeletedSize;
             }
 
             FileArchiveResult result;
@@ -327,44 +331,115 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
             if (!context.Config.DryRun.GetValueOrDefault()) 
                 file.Delete();
             
+            context.Metadata[TotalDestDeleteSizeKey] = reclaimedSpace += fileLength;
             yield return context.CreateResult(FileResult.DestFileDeleted, message: $"'{file.FullName}' ({fileLength.ToHumanReadableByteSize()})");
 
-           /* try
-            {
-                var dir = file.Directory;
-                while (dir != null && dir.FullName != context.DestinationBasePath)
-                {
-                    var deleteDir = dir;
-                    dir = dir.Parent;
-                    deleteDir.Delete();
-                }
-            }
-            catch
-            {
-                // Ignore 
-            }*/
+           var deleteDirResults = DeleteEmptyDirTree(file.Directory, context);
+           foreach (var deleteDirResult in deleteDirResults)
+               yield return deleteDirResult;
             
-            if ((reclaimedSpace += fileLength) > bytesToDelete)
+            if (reclaimedSpace > bytesToDelete)
             {
-                context.Metadata[TotalDestDeleteSizeKey] = reclaimedSpace;
                 break;
             }
         }
 
         yield break;
 
-        static IEnumerable<FileInfo> EnumerateFilesForDeletion(string path)
+        static IEnumerable<FileArchiveResult> DeleteEmptyDirTree(DirectoryInfo? dir, FileArchiveContext context)
         {
-            var files = Directory.GetFiles(path, "*", EnumerationOptionsTopLevelOnly);
-            foreach (var file in files.OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+            while (dir != null && dir.FullName != context.DestinationBasePath)
             {
-                yield return new FileInfo(file);
+                var deleteDir = dir; 
+                foreach (var file in deleteDir.EnumerateFiles(".DS_Store"))
+                {
+                    try
+                    {
+                        file.Delete();
+                    }
+                    catch
+                    {
+                        // Ignore
+                    }
+                }
+                    
+                foreach (var file in deleteDir.EnumerateFiles("._*"))
+                {
+                    try
+                    {
+                        file.Delete();
+                    }
+                    catch
+                    {
+                        // Ignore
+                    }
+                }
+
+                FileArchiveResult deleteResult = default;
+                try
+                {
+                    var dirName = dir.FullName;
+                    dir = dir.Parent;
+                    deleteDir.Delete();
+                    deleteResult = context.CreateResult(FileResult.DestFileDeleted, message: $"'{dirName}' (FOLDER)");
+                }
+                catch (Exception e)
+                {
+                    // Ignore
+                }
+
+                if (deleteResult.Result == FileResult.DestFileDeleted) 
+                    yield return deleteResult;
+                else
+                    yield break;
             }
             
-            var directories = Directory.GetDirectories(path, "*", EnumerationOptionsTopLevelOnly);
+            try
+            {
+               
+            }
+            catch
+            {
+                // Ignore 
+            }
+        }
+        
+        static IEnumerable<FileInfo> EnumerateFilesForDeletion(string path, bool isSubDir = false)
+        {
+            if (isSubDir) // Dont delete files in the root.
+            {
+                string[] files = [];
+                try
+                {
+                    files = Directory.GetFiles(path, "*", EnumerationOptionsTopLevelOnly);
+                }
+                catch
+                {
+                    // Ignore
+                }
+                
+                foreach (var file in files.OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (file.EndsWith("/no_archive", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    
+                    yield return new FileInfo(file);
+                }
+            }
+
+            string[] directories = [];
+            try
+            {
+                directories = Directory.GetDirectories(path, "*", EnumerationOptionsTopLevelOnly);
+            }
+            catch
+            {
+                // Ignore
+            }
+             
             foreach (var directory in directories.OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
             {
-                foreach (var file in EnumerateFilesForDeletion(directory))
+                foreach (var file in EnumerateFilesForDeletion(directory, true))
                 {
                    yield return file;
                 }
