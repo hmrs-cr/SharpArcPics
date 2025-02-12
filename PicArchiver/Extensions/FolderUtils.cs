@@ -2,8 +2,6 @@ namespace PicArchiver.Extensions;
 
 public static class FolderUtils
 {
-    private static readonly char[] Separators = [' ', '\t'];
-
     public static readonly ICollection<string> PictureFolders = ["DCIM"]; 
     public static readonly ICollection<string> VideoFolders = ["private/M4ROOT/CLIP"]; 
     public static readonly ICollection<string> AllFolders = [..PictureFolders, ..VideoFolders];

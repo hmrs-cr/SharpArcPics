@@ -52,7 +52,7 @@ public static class DefaultFileArchiveConfig
     private static ArchiveConfig VideoDefaultConfig { get; } = new()
     { 
         MoveFiles = false,
-        OverrideDestination = false,
+        OverrideDestination = true,
         DeleteSourceFileIfDestExists = false,
         Recursive = true,
         SourceFileNameRegExPattern = @"(?i)\.(mov|mp4)$",
@@ -64,12 +64,12 @@ public static class DefaultFileArchiveConfig
     private static ArchiveConfig RawPicAndVideoDefaultConfig { get; } = new()
     { 
         MoveFiles = false,
-        OverrideDestination = false,
+        OverrideDestination = true,
         DeleteSourceFileIfDestExists = false,
         SourceFileNameRegExPattern = @"(?i)\.(arw|dng|cr2|orf|mov|mp4)$",
         SubfolderTemplate = "NoMediaKind",
         FileNameTemplate = "{FileName}",
-        MetadaLoaders = "Default,Exif,ChkSum",
+        MetadaLoaders = "Default",
         Recursive = true,
         MediaConfigs = new Dictionary<string, ArchiveConfig>
         {
