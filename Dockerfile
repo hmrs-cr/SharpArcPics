@@ -10,8 +10,7 @@ RUN dotnet test
 # Restore as distinct layers
 RUN dotnet restore
 # Build and publish a release
-RUN dotnet publish  ./PicArchiver/PicArchiver.csproj  /p:Version=$(date "+%y").$(date "+%m%d").$(date "+%H%M").$(date "+%S") -c $BUILD_CONFIGURATION -o /app/publish
+RUN dotnet publish  ./PicArchiver/PicArchiver.csproj  /p:Version=$(date "+%y").$(date "+%m%d").$(date "+%H%M").$(date "+%S") -c $BUILD_CONFIGURATION -o /app
 
 FROM scratch AS export-stage
-COPY --from=build-stage /app/publish .
-
+COPY --from=build-stage /app .

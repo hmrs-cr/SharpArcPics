@@ -1,10 +1,17 @@
 #!/bin/bash
 
+
+if [ "$1" = "install" ]
+then
+  cp -v ./publish/PicArchiver "$HOME/bin/PicArchiver"
+  exit 
+fi 
+
 if [ "$1" = "docker" ]
 then
     echo "Building using Docker"
     docker build --output ./publish/ .
   else
      echo "Building using local Dotnet SDK"
-    dotnet publish ./PicArchiver/PicArchiver.csproj -c Release -o ./publish/macos 
+    dotnet publish ./PicArchiver/PicArchiver.csproj /p:Version=$(date "+%y").$(date "+%m%d").$(date "+%H%M").$(date "+%S") -c Release -o ./publish 
 fi 
