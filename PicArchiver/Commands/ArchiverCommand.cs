@@ -7,7 +7,7 @@ namespace PicArchiver.Commands;
 
 public class ArchiverCommand : BaseCommand 
 {
-    const ConsoleColor HeaderColor = ConsoleColor.White; 
+    const ConsoleColor HeaderColor = ConsoleColor.Cyan; 
         
     internal ArchiverCommand() : base("archive", "Archives files from source to destination applying logic defined by config.")
     {
@@ -95,10 +95,13 @@ public class ArchiverCommand : BaseCommand
                     WriteLine(HeaderColor, "Global results:");
                     PrintFolderList(sourceFolders, sourceFolder);
                     PrintResuls(results);
+                    WriteLine(string.Empty);
                 }
                 else
                 {
+                    WriteLine(string.Empty);
                     PrintResuls(result);
+                    WriteLine(string.Empty);
                 }
             } 
             
@@ -146,12 +149,12 @@ public class ArchiverCommand : BaseCommand
 
     private void PrintResuls(IFolderArchiverResult result)
     {
-        WriteLine($"Total Files: {result.TotalFilesCount}");
+        Write($"Valid Files: ");
+        Write(ConsoleColor.Cyan, $"{result.TotalFilesCount - result.InvalidFileCount}");
+        Write(" of ");
+        WriteLine(ConsoleColor.Cyan, $"{result.TotalFilesCount}");
         if (result.TotalFilesCount - result.InvalidFileCount > 0)
         {
-            Write("Valid: ");
-            WriteLine(ConsoleColor.White, $"{result.TotalFilesCount - result.InvalidFileCount}");
-
             if (result.CopiedFileCount > 0)
             {
                 Write("Copied: ");
