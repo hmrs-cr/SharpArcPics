@@ -5,6 +5,8 @@ namespace PicArchiver.Extensions;
 
 public static partial class StringExtensions
 {
+    private static readonly IList<string>  ByteSizes = [ "B", "KB", "MB", "GB", "TB" ];
+    
     public static string ResolveTokens(this string template, FileMetadata? replacements)
     {
         if (replacements != null && template.Contains('{') && template.Contains('}'))
@@ -32,6 +34,28 @@ public static partial class StringExtensions
         }
 
         return $@"{t:%d} days";
+    }
+
+    public static string ToHumanReadableByteSize(this object size)
+    {
+        var lenght = size switch
+        {
+            long l => l,
+            int i => i,
+            float f => f,
+            double d => d,
+            string s => double.Parse(s),
+            _ => throw new ArgumentException(message: "Invalid type", paramName: nameof(size))
+        };
+
+        var index = 0;
+        while (lenght >= 1024 && index < ByteSizes.Count - 1) 
+        {
+            index++;
+            lenght = lenght/1024;
+        }
+        
+        return $"{lenght:0.#}{ByteSizes[index]}";
     }
 
 

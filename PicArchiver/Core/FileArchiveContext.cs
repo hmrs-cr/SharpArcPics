@@ -9,6 +9,7 @@ public class FileArchiveContext : IDisposable
 {
     private FileInfo? _sourceFileInfo = null;
     private FileInfo? _destFileInfo = null;
+    private string? _destinationRootPath = null;
     
     public ArchiveConfig Config { get; }
 
@@ -17,6 +18,11 @@ public class FileArchiveContext : IDisposable
     public string SourceFileFullPath { get; }
     
     public string DestinationBasePath { get; }
+
+    public string DestinationRootPath =>
+        _destinationRootPath ??= OperatingSystem.IsWindows() ? 
+                                 Path.GetPathRoot(Path.GetFullPath(DestinationBasePath)) ?? DestinationBasePath : 
+                                 DestinationBasePath;
     
     public string DestFileFullPath { get; }
     
@@ -33,12 +39,6 @@ public class FileArchiveContext : IDisposable
     public bool DryRun { get; set; }
     
     public bool IsValid { get; }
-    
-    public FileResult Result { get; private set; }
-    
-    public Exception? ResultException { get; private set; }
-    
-    public string? ResultMessage { get; private set; }
 
     public FileInfo SourceFileInfo => _sourceFileInfo ??= new FileInfo(SourceFileFullPath);
 
@@ -46,12 +46,13 @@ public class FileArchiveContext : IDisposable
     
     public ICollection<IMetadataLoader>? MetadataLoaders { get; }
 
-    internal FileArchiveContext SetResult(FileResult result, string? message = null, Exception? exception = null)
+    internal FileArchiveResult CreateResult(FileResult result, string? message = null, Exception? exception = null)
+        => new FileArchiveResult(this, result, message, exception);
+
+    internal IEnumerable<FileArchiveResult> CreateResults(FileResult result, string? message = null,
+        Exception? exception = null)
     {
-        this.Result = result;
-        this.ResultMessage = message;
-        this.ResultException = exception;
-        return this;
+        yield return CreateResult(result, message, exception);
     }
 
     internal FileArchiveContext(string sourceFileName, string destinationFolderPath, ArchiveConfig config)
@@ -103,18 +104,40 @@ public class FileArchiveContext : IDisposable
     public void Dispose() => MetadataLoaders.Finalize(this);
 }
 
+public readonly record struct FileArchiveResult
+{
+    public FileArchiveContext Context { get; }
+    public FileResult Result { get; }
+    public Exception? Exception { get; }
+    public string? Message { get; }
+
+    public FileArchiveResult(
+        FileArchiveContext context, 
+        FileResult result,
+        string? message = null,
+        Exception? exception = null)
+    {
+        Context = context;
+        Result = result;
+        Exception = exception;
+        Message = message;
+    }
+}
+
 public enum FileResult
 {
+    Undefined,
     Moved,
     Copied,
     CopiedUpdated,
     MovedUpdated,
     SourceFileDeleted,
+    DestFileDeleted,
     Error,
     
     // Does not meet filter or metadata criteria.
     Invalid,
     
-    // Already exists in dest with another name.
+    // Already exists in dest.
     AlreadyExists,
 }

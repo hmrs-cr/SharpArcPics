@@ -6,6 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <PublishAot>true</PublishAot>
         <PublishReadyToRun>true</PublishReadyToRun>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
     
     

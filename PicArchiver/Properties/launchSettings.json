@@ -4,7 +4,7 @@
     "Archive": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "commandLineArgs": "archive --config RPV --source CAMERAS --destination /Users/hectormauriciorodriguez/Pictures/ifarchiverTEst",
+      "commandLineArgs": "archive --config RawPic --source CAMERAS --destination \"/Volumes/NO NAME/\"",
       "environmentVariables": {
       }
     },

@@ -19,6 +19,7 @@ public static class DefaultFileArchiveConfig
         MoveFiles = true,
         OverrideDestination = true,
         DeleteSourceFileIfDestExists = true,
+        Recursive = false,
         SubfolderTemplate = "{UserId}",
         FileNameTemplate = "{FileName}",
         MetadaLoaders = "IG,Default",
@@ -29,6 +30,7 @@ public static class DefaultFileArchiveConfig
         MoveFiles = false,
         OverrideDestination = true,
         DeleteSourceFileIfDestExists = false,
+        Recursive = true,
         SubfolderTemplate = "JPG/{FileYear}/{FileMonth}/{FileYear}-{FileMonth}-{FileDay}",
         SourceFileNameRegExPattern = @"(?i)\.(jpe?g|png|gif|bmp)$",
         FileNameTemplate = "{FileName}",
@@ -40,6 +42,7 @@ public static class DefaultFileArchiveConfig
         MoveFiles = false,
         OverrideDestination = true,
         DeleteSourceFileIfDestExists = false,
+        Recursive = true,
         SubfolderTemplate = "RAW/{FileYear}/{FileMonth}/{FileYear}-{FileMonth}-{FileDay}",
         SourceFileNameRegExPattern = @"(?i)\.(arw|dng|cr2|orf)$",
         FileNameTemplate = "{FileName}",
@@ -49,8 +52,9 @@ public static class DefaultFileArchiveConfig
     private static ArchiveConfig VideoDefaultConfig { get; } = new()
     { 
         MoveFiles = false,
-        OverrideDestination = false,
+        OverrideDestination = true,
         DeleteSourceFileIfDestExists = false,
+        Recursive = true,
         SourceFileNameRegExPattern = @"(?i)\.(mov|mp4)$",
         SubfolderTemplate = "Video/{FileYear}/{FileMonth}",
         FileNameTemplate = "{FileName}",
@@ -60,12 +64,13 @@ public static class DefaultFileArchiveConfig
     private static ArchiveConfig RawPicAndVideoDefaultConfig { get; } = new()
     { 
         MoveFiles = false,
-        OverrideDestination = false,
+        OverrideDestination = true,
         DeleteSourceFileIfDestExists = false,
         SourceFileNameRegExPattern = @"(?i)\.(arw|dng|cr2|orf|mov|mp4)$",
         SubfolderTemplate = "NoMediaKind",
         FileNameTemplate = "{FileName}",
-        MetadaLoaders = "Default,Exif,ChkSum",
+        MetadaLoaders = "Default",
+        Recursive = true,
         MediaConfigs = new Dictionary<string, ArchiveConfig>
         {
             [FileMetadata.RawImageMediaKind] = RawPicDefaultConfig,

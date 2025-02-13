@@ -4,6 +4,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PicArchiver", "PicArchiver\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IGArchiver.Test", "IGArchiver.Test\IGArchiver.Test.csproj", "{44964420-FB5B-47A4-A30D-D2B686010639}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docker", "Docker", "{215348F7-9A18-4521-A616-6708B75D9EEB}"
+	ProjectSection(SolutionItems) = preProject
+		Dockerfile = Dockerfile
+		build = build
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

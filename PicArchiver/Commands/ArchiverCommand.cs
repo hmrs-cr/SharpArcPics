@@ -7,7 +7,7 @@ namespace PicArchiver.Commands;
 
 public class ArchiverCommand : BaseCommand 
 {
-    const ConsoleColor HeaderColor = ConsoleColor.White; 
+    const ConsoleColor HeaderColor = ConsoleColor.Cyan; 
         
     internal ArchiverCommand() : base("archive", "Archives files from source to destination applying logic defined by config.")
     {
@@ -72,7 +72,7 @@ public class ArchiverCommand : BaseCommand
                 sourceFolders = [source];
             }
             
-            if (ArchiveConfig.Load(Path.Combine(destination, "config.json")) is { } destConfig)
+            if (ArchiveConfig.Load(Path.Combine(destination, "archive-config.json")) is { } destConfig)
                 config = config.Merge(destConfig);
 
             var results = new AggregatedFolderArchiverResult(sourceFolders.Count);
@@ -95,10 +95,13 @@ public class ArchiverCommand : BaseCommand
                     WriteLine(HeaderColor, "Global results:");
                     PrintFolderList(sourceFolders, sourceFolder);
                     PrintResuls(results);
+                    WriteLine(string.Empty);
                 }
                 else
                 {
+                    WriteLine(string.Empty);
                     PrintResuls(result);
+                    WriteLine(string.Empty);
                 }
             } 
             
@@ -146,22 +149,41 @@ public class ArchiverCommand : BaseCommand
 
     private void PrintResuls(IFolderArchiverResult result)
     {
-        WriteLine($"Total Files: {result.TotalFilesCount}");
+        Write($"Valid Files: ");
+        Write(ConsoleColor.Cyan, $"{result.TotalFilesCount - result.InvalidFileCount}");
+        Write(" of ");
+        WriteLine(ConsoleColor.Cyan, $"{result.TotalFilesCount}");
         if (result.TotalFilesCount - result.InvalidFileCount > 0)
         {
-            WriteLine($"Valid: {result.TotalFilesCount - result.InvalidFileCount}");
-
             if (result.CopiedFileCount > 0)
-                WriteLine($"Copied: {result.CopiedFileCount}");
+            {
+                Write("Copied: ");
+                WriteLine(ConsoleColor.Green, $"{result.CopiedFileCount}");
+            }
 
             if (result.MovedFilesCount > 0)
-                WriteLine($"Moved: {result.MovedFilesCount}");
+            {
+                Write("Moved: ");
+                WriteLine(ConsoleColor.Green, $"{result.MovedFilesCount}");
+            }
 
             if (result.UpdatedFilesCount > 0)
-                WriteLine($"Updated: {result.UpdatedFilesCount}");
-
-            if (result.DeletedFilesCount > 0)
-                WriteLine($"Deleted [SRC]: {result.DeletedFilesCount}");
+            {
+                Write("Updated: ");
+                WriteLine(ConsoleColor.Yellow, $"{result.UpdatedFilesCount}");
+            }
+            
+            if (result.SrcDeletedFilesCount > 0)
+            {
+                Write("Deleted [SRC]: ");
+                WriteLine(ConsoleColor.Red, $"{result.SrcDeletedFilesCount} ({result.SrcDeleteBytes.ToHumanReadableByteSize()})");
+            }
+            
+            if (result.DestDeletedFilesCount > 0)
+            {
+                Write("Deleted [DST]: ");
+                WriteLine(ConsoleColor.Red, $"{result.DestDeletedFilesCount} ({result.DestDeleteBytes.ToHumanReadableByteSize()})");
+            }
 
             if (result.DuplicatedFileCount > 0)
                 WriteLine($"Duplicates: {result.DuplicatedFileCount}");
@@ -181,11 +203,11 @@ public class ArchiverCommand : BaseCommand
         WriteLine($"Elapsed time: {result.ElapsedTime.ToHumanReadableString()}");
     }
     
-    private void PrintResuls(FileArchiveContext result)
+    private void PrintResuls(FileArchiveResult result)
     {
         PrintResultAction(result.Result);
 
-        if (result.DryRun && result.Result != FileResult.Invalid)
+        if (result.Context.DryRun && result.Result != FileResult.Invalid)
         {
             Write(ConsoleColor.Red, "[DRY] ");
         }
@@ -196,20 +218,22 @@ public class ArchiverCommand : BaseCommand
             case FileResult.Moved:
             case FileResult.CopiedUpdated:
             case FileResult.MovedUpdated:
-                WriteLine($"'{result.SourceFileFullPath}' -> '{result.DestFileFullPath}'");
+                WriteLine($"'{result.Context.SourceFileFullPath}' -> '{result.Context.DestFileFullPath}'");
                 break;
-            
             case FileResult.SourceFileDeleted:
-                WriteLine($"'{result.SourceFileFullPath}'");
+                WriteLine($"'{result.Context.SourceFileFullPath}'");
+                break;
+            case FileResult.DestFileDeleted:
+                WriteLine(result.Message!);
                 break;
             case FileResult.Error:
-                WriteErrorLine($"ERROR: '{result.ResultException?.Message ?? "Unknown Error"}'");
+                WriteErrorLine($"ERROR: '{result.Exception?.Message ?? result.Message ?? "Unknown Error"}'");
                 break;
             case FileResult.AlreadyExists:
-                if (string.IsNullOrEmpty(result.ResultMessage))
-                    WriteLine($"'{result.SourceFileFullPath}' in '{result.DestinationFolderPath}'");
+                if (string.IsNullOrEmpty(result.Message))
+                    WriteLine($"'{result.Context.SourceFileFullPath}' in '{result.Context.DestinationFolderPath}'");
                 else    
-                    WriteLine($"'{result.SourceFileFullPath}' as '{result.ResultMessage}'");
+                    WriteLine($"'{result.Context.SourceFileFullPath}' as '{result.Message}'");
                 break;
             case FileResult.Invalid:
                 break;
@@ -235,6 +259,7 @@ public class ArchiverCommand : BaseCommand
                 Write(ConsoleColor.Yellow, "[DEST UPDATED]: ");
                 break;
             case FileResult.SourceFileDeleted:
+            case FileResult.DestFileDeleted:
                 Write(ConsoleColor.Yellow, "DELETED: ");
                 break;
             case FileResult.AlreadyExists: // Already exists in dest with another name.

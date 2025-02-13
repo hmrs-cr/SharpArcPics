@@ -2,6 +2,13 @@ namespace PicArchiver.Core.Metadata.Loaders;
 
 public sealed class DefaultMetadataLoader : MetadataLoader
 {
+    public override bool Initialize(FileArchiveContext context)
+    {
+        context.OverrideDestinationFile =  context is { OverrideDestinationFile: true, DestFileInfo.Exists: true } 
+                                               && context.DestFileInfo.Length != context.SourceFileInfo.Length;
+        return base.Initialize(context);
+    }
+
     public override bool LoadMetadata(string path, FileMetadata metadata)
     {
         var date = File.GetCreationTime(path);
