@@ -11,6 +11,7 @@ public sealed class ArchiveConfig
     private List<IMetadataLoader>? _metadataLoaderInstances = null;
 
     public bool? DryRun { get; init; }
+    public bool? ReportProgress { get; init; }
 
     public long? MinDriveSize { get; init; }
     public bool? MoveFiles { get; init; }
@@ -76,6 +77,7 @@ public sealed class ArchiveConfig
         TokenValues = config1.TokenValues ?? TokenValues ?? config2?.TokenValues,
         DryRun = config1.DryRun ?? DryRun ?? config2?.DryRun,
         Recursive = config1.Recursive ?? Recursive ?? config2?.Recursive,
+        ReportProgress = config1.ReportProgress ?? ReportProgress ?? config2?.ReportProgress,
         
         MetadaLoaders = onlyFirstLevelConfigValues ? null : config1.MetadaLoaders ?? MetadaLoaders,
         MediaConfigs = onlyFirstLevelConfigValues ? null : MergeMediaConfigs(config1),

@@ -9,10 +9,12 @@ public sealed class ChecksumMetadataLoader : MetadataLoader
 
     public override bool Initialize(FileArchiveContext context)
     {
+        if (OpenDbConnection(context.DestinationBasePath) == null)
+            return true;
+        
         var checksum = context.Metadata.GetChecksum();
         var size = context.Metadata.GetFileSize();
             
-        OpenDbConnection(context.DestinationBasePath);
         var existingName = ChecksumExists(checksum, size);
         if (!string.IsNullOrEmpty(existingName))
         {
@@ -48,18 +50,25 @@ public sealed class ChecksumMetadataLoader : MetadataLoader
             CloseDbConnection();
     }
 
-    private SqliteConnection OpenDbConnection(string path)
+    private SqliteConnection? OpenDbConnection(string path)
     {
         if (_connection != null) 
             return _connection;
         
         _connection = new SqliteConnection($"Data Source={Path.Combine(path, "checksums.db")}");
-        _connection.Open();
-
-        ExecuteSql(Sql.BeginExclusiveTransactionSql); // Just to test if the database is locked.
-        ExecuteSql(Sql.CommitTransactionSql);
-        ExecuteSql(Sql.BeginTransactionSql);
-        ExecuteSql(Sql.CreateTableSql);
+        try
+        {
+            _connection.Open();
+            ExecuteSql(Sql.BeginExclusiveTransactionSql); // Just to test if the database is locked.
+            ExecuteSql(Sql.CommitTransactionSql);
+            ExecuteSql(Sql.BeginTransactionSql);
+            ExecuteSql(Sql.CreateTableSql);
+        }
+        catch
+        {
+           // Ignore
+           _connection = null;
+        }
 
         return _connection;
     }

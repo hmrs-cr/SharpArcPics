@@ -74,8 +74,8 @@ public class FileArchiveContext : IDisposable
                 Config = mediaConfig;
             }
             
-            DestinationFolderPath = ResolveDestSubFolder(DestinationBasePath, Config);
-            DestFileFullPath = Path.Combine(DestinationFolderPath, ResolveDestFileName(SourceFileFullPath, Config));
+            DestinationFolderPath = ResolveDestSubFolder(DestinationBasePath);
+            DestFileFullPath = Path.Combine(DestinationFolderPath, ResolveDestFileName(SourceFileFullPath));
             DestinationFileExists = File.Exists(DestFileFullPath);
             OverrideDestinationFile = Config.OverrideDestination ?? false;
             DeleteSourceFileIfDestExists = Config.DeleteSourceFileIfDestExists ?? false;
@@ -86,15 +86,16 @@ public class FileArchiveContext : IDisposable
         }
     }
 
-    private string ResolveDestSubFolder(string destinationFolderPath, ArchiveConfig? config)
+    private string ResolveDestSubFolder(string destinationFolderPath)
     {
-        var subFolderName = config?.SubfolderTemplate?.ResolveTokens(Metadata) ?? string.Empty;
-        return Directory.CreateDirectory(Path.Combine(destinationFolderPath, subFolderName)).FullName;
+        var subFolderName = Config.SubfolderTemplate?.ResolveTokens(Metadata) ?? string.Empty;
+        var path = Path.Combine(destinationFolderPath, subFolderName);
+        return Config.DryRun == true ? path : Directory.CreateDirectory(path).FullName;
     }
 
-    private string ResolveDestFileName(string sourceFileName, ArchiveConfig? config)
+    private string ResolveDestFileName(string sourceFileName)
     {
-        var fileName = config?.FileNameTemplate?.ResolveTokens(Metadata) ?? Path.GetFileName(sourceFileName);
+        var fileName = Config.FileNameTemplate?.ResolveTokens(Metadata) ?? Path.GetFileName(sourceFileName);
         return fileName;
     }
     

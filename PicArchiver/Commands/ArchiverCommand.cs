@@ -7,10 +7,21 @@ namespace PicArchiver.Commands;
 
 public class ArchiverCommand : BaseCommand 
 {
-    const ConsoleColor HeaderColor = ConsoleColor.Cyan; 
+    const ConsoleColor HeaderColor = ConsoleColor.Cyan;
+
+    private readonly bool _scanOnly = false;
+    private IFolderArchiverResult? _scanResults;
+    private IFolderArchiverResult? _globalResults;
+
+    internal ArchiverCommand(bool scanOnly = false) : base(
+        name: scanOnly ? "scan" :
+                         "archive", 
         
-    internal ArchiverCommand() : base("archive", "Archives files from source to destination applying logic defined by config.")
+        description: scanOnly ? "Scans source folder for possible changes according to destination folder and config" : 
+                                "Archives files from source to destination applying logic defined by config.")
     {
+        _scanOnly = scanOnly;
+        
         var sourceOption = new Option<string>(
             name: "--source",
             description: "The source folder containing the pictures to archive.");
@@ -32,7 +43,7 @@ public class ArchiverCommand : BaseCommand
         this.SetHandler(ArchiveFiles, sourceOption, destinationOption, configNameOption);
     }
     
-    public void ArchiveFiles(string source, string destination, string? configName)
+    private void ArchiveFiles(string source, string destination, string? configName)
     {
         try
         {
@@ -74,41 +85,73 @@ public class ArchiverCommand : BaseCommand
             
             if (ArchiveConfig.Load(Path.Combine(destination, "archive-config.json")) is { } destConfig)
                 config = config.Merge(destConfig);
-
-            var results = new AggregatedFolderArchiverResult(sourceFolders.Count);
-            foreach (var sourceFolder in sourceFolders)
-            {
-                if (results.Count > 0)
-                    WriteLine(string.Empty);
-                
-                WriteLine(HeaderColor, $"Archiving files from '{sourceFolder}' to '{destination}'...");
-                var result = ArchiveFilesInternal(sourceFolder, destination, config);
-
-                if (sourceFolders.Count > 1)
-                {
-                    WriteLine(string.Empty);
-                    WriteLine(HeaderColor, $"Results for '{sourceFolder}':");
-                    PrintResuls(result);
-                    results.Add(result);
-                    
-                    WriteLine(string.Empty);
-                    WriteLine(HeaderColor, "Global results:");
-                    PrintFolderList(sourceFolders, sourceFolder);
-                    PrintResuls(results);
-                    WriteLine(string.Empty);
-                }
-                else
-                {
-                    WriteLine(string.Empty);
-                    PrintResuls(result);
-                    WriteLine(string.Empty);
-                }
-            } 
             
+            if (_scanOnly || config.ReportProgress == true)
+                _scanResults = ArchiveOrScanFiles(destination, sourceFolders, config, true);
+            
+            if (_scanOnly)
+            {
+                UnbreakLine();
+                PrintResuls(_scanResults);
+            }
+            else
+            {
+                UnbreakLine();
+                ArchiveOrScanFiles(destination, sourceFolders, config, scanOnly: false);
+            }
         }
         catch (Exception e)
         {
             WriteErrorLine(e.Message);
+        }
+    }
+
+    private IFolderArchiverResult ArchiveOrScanFiles(
+        string destination, 
+        ICollection<string> sourceFolders, 
+        ArchiveConfig config, 
+        bool scanOnly)
+    {
+         var globalResults = new AggregatedFolderArchiverResult(sourceFolders.Count);
+         _globalResults = globalResults;
+         
+        foreach (var sourceFolder in sourceFolders)
+        {
+            if (globalResults.Count > 0)
+                WriteLine(string.Empty);
+                
+            if (!scanOnly)
+                WriteLine(HeaderColor, $"Archiving files from '{sourceFolder}' to '{destination}'...");
+            var result = ArchiveFilesInternal(sourceFolder, destination, config, scanOnly);
+            globalResults.Add(result);
+            
+            if (!scanOnly)
+                PrintResults(sourceFolders, sourceFolder, result, globalResults);
+        }
+        
+        return _globalResults;
+    }
+
+    private void PrintResults(ICollection<string> sourceFolders, string sourceFolder, IFolderArchiverResult result,
+        AggregatedFolderArchiverResult globalResults)
+    {
+        if (sourceFolders.Count > 1)
+        {
+            WriteLine(string.Empty);
+            WriteLine(HeaderColor, $"Results for '{sourceFolder}':");
+            PrintResuls(result);
+                    
+            WriteLine(string.Empty);
+            WriteLine(HeaderColor, "Global results:");
+            PrintFolderList(sourceFolders, sourceFolder);
+            PrintResuls(globalResults);
+            WriteLine(string.Empty);
+        }
+        else
+        {
+            WriteLine(string.Empty);
+            PrintResuls(result);
+            WriteLine(string.Empty);
         }
     }
 
@@ -133,17 +176,28 @@ public class ArchiverCommand : BaseCommand
         WriteLine("]");
     }
 
-    private IFolderArchiverResult ArchiveFilesInternal(string sourceDirectory, string destinationDirectory, ArchiveConfig config)
+    private IFolderArchiverResult ArchiveFilesInternal(
+        string sourceDirectory,
+        string destinationDirectory,
+        ArchiveConfig config, 
+        bool scanOnly)
     {
         using var archiver = new FolderArchiver(sourceDirectory, config);
         
-        var fileResults = archiver.ArchiveTo(destinationDirectory);
+        var fileResults = archiver.ArchiveTo(destinationDirectory, scanOnly);
+        IFolderArchiverResult archiveResult = archiver;
+        
         foreach (var result in fileResults)
         {
-            PrintResuls(result);
+            if (scanOnly)
+            {
+                WriteSpinner("Scanning...");
+            }
+            else
+            {
+                PrintFileResuls(result);
+            }
         }
-
-        IFolderArchiverResult archiveResult = archiver;
         return archiveResult;
     }
 
@@ -157,31 +211,31 @@ public class ArchiverCommand : BaseCommand
         {
             if (result.CopiedFileCount > 0)
             {
-                Write("Copied: ");
+                Write(_scanOnly ? "To copy: " : "Copied: ");
                 WriteLine(ConsoleColor.Green, $"{result.CopiedFileCount}");
             }
 
             if (result.MovedFilesCount > 0)
             {
-                Write("Moved: ");
+                Write(_scanOnly ? "To Move: " : "Moved: ");
                 WriteLine(ConsoleColor.Green, $"{result.MovedFilesCount}");
             }
 
             if (result.UpdatedFilesCount > 0)
             {
-                Write("Updated: ");
+                Write(_scanOnly ? "To Update: " : "Updated: ");
                 WriteLine(ConsoleColor.Yellow, $"{result.UpdatedFilesCount}");
             }
             
             if (result.SrcDeletedFilesCount > 0)
             {
-                Write("Deleted [SRC]: ");
+                Write(_scanOnly ? "To Delete [SRC]: " : "Deleted [SRC]: ");
                 WriteLine(ConsoleColor.Red, $"{result.SrcDeletedFilesCount} ({result.SrcDeleteBytes.ToHumanReadableByteSize()})");
             }
             
             if (result.DestDeletedFilesCount > 0)
             {
-                Write("Deleted [DST]: ");
+                Write(_scanOnly ? "To Delete [DST]: " :"Deleted [DST]: ");
                 WriteLine(ConsoleColor.Red, $"{result.DestDeletedFilesCount} ({result.DestDeleteBytes.ToHumanReadableByteSize()})");
             }
 
@@ -189,7 +243,7 @@ public class ArchiverCommand : BaseCommand
                 WriteLine($"Duplicates: {result.DuplicatedFileCount}");
             
             if (result.TransferredBytes > 0)
-                WriteLine($"Data Transferred: {result.TransferredBytes.ToSizeString()}");
+                WriteLine($"Data {(_scanOnly ? "to Transfer" : "Transferred")} {result.TransferredBytes.ToSizeString()}");
 
             if (result.FailedFilesCount > 0)
                 WriteLine(ConsoleColor.Red, $"Failed: {result.FailedFilesCount}");
@@ -199,11 +253,13 @@ public class ArchiverCommand : BaseCommand
             WriteLine(ConsoleColor.Yellow, "Nothing to archive.");
         }
 
-
-        WriteLine($"Elapsed time: {result.ElapsedTime.ToHumanReadableString()}");
+        if (result.ElapsedTime.TotalSeconds > 1)
+        {
+            WriteLine($"Elapsed time: {result.ElapsedTime.ToHumanReadableString()}");
+        }
     }
     
-    private void PrintResuls(FileArchiveResult result)
+    private void PrintFileResuls(FileArchiveResult result)
     {
         PrintResultAction(result.Result);
 
@@ -245,28 +301,45 @@ public class ArchiverCommand : BaseCommand
         switch (result)
         {
             case FileResult.Copied:
+                WriteProgress();
                 Write(ConsoleColor.Green, "COPIED: ");
                 break;
             case FileResult.Moved:
+                WriteProgress();
                 Write(ConsoleColor.Green, "MOVED: ");
                 break;
             case FileResult.CopiedUpdated:
+                WriteProgress();
                 Write(ConsoleColor.Green, "COPIED ");
                 Write(ConsoleColor.Yellow, "[DEST UPDATED]: ");
                 break;
             case FileResult.MovedUpdated:
+                WriteProgress();
                 Write(ConsoleColor.Green, "MOVED ");
                 Write(ConsoleColor.Yellow, "[DEST UPDATED]: ");
                 break;
             case FileResult.SourceFileDeleted:
             case FileResult.DestFileDeleted:
+                WriteProgress();
                 Write(ConsoleColor.Yellow, "DELETED: ");
                 break;
             case FileResult.AlreadyExists: // Already exists in dest with another name.
+                WriteProgress();
                 Write("DUPLICATED: ");
                 break;
             case FileResult.Invalid: // Does not meet filter or metadata criteria.
                 break;
+        }
+
+        void WriteProgress()
+        {
+            if (_scanResults != null && _globalResults != null)
+            {
+                var totalValidFileCount = _scanResults.TotalFilesCount - _scanResults.InvalidFileCount;
+                var currentFileCount = _globalResults.TotalFilesCount - _globalResults.InvalidFileCount;
+                var percent = (double)currentFileCount / totalValidFileCount;
+                Write(ConsoleColor.Cyan, $"[{currentFileCount}/{totalValidFileCount} ({percent:P1})] ");
+            }
         }
     }
 }
