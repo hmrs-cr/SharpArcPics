@@ -15,7 +15,7 @@ public class BaseCommand : Command
 
     protected IConsole Console { get; } = new SystemConsole();
     
-    protected void WriteLine(string line) => Console.WriteLine(line);
+    protected void WriteLine(string line = "") => Console.WriteLine(line);
     
     protected void Write(string text) => Console.Write(text);
 

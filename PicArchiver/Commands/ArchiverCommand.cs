@@ -8,11 +8,7 @@ namespace PicArchiver.Commands;
 public class ArchiverCommand : BaseCommand 
 {
     const ConsoleColor HeaderColor = ConsoleColor.Cyan;
-
-    private readonly bool _scanOnly = false;
-    private IFolderArchiverResult? _scanResults;
-    private IFolderArchiverResult? _globalResults;
-
+    
     internal ArchiverCommand(bool scanOnly = false) : base(
         name: scanOnly ? "scan" :
                          "archive", 
@@ -20,8 +16,6 @@ public class ArchiverCommand : BaseCommand
         description: scanOnly ? "Scans source folder for possible changes according to destination folder and config" : 
                                 "Archives files from source to destination applying logic defined by config.")
     {
-        _scanOnly = scanOnly;
-        
         var sourceOption = new Option<string>(
             name: "--source",
             description: "The source folder containing the pictures to archive.");
@@ -39,66 +33,60 @@ public class ArchiverCommand : BaseCommand
         AddOption(sourceOption);
         AddOption(destinationOption);
         AddOption(configNameOption);
-        
-        this.SetHandler(ArchiveFiles, sourceOption, destinationOption, configNameOption);
+
+        Action<string, string, string> handler = scanOnly ? ScanFiles : ArchiveFiles;
+        this.SetHandler(handler, sourceOption, destinationOption, configNameOption);
+    }
+
+    private void ScanFiles(string source, string destination, string? configName)
+    {
+        try
+        {
+            var isValid = TryGetConfigAndSourceFolders(source, destination, configName, out var config, out var sourceFolders);
+            if (!isValid || config == null)
+                return;
+
+            Write("Scanning ");
+            PrintFolderList(sourceFolders);
+            WriteLine();
+            
+            var folderArchiver = new MultiFolderArchiver(sourceFolders, config);
+            PrintResults(folderArchiver.ScanAll());
+        }
+        catch (Exception e)
+        {
+            WriteErrorLine(e.Message);
+        }
     }
     
     private void ArchiveFiles(string source, string destination, string? configName)
     {
         try
         {
-            if (string.IsNullOrEmpty(configName))
-            {
-                WriteErrorLine($"ERROR: Config not specified.");
+            var isValid = TryGetConfigAndSourceFolders(source, destination, configName, out var config, out var sourceFolders);
+            if (!isValid || config == null)
                 return;
-            }
+            
+            Write("Archiving ");
+            PrintFolderList(sourceFolders);
+            WriteLine();
 
-            var config = ArchiveConfig.Load(configName);
-            if (config == null)
+            var lastFolder = string.Empty;
+            var folderArchiver = new MultiFolderArchiver(sourceFolders, config);
+            foreach (var fileArchiveResult in folderArchiver.ArchiveTo(destination))
             {
-                WriteErrorLine($"ERROR: Config '{configName}' not found.");
-                return;
-            }
-
-            ICollection<string> sourceFolders;
-            if (source == "CAMERAS")
-            {
-                if (FolderUtils.GetAllConnectedCameraFolders() is { Count: > 0 } folders)
+                if (lastFolder != fileArchiveResult.Folder)
                 {
-                    sourceFolders = folders;
-                }
-                else
-                {
-                    WriteErrorLine("ERROR: No Camera folders found.");
-                    return;
+                    WriteLine();
+                    WriteLine(HeaderColor, $"Archiving files from '{fileArchiveResult.Folder}' to '{destination}'");
+                    lastFolder = fileArchiveResult.Folder;
                 }
                 
-                Write("Detected Source ");
-                PrintFolderList(sourceFolders);
-                
-                WriteLine(string.Empty);
-            }
-            else
-            {
-                sourceFolders = [source];
+                PrintFileResults(fileArchiveResult.FileResult, folderArchiver.Result);
             }
             
-            if (ArchiveConfig.Load(Path.Combine(destination, "archive-config.json")) is { } destConfig)
-                config = config.Merge(destConfig);
-            
-            if (_scanOnly || config.ReportProgress == true)
-                _scanResults = ArchiveOrScanFiles(destination, sourceFolders, config, true);
-            
-            if (_scanOnly)
-            {
-                UnbreakLine();
-                PrintResuls(_scanResults);
-            }
-            else
-            {
-                UnbreakLine();
-                ArchiveOrScanFiles(destination, sourceFolders, config, scanOnly: false);
-            }
+            WriteLine();
+            PrintResults(folderArchiver.Result);
         }
         catch (Exception e)
         {
@@ -106,56 +94,55 @@ public class ArchiverCommand : BaseCommand
         }
     }
 
-    private IFolderArchiverResult ArchiveOrScanFiles(
+    private bool TryGetConfigAndSourceFolders(
+        string source, 
         string destination, 
-        ICollection<string> sourceFolders, 
-        ArchiveConfig config, 
-        bool scanOnly)
+        string? configName, 
+        out ArchiveConfig? config,
+        out IReadOnlyCollection<string> sourceFolders)
     {
-         var globalResults = new AggregatedFolderArchiverResult(sourceFolders.Count);
-         _globalResults = globalResults;
-         
-        foreach (var sourceFolder in sourceFolders)
+        if (string.IsNullOrEmpty(configName))
         {
-            if (globalResults.Count > 0)
-                WriteLine(string.Empty);
-                
-            if (!scanOnly)
-                WriteLine(HeaderColor, $"Archiving files from '{sourceFolder}' to '{destination}'...");
-            var result = ArchiveFilesInternal(sourceFolder, destination, config, scanOnly);
-            globalResults.Add(result);
-            
-            if (!scanOnly)
-                PrintResults(sourceFolders, sourceFolder, result, globalResults);
+            WriteErrorLine($"ERROR: Config not specified.");
+            sourceFolders = [];
+            config = null;
+            return false;
         }
-        
-        return _globalResults;
-    }
 
-    private void PrintResults(ICollection<string> sourceFolders, string sourceFolder, IFolderArchiverResult result,
-        AggregatedFolderArchiverResult globalResults)
-    {
-        if (sourceFolders.Count > 1)
+        config = ArchiveConfig.Load(configName);
+        if (config == null)
         {
-            WriteLine(string.Empty);
-            WriteLine(HeaderColor, $"Results for '{sourceFolder}':");
-            PrintResuls(result);
-                    
-            WriteLine(string.Empty);
-            WriteLine(HeaderColor, "Global results:");
-            PrintFolderList(sourceFolders, sourceFolder);
-            PrintResuls(globalResults);
-            WriteLine(string.Empty);
+            WriteErrorLine($"ERROR: Config '{configName}' not found.");
+            sourceFolders = [];
+            config = null;
+            return false;
+        }
+
+        if (source == "CAMERAS")
+        {
+            if (FolderUtils.GetAllConnectedCameraFolders() is { Count: > 0 } folders)
+            {
+                sourceFolders = folders;
+            }
+            else
+            {
+                WriteErrorLine("ERROR: No Camera folders found.");
+                sourceFolders = [];
+                return false;
+            }
         }
         else
         {
-            WriteLine(string.Empty);
-            PrintResuls(result);
-            WriteLine(string.Empty);
+            sourceFolders = [source];
         }
+            
+        if (ArchiveConfig.Load(Path.Combine(destination, "archive-config.json")) is { } destConfig)
+            config = config.Merge(destConfig);
+        
+        return true;
     }
 
-    private void PrintFolderList(ICollection<string> sourceFolders, string? currentFolder = null)
+    private void PrintFolderList(IReadOnlyCollection<string> sourceFolders, string? currentFolder = null)
     {
         Write("Folders: [");
         var color = string.IsNullOrEmpty(currentFolder) ? ConsoleColor.Gray : ConsoleColor.Green;
@@ -176,33 +163,10 @@ public class ArchiverCommand : BaseCommand
         WriteLine("]");
     }
 
-    private IFolderArchiverResult ArchiveFilesInternal(
-        string sourceDirectory,
-        string destinationDirectory,
-        ArchiveConfig config, 
-        bool scanOnly)
+    private void PrintResults(IArchiverResult result)
     {
-        using var archiver = new FolderArchiver(sourceDirectory, config);
+        var isScanResult = result is ScannedArchiverResults;
         
-        var fileResults = archiver.ArchiveTo(destinationDirectory, scanOnly);
-        IFolderArchiverResult archiveResult = archiver;
-        
-        foreach (var result in fileResults)
-        {
-            if (scanOnly)
-            {
-                WriteSpinner("Scanning...");
-            }
-            else
-            {
-                PrintFileResuls(result);
-            }
-        }
-        return archiveResult;
-    }
-
-    private void PrintResuls(IFolderArchiverResult result)
-    {
         Write($"Valid Files: ");
         Write(ConsoleColor.Cyan, $"{result.TotalFilesCount - result.InvalidFileCount}");
         Write(" of ");
@@ -211,39 +175,39 @@ public class ArchiverCommand : BaseCommand
         {
             if (result.CopiedFileCount > 0)
             {
-                Write(_scanOnly ? "To copy: " : "Copied: ");
+                Write(isScanResult ? "To copy: " : "Copied: ");
                 WriteLine(ConsoleColor.Green, $"{result.CopiedFileCount}");
             }
 
             if (result.MovedFilesCount > 0)
             {
-                Write(_scanOnly ? "To Move: " : "Moved: ");
+                Write(isScanResult ? "To Move: " : "Moved: ");
                 WriteLine(ConsoleColor.Green, $"{result.MovedFilesCount}");
             }
 
             if (result.UpdatedFilesCount > 0)
             {
-                Write(_scanOnly ? "To Update: " : "Updated: ");
+                Write(isScanResult ? "To Update: " : "Updated: ");
                 WriteLine(ConsoleColor.Yellow, $"{result.UpdatedFilesCount}");
             }
             
             if (result.SrcDeletedFilesCount > 0)
             {
-                Write(_scanOnly ? "To Delete [SRC]: " : "Deleted [SRC]: ");
-                WriteLine(ConsoleColor.Red, $"{result.SrcDeletedFilesCount} ({result.SrcDeleteBytes.ToHumanReadableByteSize()})");
+                Write(isScanResult ? "To Delete [SRC]: " : "Deleted [SRC]: ");
+                WriteLine(ConsoleColor.Red, $"{result.SrcDeletedFilesCount} ({result.SrcDeletedBytes.ToHumanReadableByteSize()})");
             }
             
             if (result.DestDeletedFilesCount > 0)
             {
-                Write(_scanOnly ? "To Delete [DST]: " :"Deleted [DST]: ");
-                WriteLine(ConsoleColor.Red, $"{result.DestDeletedFilesCount} ({result.DestDeleteBytes.ToHumanReadableByteSize()})");
+                Write(isScanResult ? "To Delete [DST]: " :"Deleted [DST]: ");
+                WriteLine(ConsoleColor.Red, $"{result.DestDeletedFilesCount} ({result.DestDeletedBytes.ToHumanReadableByteSize()})");
             }
 
             if (result.DuplicatedFileCount > 0)
                 WriteLine($"Duplicates: {result.DuplicatedFileCount}");
             
             if (result.TransferredBytes > 0)
-                WriteLine($"Data {(_scanOnly ? "to Transfer" : "Transferred")} {result.TransferredBytes.ToSizeString()}");
+                WriteLine($"Data {(isScanResult ? "to Transfer" : "Transferred")} {result.TransferredBytes.ToSizeString()}");
 
             if (result.FailedFilesCount > 0)
                 WriteLine(ConsoleColor.Red, $"Failed: {result.FailedFilesCount}");
@@ -259,9 +223,9 @@ public class ArchiverCommand : BaseCommand
         }
     }
     
-    private void PrintFileResuls(FileArchiveResult result)
+    private void PrintFileResults(FileArchiveResult result, IProgressArchiverResult progress)
     {
-        PrintResultAction(result.Result);
+        PrintResultAction(result.Result, progress);
 
         if (result.Context.DryRun && result.Result != FileResult.Invalid)
         {
@@ -296,7 +260,7 @@ public class ArchiverCommand : BaseCommand
         }
     }
 
-    private void PrintResultAction(FileResult result)
+    private void PrintResultAction(FileResult result, IProgressArchiverResult progress)
     {
         switch (result)
         {
@@ -333,12 +297,10 @@ public class ArchiverCommand : BaseCommand
 
         void WriteProgress()
         {
-            if (_scanResults != null && _globalResults != null)
+            var percentage = progress.Percentage;
+            if (percentage is > 0 and <= 1)
             {
-                var totalValidFileCount = _scanResults.TotalFilesCount - _scanResults.InvalidFileCount;
-                var currentFileCount = _globalResults.TotalFilesCount - _globalResults.InvalidFileCount;
-                var percent = (double)currentFileCount / totalValidFileCount;
-                Write(ConsoleColor.Cyan, $"[{currentFileCount}/{totalValidFileCount} ({percent:P1})] ");
+                Write(ConsoleColor.Cyan, $"[{progress.ValidFileCount}/{progress.ValidScannedFileCount} ({percentage:P1}) ({progress.RemainingTime?.ToHumanReadableString(true)})] ");
             }
         }
     }

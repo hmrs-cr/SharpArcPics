@@ -6,7 +6,7 @@ public static class FolderUtils
     public static readonly ICollection<string> VideoFolders = ["private/M4ROOT/CLIP"]; 
     public static readonly ICollection<string> AllFolders = [..PictureFolders, ..VideoFolders];
 
-    public static ICollection<string> GetAllConnectedCameraFolders() => GetConnectedCameraFolders(AllFolders).ToList();
+    public static IReadOnlyCollection<string> GetAllConnectedCameraFolders() => GetConnectedCameraFolders(AllFolders).ToList();
     
     public static IEnumerable<string> GetConnectedCameraFolders(params ICollection<string> subfolders)
     {

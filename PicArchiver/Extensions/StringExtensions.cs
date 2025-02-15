@@ -18,22 +18,27 @@ public static partial class StringExtensions
         return template;
     }
     
-    public static string ToHumanReadableString (this TimeSpan t)
+    public static string ToHumanReadableString(this TimeSpan t, bool shortDesc = false)
     {
+        var secondsStr = shortDesc ? "s" : " seconds";
+        var minsStr = shortDesc ? "m" : " minutes";
+        var hoursStr = shortDesc ? "m" : " hours";
+        var daysStr = shortDesc ? "m" : " days";
+        
         if (t.TotalSeconds <= 1) {
-            return $@"{t:s\.ff} seconds";
+            return $@"{t:s\.ff}{secondsStr}";
         }
         if (t.TotalMinutes <= 1) {
-            return $@"{t:%s} seconds";
+            return $@"{t:%s}{secondsStr}";
         }
         if (t.TotalHours <= 1) {
-            return $@"{t:%m} minutes";
+            return $@"{t:%m}{minsStr}";
         }
         if (t.TotalDays <= 1) {
-            return $@"{t:%h} hours";
+            return $@"{t:%h}{hoursStr}";
         }
 
-        return $@"{t:%d} days";
+        return $@"{t:%d}{daysStr}";
     }
 
     public static string ToHumanReadableByteSize(this object size)
@@ -52,7 +57,7 @@ public static partial class StringExtensions
         while (lenght >= 1024 && index < ByteSizes.Count - 1) 
         {
             index++;
-            lenght = lenght/1024;
+            lenght /= 1024;
         }
         
         return $"{lenght:0.#}{ByteSizes[index]}";
