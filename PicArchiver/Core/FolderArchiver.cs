@@ -570,12 +570,12 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
 
 public class MultiFolderArchiver
 {
-    private readonly IReadOnlyCollection<string> _folders;
+    private readonly IReadOnlyCollection<DirectoryInfo> _folders;
     private readonly ArchiveConfig _config;
     
     public IProgressArchiverResult Result { get; private set; } = ProgressArchiverResult.Default;
 
-    public MultiFolderArchiver(IReadOnlyCollection<string> folders, ArchiveConfig config)
+    public MultiFolderArchiver(IReadOnlyCollection<DirectoryInfo> folders, ArchiveConfig config)
     {
         _folders = folders;
         _config = config;
@@ -583,30 +583,30 @@ public class MultiFolderArchiver
 
     public IEnumerable<MultiFolderFileArchiveResult> ArchiveTo(string destFolder)
     {
-        var scanResults = _config.ReportProgress == true ? ScanAll() : null;
+        var scanResults = _config.ReportProgress == true ? ScanAll(destFolder) : null;
         var progressArchiverResult  = new ProgressArchiverResult(scanResults);
         Result = progressArchiverResult;
         
         foreach (var folder in _folders)
         {
-            using var folderArchiver = new FolderArchiver(folder, _config);
+            using var folderArchiver = new FolderArchiver(folder.FullName, _config);
             var fileResults = folderArchiver.ArchiveTo(destFolder);
             foreach (var fileArchiveResult in fileResults)
             {
                 progressArchiverResult.UpdateProgress(folderArchiver);
-                yield return new MultiFolderFileArchiveResult(folder, fileArchiveResult);
+                yield return new MultiFolderFileArchiveResult(folder.FullName, fileArchiveResult);
             }
         }
     }
 
-    public IAggregatedArchiverResult ScanAll()
+    public IAggregatedArchiverResult ScanAll(string? destFolder)
     {
         var results = new ScannedArchiverResults(_folders.Count);
 
         foreach (var folder in _folders)
         {
-            using var folderArchiver = new FolderArchiver(folder, _config);
-            _ = folderArchiver.ScanSrcFiles(folder).All(f => true);
+            using var folderArchiver = new FolderArchiver(folder.FullName, _config);
+            _ = folderArchiver.ScanSrcFiles(destFolder).All(f => true);
 
             IFolderArchiverResult result = folderArchiver;
             results.Add(result);

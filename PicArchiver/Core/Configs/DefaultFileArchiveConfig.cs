@@ -4,7 +4,7 @@ namespace PicArchiver.Core.Configs;
 
 public static class DefaultFileArchiveConfig
 {
-    private static ArchiveConfig DefaultConfig { get; } = new()
+    public static ArchiveConfig DefaultConfig { get; } = new()
     { 
         MoveFiles = false,
         OverrideDestination = false,
@@ -71,6 +71,7 @@ public static class DefaultFileArchiveConfig
         FileNameTemplate = "{FileName}",
         MetadaLoaders = "Default",
         Recursive = true,
+        ReportProgress = true,
         MediaConfigs = new Dictionary<string, ArchiveConfig>
         {
             [FileMetadata.RawImageMediaKind] = RawPicDefaultConfig,
@@ -88,6 +89,6 @@ public static class DefaultFileArchiveConfig
         ["RPV"] = RawPicAndVideoDefaultConfig,
     };
 
-    public static ArchiveConfig? GetDefaultConfig(string name) => Configs.GetValueOrDefault(name);
+    public static ArchiveConfig? GetDefaultConfig(string? name = null) => name == null ? DefaultConfig : Configs.GetValueOrDefault(name);
     public static IEnumerable<string> GetConfigNames() => Configs.Keys;
 }

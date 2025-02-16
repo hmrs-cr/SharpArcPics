@@ -6,9 +6,9 @@ public static class FolderUtils
     public static readonly ICollection<string> VideoFolders = ["private/M4ROOT/CLIP"]; 
     public static readonly ICollection<string> AllFolders = [..PictureFolders, ..VideoFolders];
 
-    public static IReadOnlyCollection<string> GetAllConnectedCameraFolders() => GetConnectedCameraFolders(AllFolders).ToList();
+    public static IReadOnlyCollection<DirectoryInfo> GetAllConnectedCameraFolders() => GetConnectedCameraFolders(AllFolders).ToList();
     
-    public static IEnumerable<string> GetConnectedCameraFolders(params ICollection<string> subfolders)
+    public static IEnumerable<DirectoryInfo> GetConnectedCameraFolders(params ICollection<string> subfolders)
     {
         foreach (var drive in DriveInfo.GetDrives())
         {
@@ -17,7 +17,7 @@ public static class FolderUtils
                 var cameraFolder = Path.Join(drive.RootDirectory.FullName, subfolder.AsSpan());
                 if (Directory.Exists(cameraFolder))
                 {
-                    yield return cameraFolder;
+                    yield return new DirectoryInfo(cameraFolder);
                 }
             }
         }

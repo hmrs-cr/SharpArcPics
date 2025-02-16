@@ -77,10 +77,10 @@ public class FileArchiveContext : IDisposable
             DestinationFolderPath = ResolveDestSubFolder(DestinationBasePath);
             DestFileFullPath = Path.Combine(DestinationFolderPath, ResolveDestFileName(SourceFileFullPath));
             DestinationFileExists = File.Exists(DestFileFullPath);
-            OverrideDestinationFile = Config.OverrideDestination ?? false;
-            DeleteSourceFileIfDestExists = Config.DeleteSourceFileIfDestExists ?? false;
-            MoveSourceFile = Config.MoveFiles ?? false;
-            DryRun = Config.DryRun ?? false;
+            OverrideDestinationFile = Config.OverrideDestination ?? config.OverrideDestination ?? false;
+            DeleteSourceFileIfDestExists = Config.DeleteSourceFileIfDestExists ?? config.DeleteSourceFileIfDestExists ?? false;
+            MoveSourceFile = Config.MoveFiles ?? config.MoveFiles ?? false;
+            DryRun = config.DryRun ?? Config.DryRun ?? false;
 
             IsValid = MetadataLoaders.Initialize(this);
         }

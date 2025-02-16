@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using PicArchiver.Core;
 using PicArchiver.Core.Configs;
 using PicArchiver.Extensions;
@@ -16,42 +17,94 @@ public class ArchiverCommand : BaseCommand
         description: scanOnly ? "Scans source folder for possible changes according to destination folder and config" : 
                                 "Archives files from source to destination applying logic defined by config.")
     {
-        var sourceOption = new Option<string>(
+        var sourceOption = new Option<IReadOnlyCollection<DirectoryInfo>>(
             name: "--source",
-            description: "The source folder containing the pictures to archive.");
+            parseArgument: ParseSourceFolders,
+            isDefault: true,
+            description: "The source folder containing the pictures to archive.")
+        {
+            AllowMultipleArgumentsPerToken = true,
+            IsRequired = true
+        };
         
         var destinationOption = new Option<string>(
             name: "--destination",
             description: "The destination folder to archive the pictures.");
         
-        var configNameOption = new Option<string>(
+        var configNameOption = new Option<ArchiveConfig>(
             name: "--config",
-            description: $"The config  to use. Could be any of {string.Join(',', DefaultFileArchiveConfig.GetConfigNames())} " +
+            parseArgument: ParseConfig,
+            description: $"The config to use. Could be any of {string.Join(',', DefaultFileArchiveConfig.GetConfigNames())} " +
                          $"or a file containing the configuration in json format.");
-        
         
         AddOption(sourceOption);
         AddOption(destinationOption);
         AddOption(configNameOption);
 
-        Action<string, string, string> handler = scanOnly ? ScanFiles : ArchiveFiles;
+        Action<IReadOnlyCollection<DirectoryInfo>, string, ArchiveConfig> handler = scanOnly ? ScanFiles : ArchiveFiles;
         this.SetHandler(handler, sourceOption, destinationOption, configNameOption);
     }
 
-    private void ScanFiles(string source, string destination, string? configName)
+    private IReadOnlyCollection<DirectoryInfo> ParseSourceFolders(ArgumentResult result)
+    {
+        if (result.Tokens is [{ Value: "CAMERAS" }])
+        {
+            if (FolderUtils.GetAllConnectedCameraFolders() is { Count: > 0 } cameraFolders)
+            {
+                return cameraFolders;
+            }
+
+            result.ErrorMessage = "No Camera folders found.";
+            return [];
+        }
+
+        var nonExistingFolders = string.Join(",", result.Tokens.Where(t => !Directory.Exists(t.Value)));
+        if (nonExistingFolders != string.Empty)
+        {
+            result.ErrorMessage = $"Non existing folders passed as source: {nonExistingFolders}";
+            return [];
+        }
+        
+        return result.Tokens.Where(t => Directory.Exists(t.Value)).Select(t => new DirectoryInfo(t.Value)).ToList();
+    }
+    
+    private ArchiveConfig ParseConfig(ArgumentResult result)
+    {
+        var configName = result.Tokens.First().Value;
+        if (string.IsNullOrEmpty(configName))
+        {
+            result.ErrorMessage = "Config not specified.";
+            return DefaultFileArchiveConfig.DefaultConfig;
+        }
+                
+        var config = ArchiveConfig.Load(configName);
+        if (config == null)
+        {
+            result.ErrorMessage = $"Config '{configName}' not found.";
+            return DefaultFileArchiveConfig.DefaultConfig;
+        }
+
+        return config;
+    }
+
+    private ArchiveConfig MergeWithDest(ArchiveConfig config, string destination)
+    {
+        if (ArchiveConfig.Load(Path.Combine(destination, "archive-config.json")) is { } destConfig)
+            config = config.Merge(destConfig);
+
+        return config;
+    }
+
+    private void ScanFiles(IReadOnlyCollection<DirectoryInfo> sourceFolders, string destination, ArchiveConfig config)
     {
         try
         {
-            var isValid = TryGetConfigAndSourceFolders(source, destination, configName, out var config, out var sourceFolders);
-            if (!isValid || config == null)
-                return;
-
             Write("Scanning ");
             PrintFolderList(sourceFolders);
             WriteLine();
             
-            var folderArchiver = new MultiFolderArchiver(sourceFolders, config);
-            PrintResults(folderArchiver.ScanAll());
+            var folderArchiver = new MultiFolderArchiver(sourceFolders,MergeWithDest(config, destination));
+            PrintResults(folderArchiver.ScanAll(destination));
         }
         catch (Exception e)
         {
@@ -59,20 +112,16 @@ public class ArchiverCommand : BaseCommand
         }
     }
     
-    private void ArchiveFiles(string source, string destination, string? configName)
+    private void ArchiveFiles(IReadOnlyCollection<DirectoryInfo> sourceFolders, string destination, ArchiveConfig config)
     {
         try
         {
-            var isValid = TryGetConfigAndSourceFolders(source, destination, configName, out var config, out var sourceFolders);
-            if (!isValid || config == null)
-                return;
-            
             Write("Archiving ");
             PrintFolderList(sourceFolders);
             WriteLine();
 
             var lastFolder = string.Empty;
-            var folderArchiver = new MultiFolderArchiver(sourceFolders, config);
+            var folderArchiver = new MultiFolderArchiver(sourceFolders, MergeWithDest(config, destination));
             foreach (var fileArchiveResult in folderArchiver.ArchiveTo(destination))
             {
                 if (lastFolder != fileArchiveResult.Folder)
@@ -94,55 +143,7 @@ public class ArchiverCommand : BaseCommand
         }
     }
 
-    private bool TryGetConfigAndSourceFolders(
-        string source, 
-        string destination, 
-        string? configName, 
-        out ArchiveConfig? config,
-        out IReadOnlyCollection<string> sourceFolders)
-    {
-        if (string.IsNullOrEmpty(configName))
-        {
-            WriteErrorLine($"ERROR: Config not specified.");
-            sourceFolders = [];
-            config = null;
-            return false;
-        }
-
-        config = ArchiveConfig.Load(configName);
-        if (config == null)
-        {
-            WriteErrorLine($"ERROR: Config '{configName}' not found.");
-            sourceFolders = [];
-            config = null;
-            return false;
-        }
-
-        if (source == "CAMERAS")
-        {
-            if (FolderUtils.GetAllConnectedCameraFolders() is { Count: > 0 } folders)
-            {
-                sourceFolders = folders;
-            }
-            else
-            {
-                WriteErrorLine("ERROR: No Camera folders found.");
-                sourceFolders = [];
-                return false;
-            }
-        }
-        else
-        {
-            sourceFolders = [source];
-        }
-            
-        if (ArchiveConfig.Load(Path.Combine(destination, "archive-config.json")) is { } destConfig)
-            config = config.Merge(destConfig);
-        
-        return true;
-    }
-
-    private void PrintFolderList(IReadOnlyCollection<string> sourceFolders, string? currentFolder = null)
+    private void PrintFolderList(IReadOnlyCollection<DirectoryInfo> sourceFolders, string? currentFolder = null)
     {
         Write("Folders: [");
         var color = string.IsNullOrEmpty(currentFolder) ? ConsoleColor.Gray : ConsoleColor.Green;
@@ -152,11 +153,11 @@ public class ArchiverCommand : BaseCommand
             if (currentFound)
                 color = ConsoleColor.Gray;
             
-            Write(color,$"'{folder}'");
+            Write(color,$"'{folder.FullName}'");
             if (folder != sourceFolders.Last())
                 Write(", ");
             
-            if (folder == currentFolder)
+            if (folder.FullName == currentFolder)
                 currentFound = true;
         }
         
