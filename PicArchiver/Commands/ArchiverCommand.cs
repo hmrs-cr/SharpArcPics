@@ -26,16 +26,23 @@ public class ArchiverCommand : BaseCommand
             AllowMultipleArgumentsPerToken = true,
             IsRequired = true
         };
-        
+
         var destinationOption = new Option<string>(
             name: "--destination",
-            description: "The destination folder to archive the pictures.");
-        
+            description: "The destination folder to archive the pictures.")
+        {
+            IsRequired = !scanOnly
+        };
+
         var configNameOption = new Option<ArchiveConfig>(
             name: "--config",
             parseArgument: ParseConfig,
-            description: $"The config to use. Could be any of {string.Join(',', DefaultFileArchiveConfig.GetConfigNames())} " +
-                         $"or a file containing the configuration in json format.");
+            description:
+            $"The config to use. Could be any of {string.Join(',', DefaultFileArchiveConfig.GetConfigNames())} " +
+            $"or a file containing the configuration in json format.")
+        {
+            IsRequired = true
+        };
         
         AddOption(sourceOption);
         AddOption(destinationOption);
@@ -70,7 +77,7 @@ public class ArchiverCommand : BaseCommand
     
     private ArchiveConfig ParseConfig(ArgumentResult result)
     {
-        var configName = result.Tokens.First().Value;
+        var configName = result.Tokens.FirstOrDefault()?.Value;
         if (string.IsNullOrEmpty(configName))
         {
             result.ErrorMessage = "Config not specified.";
@@ -78,18 +85,16 @@ public class ArchiverCommand : BaseCommand
         }
                 
         var config = ArchiveConfig.Load(configName);
-        if (config == null)
-        {
-            result.ErrorMessage = $"Config '{configName}' not found.";
-            return DefaultFileArchiveConfig.DefaultConfig;
-        }
-
-        return config;
+        if (config != null) 
+            return config;
+        
+        result.ErrorMessage = $"Config '{configName}' not found.";
+        return DefaultFileArchiveConfig.DefaultConfig;
     }
 
-    private ArchiveConfig MergeWithDest(ArchiveConfig config, string destination)
+    private ArchiveConfig MergeConfigWithDest(ArchiveConfig config, string? destination)
     {
-        if (ArchiveConfig.Load(Path.Combine(destination, "archive-config.json")) is { } destConfig)
+        if (destination != null && ArchiveConfig.Load(Path.Combine(destination, "archive-config.json")) is { } destConfig)
             config = config.Merge(destConfig);
 
         return config;
@@ -103,7 +108,7 @@ public class ArchiverCommand : BaseCommand
             PrintFolderList(sourceFolders);
             WriteLine();
             
-            var folderArchiver = new MultiFolderArchiver(sourceFolders,MergeWithDest(config, destination));
+            var folderArchiver = new MultiFolderArchiver(sourceFolders, MergeConfigWithDest(config, destination));
             PrintResults(folderArchiver.ScanAll(destination));
         }
         catch (Exception e)
@@ -121,7 +126,7 @@ public class ArchiverCommand : BaseCommand
             WriteLine();
 
             var lastFolder = string.Empty;
-            var folderArchiver = new MultiFolderArchiver(sourceFolders, MergeWithDest(config, destination));
+            var folderArchiver = new MultiFolderArchiver(sourceFolders, MergeConfigWithDest(config, destination));
             foreach (var fileArchiveResult in folderArchiver.ArchiveTo(destination))
             {
                 if (lastFolder != fileArchiveResult.Folder)
