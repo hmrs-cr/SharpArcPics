@@ -74,13 +74,15 @@ public class FileArchiveContext : IDisposable
                 Config = mediaConfig;
             }
             
+            
+            DryRun = config.DryRun ?? Config.DryRun ?? false;
+            
             DestinationFolderPath = ResolveDestSubFolder(DestinationBasePath);
             DestFileFullPath = Path.Combine(DestinationFolderPath, ResolveDestFileName(SourceFileFullPath));
             DestinationFileExists = File.Exists(DestFileFullPath);
             OverrideDestinationFile = Config.OverrideDestination ?? config.OverrideDestination ?? false;
             DeleteSourceFileIfDestExists = Config.DeleteSourceFileIfDestExists ?? config.DeleteSourceFileIfDestExists ?? false;
             MoveSourceFile = Config.MoveFiles ?? config.MoveFiles ?? false;
-            DryRun = config.DryRun ?? Config.DryRun ?? false;
 
             IsValid = MetadataLoaders.Initialize(this);
         }
@@ -90,7 +92,7 @@ public class FileArchiveContext : IDisposable
     {
         var subFolderName = Config.SubfolderTemplate?.ResolveTokens(Metadata) ?? string.Empty;
         var path = Path.Combine(destinationFolderPath, subFolderName);
-        return Config.DryRun == true ? path : Directory.CreateDirectory(path).FullName;
+        return DryRun ? path : Directory.CreateDirectory(path).FullName;
     }
 
     private string ResolveDestFileName(string sourceFileName)

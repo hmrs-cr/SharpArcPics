@@ -575,6 +575,8 @@ public class MultiFolderArchiver
     
     public IProgressArchiverResult Result { get; private set; } = ProgressArchiverResult.Default;
 
+    public Func<FileArchiveResult, IFolderArchiverResult, bool>? OnScanResult { get; set; } = null;
+
     public MultiFolderArchiver(IReadOnlyCollection<DirectoryInfo> folders, ArchiveConfig config)
     {
         _folders = folders;
@@ -606,7 +608,7 @@ public class MultiFolderArchiver
         foreach (var folder in _folders)
         {
             using var folderArchiver = new FolderArchiver(folder.FullName, _config);
-            _ = folderArchiver.ScanSrcFiles(destFolder).All(f => true);
+            _ = folderArchiver.ScanSrcFiles(destFolder).All(f => OnScanResult == null || OnScanResult.Invoke(f, folderArchiver));
 
             IFolderArchiverResult result = folderArchiver;
             results.Add(result);
@@ -615,15 +617,5 @@ public class MultiFolderArchiver
         return results;
     }
 
-    public readonly struct MultiFolderFileArchiveResult
-    {
-        public string Folder { get; }
-        public FileArchiveResult FileResult { get; }
-
-        public MultiFolderFileArchiveResult(string folder, FileArchiveResult fileResult)
-        {
-            Folder = folder;
-            FileResult = fileResult;
-        }
-    }
+    public readonly record struct MultiFolderFileArchiveResult(string Folder, FileArchiveResult FileResult);
 }

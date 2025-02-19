@@ -6,7 +6,7 @@ namespace PicArchiver.Commands;
 
 public class BaseCommand : Command
 {
-    private static bool AreColorsSupported => !(OperatingSystem.IsBrowser() || OperatingSystem.IsAndroid() ||
+    protected static bool AreColorsSupported => !(OperatingSystem.IsBrowser() || OperatingSystem.IsAndroid() ||
                                          OperatingSystem.IsIOS() || OperatingSystem.IsTvOS());
     
     public BaseCommand(string name, string? description = null) : base(name, description)

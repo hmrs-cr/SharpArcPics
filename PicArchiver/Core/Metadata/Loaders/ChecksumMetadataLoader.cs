@@ -9,7 +9,7 @@ public sealed class ChecksumMetadataLoader : MetadataLoader
 
     public override bool Initialize(FileArchiveContext context)
     {
-        if (OpenDbConnection(context.DestinationBasePath) == null)
+        if (OpenDbConnection(context) == null)
             return true;
         
         var checksum = context.Metadata.GetChecksum();
@@ -23,13 +23,25 @@ public sealed class ChecksumMetadataLoader : MetadataLoader
                 return false;
         }
 
-        var name = context.DestFileFullPath.Replace(context.DestinationBasePath.TrimEnd('/'), ".");
-        var dateTime = context.Metadata.GetFileDateTime();
-        if (dateTime == default)
-            return false;
-        
-        InsertNewChecksumRecord(name, checksum, size, dateTime.Ticks);
+        if (!context.DryRun)
+        {
+            var name = context.DestFileFullPath.Replace(context.DestinationBasePath.TrimEnd('/'), ".");
+            var dateTime = context.Metadata.GetFileDateTime();
+            if (dateTime == default)
+                return false;
+            
+            InsertNewChecksumRecord(name, checksum, size, dateTime.Ticks);
+        }
+
         return true;
+    }
+
+    public override bool LoadMetadata(FileArchiveContext context)
+    {
+        if (OpenDbConnection(context) == null)
+            return true;
+        
+        return LoadMetadata(context);
     }
 
     public override bool LoadMetadata(string path, FileMetadata metadata)
@@ -50,12 +62,16 @@ public sealed class ChecksumMetadataLoader : MetadataLoader
             CloseDbConnection();
     }
 
-    private SqliteConnection? OpenDbConnection(string path)
+    private SqliteConnection? OpenDbConnection(FileArchiveContext context)
     {
         if (_connection != null) 
             return _connection;
+
+        var dbFilePath =  Path.Combine(context.DestinationBasePath, "checksums.db");
+        if (!File.Exists(dbFilePath) && context.DryRun)
+            return null;
         
-        _connection = new SqliteConnection($"Data Source={Path.Combine(path, "checksums.db")}");
+        _connection = new SqliteConnection($"Data Source={dbFilePath}");
         try
         {
             _connection.Open();

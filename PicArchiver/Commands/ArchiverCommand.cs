@@ -107,14 +107,29 @@ public class ArchiverCommand : BaseCommand
             Write("Scanning ");
             PrintFolderList(sourceFolders);
             WriteLine();
+
+            var folderArchiver = new MultiFolderArchiver(sourceFolders, MergeConfigWithDest(config, destination)) 
+            {
+                OnScanResult = PrintScan
+            };
             
-            var folderArchiver = new MultiFolderArchiver(sourceFolders, MergeConfigWithDest(config, destination));
             PrintResults(folderArchiver.ScanAll(destination));
         }
         catch (Exception e)
         {
             WriteErrorLine(e.Message);
         }
+    }
+
+    private bool PrintScan(FileArchiveResult fileResult, IFolderArchiverResult folderResult)
+    {
+        if (AreColorsSupported && !Console.IsOutputRedirected)
+        {
+            System.Console.SetCursorPosition(0, System.Console.CursorTop);
+            Console.Write($"Scanning... {folderResult.TotalFilesCount} ({folderResult.TransferredBytes.ToHumanReadableByteSize()} of data to transfer). ");
+        } 
+        
+        return true;
     }
     
     private void ArchiveFiles(IReadOnlyCollection<DirectoryInfo> sourceFolders, string destination, ArchiveConfig config)
@@ -126,7 +141,11 @@ public class ArchiverCommand : BaseCommand
             WriteLine();
 
             var lastFolder = string.Empty;
-            var folderArchiver = new MultiFolderArchiver(sourceFolders, MergeConfigWithDest(config, destination));
+            var folderArchiver = new MultiFolderArchiver(sourceFolders, MergeConfigWithDest(config, destination))
+            {
+                OnScanResult = PrintScan
+            };
+            
             foreach (var fileArchiveResult in folderArchiver.ArchiveTo(destination))
             {
                 if (lastFolder != fileArchiveResult.Folder)
@@ -172,11 +191,17 @@ public class ArchiverCommand : BaseCommand
     private void PrintResults(IArchiverResult result)
     {
         var isScanResult = result is ScannedArchiverResults;
+
+        if (isScanResult)
+        {
+            UnbreakLine();
+            WriteLine("                                                                                       ");
+        }
         
         Write($"Valid Files: ");
         Write(ConsoleColor.Cyan, $"{result.TotalFilesCount - result.InvalidFileCount}");
         Write(" of ");
-        WriteLine(ConsoleColor.Cyan, $"{result.TotalFilesCount}");
+        WriteLine(ConsoleColor.Cyan, $"{result.TotalFilesCount}                                  ");
         if (result.TotalFilesCount - result.InvalidFileCount > 0)
         {
             if (result.CopiedFileCount > 0)

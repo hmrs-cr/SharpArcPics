@@ -60,7 +60,7 @@ public static partial class StringExtensions
             lenght /= 1024;
         }
         
-        return $"{lenght:0.#}{ByteSizes[index]}";
+        return $"{lenght:0.0}{ByteSizes[index]}";
     }
 
 
