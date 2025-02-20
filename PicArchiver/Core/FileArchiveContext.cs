@@ -13,7 +13,7 @@ public class FileArchiveContext : IDisposable
     
     public ArchiveConfig Config { get; }
 
-    public FileMetadata Metadata { get; }
+    public FileMetadata Metadata { get; internal set; }
     
     public string SourceFileFullPath { get; }
     
@@ -65,6 +65,7 @@ public class FileArchiveContext : IDisposable
         
         Metadata = new FileMetadata(Config.TokenValues);
         MetadataLoaders = Config.MetadataLoaderInstances;
+        DryRun = config.DryRun ?? Config.DryRun ?? false;
         
         IsValid = SourceFileNameMatchRegEx(SourceFileFullPath, Config) && MetadataLoaders.LoadMetadata(this);
         if (IsValid)
@@ -75,7 +76,7 @@ public class FileArchiveContext : IDisposable
             }
             
             
-            DryRun = config.DryRun ?? Config.DryRun ?? false;
+            DryRun = Config.DryRun ?? config.DryRun ?? DryRun;
             
             DestinationFolderPath = ResolveDestSubFolder(DestinationBasePath);
             DestFileFullPath = Path.Combine(DestinationFolderPath, ResolveDestFileName(SourceFileFullPath));

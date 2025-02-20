@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PicArchiver.Core.Metadata;
-using PicArchiver.Core.Metadata.Loaders;
 
 namespace PicArchiver.Core.Configs;
 
@@ -125,11 +124,23 @@ public sealed class ArchiveConfig
 
 public static class MetadataLoadersExtensions
 {
+    private static Dictionary<string, FileMetadata>? _scanMetadataCache;
+    
     public static bool LoadMetadata(this IEnumerable<IMetadataLoader>? metadataLoaderInstances, FileArchiveContext context)
     {
         if (metadataLoaderInstances is null)
         {
             return true;
+        }
+
+        if (context.Config.ReportProgress == true)
+        {
+            _scanMetadataCache ??= new Dictionary<string, FileMetadata>();
+            if (_scanMetadataCache.TryGetValue(context.SourceFileFullPath, out var metadata))
+            {
+                context.Metadata = metadata;
+                return true;
+            }
         }
 
         foreach (var metadataLoader in metadataLoaderInstances!)
@@ -139,7 +150,9 @@ public static class MetadataLoadersExtensions
                 return false;
             }
         }
-        
+
+        _scanMetadataCache?.TryAdd(context.SourceFileFullPath, context.Metadata);
+
         return true;
     }
     
