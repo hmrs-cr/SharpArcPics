@@ -41,7 +41,7 @@ public sealed class ChecksumMetadataLoader : MetadataLoader
         if (OpenDbConnection(context) == null)
             return true;
         
-        return LoadMetadata(context);
+        return LoadMetadata(context.SourceFileFullPath, context.Metadata);
     }
 
     public override bool LoadMetadata(string path, FileMetadata metadata)
