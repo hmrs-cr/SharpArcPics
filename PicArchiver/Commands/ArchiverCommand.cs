@@ -1,13 +1,18 @@
 using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using System.Reflection;
 using PicArchiver.Core;
 using PicArchiver.Core.Configs;
 using PicArchiver.Extensions;
 
 namespace PicArchiver.Commands;
 
-public class ArchiverCommand : BaseCommand 
+public class ArchiverCommand : BaseCommand, ICommandHandler
 {
+    private readonly ICommandHandler? _commandHandler;
+    private ArchiveConfig? _cmdLineConfigOptions;
+
     const ConsoleColor HeaderColor = ConsoleColor.Cyan;
     
     internal ArchiverCommand(bool scanOnly = false) : base(
@@ -48,8 +53,69 @@ public class ArchiverCommand : BaseCommand
         AddOption(destinationOption);
         AddOption(configNameOption);
 
+        AddConfigOptions();
+        
         Action<IReadOnlyCollection<DirectoryInfo>, string, ArchiveConfig> handler = scanOnly ? ScanFiles : ArchiveFiles;
         this.SetHandler(handler, sourceOption, destinationOption, configNameOption);
+        _commandHandler = Handler; 
+        Handler = this;
+    }
+    
+    public int Invoke(InvocationContext context)
+    {
+        Console = context.Console;
+        _cmdLineConfigOptions = GetCmdLineConfigOptions(context);
+        return _commandHandler?.Invoke(context) ?? -1;
+    }
+
+    public Task<int> InvokeAsync(InvocationContext context) => _commandHandler?.InvokeAsync(context) ?? Task.FromResult(-1);
+
+    private void AddConfigOptions()
+    {
+        foreach (var propertyInfo in typeof(ArchiveConfig).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            var isString = propertyInfo.PropertyType.IsAssignableFrom(typeof(string));
+            var isBool = !isString && propertyInfo.PropertyType.IsAssignableFrom(typeof(bool));
+            
+            if (isString)
+            {
+                AddOption(new CmdLineConfigOption<string>(propertyInfo));
+            }
+
+            if (isBool)
+            {
+                AddOption(new CmdLineConfigOption<bool?>(propertyInfo, parseArgument: ParseBool));
+            }
+        }
+
+        return;
+
+        static bool? ParseBool(ArgumentResult result)
+        {
+            if (result.Tokens.Count == 0)
+                return true;
+            
+            var value = result.Tokens[0].Value;
+            return value is "true" or "True" or "TRUE" or "1" or "Yes" or "yes" or "on" or "y" or "Y" or "YES" or "ON"
+                or "On";
+        }
+    }
+
+    private ArchiveConfig? GetCmdLineConfigOptions(InvocationContext context)
+    {
+        ArchiveConfig? result = null;
+        
+        foreach (var option in Options.Where(o => o is IConfigProperty))
+        {
+            var value = context.ParseResult.GetValueForOption(option);
+            if (value == null)
+                continue;
+            
+            result ??= new ArchiveConfig();
+            ((IConfigProperty)option).ConfigProperty.SetValue(result, value);
+        }
+        
+        return result;
     }
 
     private IReadOnlyCollection<DirectoryInfo> ParseSourceFolders(ArgumentResult result)
@@ -92,10 +158,25 @@ public class ArchiverCommand : BaseCommand
         return DefaultFileArchiveConfig.DefaultConfig;
     }
 
-    private ArchiveConfig MergeConfigWithDest(ArchiveConfig config, string? destination)
+    private ArchiveConfig MergeConfigOptions(ArchiveConfig config, string? destination)
     {
         if (destination != null && ArchiveConfig.Load(Path.Combine(destination, "archive-config.json")) is { } destConfig)
             config = config.Merge(destConfig);
+
+        return MergeWithCmdLineOptions(config);
+    }
+
+    private ArchiveConfig MergeWithCmdLineOptions(ArchiveConfig config)
+    {
+        // Command line options override all other options.
+        config = _cmdLineConfigOptions != null ? config.Merge(_cmdLineConfigOptions) : config;
+        if (config.MediaConfigs != null)
+        {
+            foreach (var key in config.MediaConfigs.Keys)
+            {
+                config.MediaConfigs[key] =  config.Merge(config.MediaConfigs[key]);
+            }
+        }
 
         return config;
     }
@@ -108,7 +189,7 @@ public class ArchiverCommand : BaseCommand
             PrintFolderList(sourceFolders);
             WriteLine();
 
-            var folderArchiver = new MultiFolderArchiver(sourceFolders, MergeConfigWithDest(config, destination)) 
+            var folderArchiver = new MultiFolderArchiver(sourceFolders, MergeConfigOptions(config, destination)) 
             {
                 OnScanResult = PrintScan
             };
@@ -141,7 +222,7 @@ public class ArchiverCommand : BaseCommand
             WriteLine();
 
             var lastFolder = string.Empty;
-            var folderArchiver = new MultiFolderArchiver(sourceFolders, MergeConfigWithDest(config, destination))
+            var folderArchiver = new MultiFolderArchiver(sourceFolders, MergeConfigOptions(config, destination))
             {
                 OnScanResult = PrintScan
             };
@@ -281,10 +362,9 @@ public class ArchiverCommand : BaseCommand
                 WriteErrorLine($"ERROR: '{result.Exception?.Message ?? result.Message ?? "Unknown Error"}'");
                 break;
             case FileResult.AlreadyExists:
-                if (string.IsNullOrEmpty(result.Message))
-                    WriteLine($"'{result.Context.SourceFileFullPath}' in '{result.Context.DestinationFolderPath}'");
-                else    
-                    WriteLine($"'{result.Context.SourceFileFullPath}' as '{result.Message}'");
+                WriteLine(string.IsNullOrEmpty(result.Message)
+                    ? $"'{result.Context.SourceFileFullPath}' in '{result.Context.DestinationFolderPath}'"
+                    : $"'{result.Context.SourceFileFullPath}' as '{result.Message}'");
                 break;
             case FileResult.Invalid:
                 break;
@@ -326,6 +406,8 @@ public class ArchiverCommand : BaseCommand
                 break;
         }
 
+        return;
+
         void WriteProgress()
         {
             var percentage = progress.Percentage;
@@ -334,5 +416,30 @@ public class ArchiverCommand : BaseCommand
                 Write(ConsoleColor.Cyan, $"[{progress.ValidFileCount}/{progress.ValidScannedFileCount} ({percentage:P1}) ({progress.RemainingTime?.ToHumanReadableString(true)})] ");
             }
         }
+    }
+
+    private interface IConfigProperty
+    {
+        PropertyInfo ConfigProperty { get; }
+    }
+    
+    private class CmdLineConfigOption<T> : Option<T>, IConfigProperty
+    {
+        public CmdLineConfigOption(PropertyInfo property) : base($"--{property.Name}")
+        {
+            IsRequired = false;
+            IsHidden = true;
+            ConfigProperty = property;
+        }
+        
+        public CmdLineConfigOption(PropertyInfo property, ParseArgument<T> parseArgument) 
+            : base($"--{property.Name}", parseArgument)
+        {
+            IsRequired = false;
+            IsHidden = true;
+            ConfigProperty = property;
+        }
+
+        public PropertyInfo ConfigProperty { get; }
     }
 }

@@ -13,7 +13,7 @@ public class BaseCommand : Command
     {
     }
 
-    protected IConsole Console { get; } = new SystemConsole();
+    protected IConsole Console { get; set; } = new SystemConsole();
     
     protected void WriteLine(string line = "") => Console.WriteLine(line);
     

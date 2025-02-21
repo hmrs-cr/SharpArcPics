@@ -26,7 +26,7 @@ public sealed class ArchiveConfig
     
     public bool? Recursive { get; init; }
     
-    public string? MetadaLoaders { get; init; }
+    public string? MetadataLoaders { get; init; }
     
     public Dictionary<string, object?>? TokenValues { get; init; }
     
@@ -39,12 +39,12 @@ public sealed class ArchiveConfig
             if (_metadataLoaderInstances != null)
                 return _metadataLoaderInstances;
             
-            if (MetadaLoaders == null)
+            if (MetadataLoaders == null)
             {
                 return null;
             }
             
-            var span = MetadaLoaders.AsSpan();
+            var span = MetadataLoaders.AsSpan();
             foreach (var range in span.Split(','))
             {
                 var metadataLoader = MetadataLoader.GetMetadataLoader(span[range].Trim());
@@ -78,7 +78,7 @@ public sealed class ArchiveConfig
         Recursive = config1.Recursive ?? Recursive ?? config2?.Recursive,
         ReportProgress = config1.ReportProgress ?? ReportProgress ?? config2?.ReportProgress,
         
-        MetadaLoaders = onlyFirstLevelConfigValues ? null : config1.MetadaLoaders ?? MetadaLoaders,
+        MetadataLoaders = onlyFirstLevelConfigValues ? null : config1.MetadataLoaders ?? MetadataLoaders,
         MediaConfigs = onlyFirstLevelConfigValues ? null : MergeMediaConfigs(config1),
     };
 
@@ -87,7 +87,7 @@ public sealed class ArchiveConfig
         if (MediaConfigs is null)
             return loadedConfig.MediaConfigs?.ToDictionary(mc => mc.Key, mc => mc.Value.Merge(loadedConfig, this, true));
 
-        if (loadedConfig.MediaConfigs?.Any(mc => mc.Value.MediaConfigs is not null || mc.Value.MetadaLoaders is not null) == true)
+        if (loadedConfig.MediaConfigs?.Any(mc => mc.Value.MediaConfigs is not null || mc.Value.MetadataLoaders is not null) == true)
             throw new InvalidOperationException("Invalid config: Media specific configs cannot have other media specific configs or metadata loaders specified.");
         
         if (loadedConfig.MediaConfigs is null)
