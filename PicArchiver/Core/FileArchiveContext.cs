@@ -13,7 +13,7 @@ public class FileArchiveContext : IDisposable
     
     public ArchiveConfig Config { get; }
 
-    public FileMetadata Metadata { get; }
+    public FileMetadata Metadata { get; internal set; }
     
     public string SourceFileFullPath { get; }
     
@@ -65,6 +65,7 @@ public class FileArchiveContext : IDisposable
         
         Metadata = new FileMetadata(Config.TokenValues);
         MetadataLoaders = Config.MetadataLoaderInstances;
+        DryRun = config.DryRun ?? Config.DryRun ?? false;
         
         IsValid = SourceFileNameMatchRegEx(SourceFileFullPath, Config) && MetadataLoaders.LoadMetadata(this);
         if (IsValid)
@@ -74,27 +75,30 @@ public class FileArchiveContext : IDisposable
                 Config = mediaConfig;
             }
             
-            DestinationFolderPath = ResolveDestSubFolder(DestinationBasePath, Config);
-            DestFileFullPath = Path.Combine(DestinationFolderPath, ResolveDestFileName(SourceFileFullPath, Config));
+            
+            DryRun = Config.DryRun ?? config.DryRun ?? DryRun;
+            
+            DestinationFolderPath = ResolveDestSubFolder(DestinationBasePath);
+            DestFileFullPath = Path.Combine(DestinationFolderPath, ResolveDestFileName(SourceFileFullPath));
             DestinationFileExists = File.Exists(DestFileFullPath);
-            OverrideDestinationFile = Config.OverrideDestination ?? false;
-            DeleteSourceFileIfDestExists = Config.DeleteSourceFileIfDestExists ?? false;
-            MoveSourceFile = Config.MoveFiles ?? false;
-            DryRun = Config.DryRun ?? false;
+            OverrideDestinationFile = Config.OverrideDestination ?? config.OverrideDestination ?? false;
+            DeleteSourceFileIfDestExists = Config.DeleteSourceFileIfDestExists ?? config.DeleteSourceFileIfDestExists ?? false;
+            MoveSourceFile = Config.MoveFiles ?? config.MoveFiles ?? false;
 
             IsValid = MetadataLoaders.Initialize(this);
         }
     }
 
-    private string ResolveDestSubFolder(string destinationFolderPath, ArchiveConfig? config)
+    private string ResolveDestSubFolder(string destinationFolderPath)
     {
-        var subFolderName = config?.SubfolderTemplate?.ResolveTokens(Metadata) ?? string.Empty;
-        return Directory.CreateDirectory(Path.Combine(destinationFolderPath, subFolderName)).FullName;
+        var subFolderName = Config.SubfolderTemplate?.ResolveTokens(Metadata) ?? string.Empty;
+        var path = Path.Combine(destinationFolderPath, subFolderName);
+        return DryRun ? path : Directory.CreateDirectory(path).FullName;
     }
 
-    private string ResolveDestFileName(string sourceFileName, ArchiveConfig? config)
+    private string ResolveDestFileName(string sourceFileName)
     {
-        var fileName = config?.FileNameTemplate?.ResolveTokens(Metadata) ?? Path.GetFileName(sourceFileName);
+        var fileName = Config.FileNameTemplate?.ResolveTokens(Metadata) ?? Path.GetFileName(sourceFileName);
         return fileName;
     }
     

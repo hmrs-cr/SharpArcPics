@@ -6,13 +6,13 @@ using PicArchiver.Extensions;
 
 namespace PicArchiver.Core;
 
-public interface IFolderArchiverResult
+public interface IArchiverResult
 {
     int FailedFilesCount { get; }
     int SrcDeletedFilesCount { get; }
     int DestDeletedFilesCount { get; } 
-    long SrcDeleteBytes { get; }
-    long DestDeleteBytes { get; }
+    long SrcDeletedBytes { get; }
+    long DestDeletedBytes { get; }
     int UpdatedFilesCount { get; }
     int MovedFilesCount { get; }
     int DuplicatedFileCount { get; }
@@ -23,11 +23,28 @@ public interface IFolderArchiverResult
     TimeSpan ElapsedTime { get; }
 
     long TransferredBytes { get; }
+    long ProcessedBytes { get; }
 }
 
-public class AggregatedFolderArchiverResult : IFolderArchiverResult, IEnumerable<IFolderArchiverResult>
+public interface IFolderArchiverResult : IArchiverResult
 {
-    private readonly ICollection<IFolderArchiverResult> _results;
+    string SourceFolderPath { get; }
+}
+
+public interface IAggregatedArchiverResult : IArchiverResult, IReadOnlyCollection<IArchiverResult>;
+
+public interface IProgressArchiverResult : IArchiverResult
+{
+    int ValidFileCount { get; }
+    int? ValidScannedFileCount { get; }
+    TimeSpan? RemainingTime { get; }
+    double? Percentage { get; }
+}
+
+public class ScannedArchiverResults(int maxCount) : AggregatedArchiverResult(maxCount);
+public class AggregatedArchiverResult : IAggregatedArchiverResult
+{
+    private readonly ICollection<IArchiverResult> _results;
     private readonly long _startTime;
     private readonly int _maxCount;
 
@@ -35,8 +52,8 @@ public class AggregatedFolderArchiverResult : IFolderArchiverResult, IEnumerable
     public int SrcDeletedFilesCount { get; private set; }
     
     public int DestDeletedFilesCount { get; private set; }
-    public long SrcDeleteBytes { get; private set; }
-    public long DestDeleteBytes { get; private set; }
+    public long SrcDeletedBytes { get; private set; }
+    public long DestDeletedBytes { get; private set; }
     public int UpdatedFilesCount { get; private set; }
     public int MovedFilesCount { get; private set; }
     public int DuplicatedFileCount { get; private set; }
@@ -47,17 +64,29 @@ public class AggregatedFolderArchiverResult : IFolderArchiverResult, IEnumerable
     public TimeSpan ElapsedTime { get; private set; }
     
     public long TransferredBytes { get; private set; }
-    
+    public long ProcessedBytes { get; private set; }
+
     public int Count => _results.Count;
 
-    public AggregatedFolderArchiverResult(int maxCount)
+    public AggregatedArchiverResult(int maxCount)
     {
         _maxCount = maxCount;
-        _results = new List<IFolderArchiverResult>(_maxCount);
+        _results = new List<IArchiverResult>(_maxCount);
         _startTime = Stopwatch.GetTimestamp();
     }
+    
+    public AggregatedArchiverResult(IReadOnlyCollection<IFolderArchiverResult> results)
+    {
+        _maxCount = results.Count;
+        _results = new List<IArchiverResult>(_maxCount);
+        _startTime = Stopwatch.GetTimestamp();
+        foreach (var folderArchiverResult in results)
+        {
+            Add(folderArchiverResult);
+        }
+    }
 
-    public void Add(IFolderArchiverResult folderArchiverResult)
+    public void Add(IArchiverResult folderArchiverResult)
     {
         if (Count == _maxCount)
             throw new InvalidOperationException("Folder archiver has already been archived");
@@ -72,18 +101,82 @@ public class AggregatedFolderArchiverResult : IFolderArchiverResult, IEnumerable
         ProcessedFilesCount += folderArchiverResult.ProcessedFilesCount;
         TotalFilesCount += folderArchiverResult.TotalFilesCount;
         TransferredBytes += folderArchiverResult.TransferredBytes;
+        ProcessedBytes += folderArchiverResult.ProcessedBytes;
         DestDeletedFilesCount += folderArchiverResult.DestDeletedFilesCount;
-        SrcDeleteBytes += folderArchiverResult.SrcDeleteBytes;
-        DestDeleteBytes += folderArchiverResult.DestDeleteBytes;
+        SrcDeletedBytes += folderArchiverResult.SrcDeletedBytes;
+        DestDeletedBytes += folderArchiverResult.DestDeletedBytes;
         
         ElapsedTime = Stopwatch.GetElapsedTime(_startTime);
 
         _results.Add(folderArchiverResult);
     }
 
-    public IEnumerator<IFolderArchiverResult> GetEnumerator() => _results.GetEnumerator();
+    public IEnumerator<IArchiverResult> GetEnumerator() => _results.GetEnumerator();
     
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+public class ProgressArchiverResult : IProgressArchiverResult
+{
+    public static readonly IProgressArchiverResult Default = new ProgressArchiverResult();
+    
+    private readonly long _startTime;
+    private readonly Dictionary<string, IFolderArchiverResult>? _results;
+    private IArchiverResult? _aggregatedResults;
+    private readonly IAggregatedArchiverResult? _scanResults;
+
+    public ProgressArchiverResult(IAggregatedArchiverResult? scanResults)
+    {
+        _scanResults = scanResults;
+        _results = new Dictionary<string, IFolderArchiverResult>(scanResults?.Count ?? 2);
+        _startTime = Stopwatch.GetTimestamp();
+    }
+
+    private ProgressArchiverResult() { }
+    
+    public int FailedFilesCount => _aggregatedResults?.FailedFilesCount ?? 0;
+    public int SrcDeletedFilesCount => _aggregatedResults?.SrcDeletedFilesCount ?? 0;
+    public int DestDeletedFilesCount => _aggregatedResults?.DestDeletedFilesCount ?? 0;
+    public long SrcDeletedBytes => _aggregatedResults?.SrcDeletedBytes ?? 0;
+    public long DestDeletedBytes => _aggregatedResults?.DestDeletedBytes ?? 0;
+    public int UpdatedFilesCount => _aggregatedResults?.UpdatedFilesCount ?? 0;
+    public int MovedFilesCount => _aggregatedResults?.MovedFilesCount ?? 0;
+    public int DuplicatedFileCount => _aggregatedResults?.DuplicatedFileCount ?? 0;
+    public int InvalidFileCount => _aggregatedResults?.InvalidFileCount ?? 0;
+    public int CopiedFileCount => _aggregatedResults?.CopiedFileCount ?? 0;
+    public int ProcessedFilesCount => _aggregatedResults?.ProcessedFilesCount ?? 0;
+    public int TotalFilesCount => _aggregatedResults?.TotalFilesCount ?? 0;
+    public TimeSpan ElapsedTime => Stopwatch.GetElapsedTime(_startTime);
+    public long TransferredBytes => _aggregatedResults?.TransferredBytes ?? 0;
+    public long ProcessedBytes => _aggregatedResults?.ProcessedBytes ?? 0;
+    
+    public int ValidFileCount => TotalFilesCount - InvalidFileCount;
+    public int? ValidScannedFileCount => _scanResults?.TotalFilesCount - _scanResults?.InvalidFileCount;
+
+    public TimeSpan? RemainingTime
+    {
+        get
+        {
+            if (_scanResults == null)
+                return null;
+
+            var bytesPerSecond = ProcessedBytes / ElapsedTime.TotalSeconds;
+            var remainingBytes = _scanResults.ProcessedBytes - ProcessedBytes;
+            var remainingSeconds = remainingBytes / bytesPerSecond;
+
+            return TimeSpan.FromSeconds(remainingSeconds);
+        }
+    }
+    public double? Percentage => _scanResults != null ? (double)ProcessedBytes / _scanResults.ProcessedBytes : null;
+
+    public void UpdateProgress(IFolderArchiverResult folderArchiverResult)
+    {
+        if (_results == null)
+            throw new InvalidOperationException("Default instance does not allow Updates");
+        
+        _results[folderArchiverResult.SourceFolderPath] = folderArchiverResult;
+        _aggregatedResults = new AggregatedArchiverResult(_results.Values);
+    }
 }
 
 public class FolderArchiver : IDisposable, IFolderArchiverResult
@@ -112,10 +205,11 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
     public TimeSpan ElapsedTime { get; private set; }
     
     public long TransferredBytes { get; private set; }
-    public long SrcDeleteBytes { get; private set; }
-    public long DestDeleteBytes { get; private set; }
+    public long ProcessedBytes { get; private set; }
+    public long SrcDeletedBytes { get; private set; }
+    public long DestDeletedBytes { get; private set; }
 
-    public string SourceFolder { get; }
+    public string SourceFolderPath { get; }
     
     public ArchiveConfig Config { get; }
     
@@ -124,18 +218,23 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
 
     public FolderArchiver(string sourceFolder, ArchiveConfig config)
     {
-        SourceFolder = sourceFolder;
+        SourceFolderPath = sourceFolder;
         Config = config;
     }
+
+    public IEnumerable<FileArchiveResult> ArchiveTo(string destFolder) => ArchiveToInternal(destFolder, false);
+
+    public IEnumerable<FileArchiveResult> ScanSrcFiles(string? destFolder = null) => ArchiveToInternal(destFolder ?? "/dev/null", true);
     
-    public IEnumerable<FileArchiveResult> ArchiveTo(string destFolder)
+    public IEnumerable<FileArchiveResult> ArchiveToInternal(string destFolder, bool scanOnly)
     {
         var ts = Stopwatch.GetTimestamp();
+        ResetCounters();
         
-        var files = EnumerateFiles(SourceFolder, Config.Recursive == true);
+        var files = EnumerateFiles(SourceFolderPath, Config.Recursive == true);
         foreach (var file in files)
         {
-            var results = ProcessFile(file, destFolder);
+            var results = ProcessFile(file, destFolder, scanOnly);
             foreach (var result in results)
             {
                 UpdateCounters(result.Result);
@@ -148,23 +247,33 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
 
     public static IEnumerable<string> EnumerateFiles(string folderPath, bool recurseSubdirectories)
     {
+        if (File.Exists(Path.Join(folderPath, "no_archive")))
+            yield break;
+
         var files = Directory.GetFiles(folderPath, "*", EnumerationOptionsTopLevelOnly).OrderBy(f => f);
         foreach (var file in files)
             yield return file;
 
-        if (recurseSubdirectories)
-        {
-            var directories = Directory.GetDirectories(folderPath, "*", EnumerationOptionsRecursive).OrderBy(d => d);
-            foreach (var directory in directories)
-            {
-                if (File.Exists(Path.Join(directory, "no_archive")))
-                    continue;
-                
-                files = Directory.GetFiles(directory, "*", EnumerationOptionsTopLevelOnly).OrderBy(f => f);
-                foreach (var file in files)
-                    yield return file;
-            }
-        }
+        if (!recurseSubdirectories)
+            yield break;
+
+        var directories = Directory.GetDirectories(folderPath, "*", EnumerationOptionsTopLevelOnly).OrderBy(d => d);
+        foreach (var directory in directories)
+            foreach (var file in EnumerateFiles(directory, recurseSubdirectories))
+                yield return file;
+    }
+
+    private void ResetCounters()
+    {
+        MovedFilesCount = 0;
+        UpdatedFilesCount = 0;
+        SrcDeletedFilesCount = 0;
+        FailedFilesCount = 0;
+        CopiedFileCount = 0;
+        DuplicatedFileCount = 0;
+        InvalidFileCount = 0;
+        DestDeletedFilesCount = 0;
+        TotalFilesCount = 0;
     }
 
     private void UpdateCounters(FileResult result)
@@ -206,11 +315,19 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
         }
     }
 
-    private IEnumerable<FileArchiveResult> ProcessFile(string sourceFileName, string destDirectory)
+    private IEnumerable<FileArchiveResult> ProcessFile(string sourceFileName, string destDirectory, bool scanOnly = false)
     {
-        using var context = new FileArchiveContext(sourceFileName, destDirectory, Config);
+        var config = Config;
+        if (scanOnly)
+            config = config.Merge(new ArchiveConfig { DryRun = true });
+        
+        using var context = new FileArchiveContext(sourceFileName, destDirectory, config);
+
+        var countBytes = !context.DryRun || scanOnly;
         if (context.IsValid)
         {
+            ProcessedBytes += context.SourceFileInfo.Length;
+            
             var updated = false;
             var canOverwrite = false;
             var destExists = context.DestinationFileExists;
@@ -222,8 +339,10 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
                     if (!context.DryRun)
                     {
                         File.Delete(sourceFileName);
-                        SrcDeleteBytes += sourceFileLength;
                     }
+                    
+                    if (countBytes)
+                        SrcDeletedBytes += sourceFileLength;
 
                     yield return context.CreateResult(FileResult.SourceFileDeleted);
                     yield break;
@@ -259,7 +378,7 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
                     yield return delResult;
                 }
                 
-                DestDeleteBytes += totalDeletedSize;
+                DestDeletedBytes += totalDeletedSize;
             }
 
             FileArchiveResult result;
@@ -267,12 +386,14 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
             {
                 if (context.MoveSourceFile)
                 {
+                    var sourceFileLength = context.SourceFileInfo.Length;
                     if (!context.DryRun)
                     {
-                        var sourceFileLength = context.SourceFileInfo.Length;
                         File.Move(sourceFileName, context.DestFileFullPath, overwrite: canOverwrite);
-                        TransferredBytes += sourceFileLength;
                     }
+                    
+                    if (countBytes)
+                        TransferredBytes += sourceFileLength;
 
                     result = context.CreateResult(updated ? FileResult.MovedUpdated : FileResult.Moved);
                 }
@@ -281,8 +402,10 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
                     if (!context.DryRun)
                     {
                         File.Copy(sourceFileName, context.DestFileFullPath, overwrite: canOverwrite);
-                        TransferredBytes += context.SourceFileInfo.Length;
                     }
+                    
+                    if (countBytes)
+                        TransferredBytes += context.SourceFileInfo.Length;
 
                     result = context.CreateResult(updated ? FileResult.CopiedUpdated : FileResult.Copied);
                 }
@@ -377,7 +500,7 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
                     deleteDir.Delete();
                     deleteResult = context.CreateResult(FileResult.DestFileDeleted, message: $"'{dirName}' (FOLDER)");
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     // Ignore
                 }
@@ -443,4 +566,56 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
     
 
     public void Dispose() => Config.MetadataLoaderInstances.Finalize(null);
+}
+
+public class MultiFolderArchiver
+{
+    private readonly IReadOnlyCollection<DirectoryInfo> _folders;
+    private readonly ArchiveConfig _config;
+    
+    public IProgressArchiverResult Result { get; private set; } = ProgressArchiverResult.Default;
+
+    public Func<FileArchiveResult, IFolderArchiverResult, bool>? OnScanResult { get; set; } = null;
+
+    public MultiFolderArchiver(IReadOnlyCollection<DirectoryInfo> folders, ArchiveConfig config)
+    {
+        _folders = folders;
+        _config = config;
+    }
+
+    public IEnumerable<MultiFolderFileArchiveResult> ArchiveTo(string destFolder)
+    {
+        var scanResults = _config.ReportProgress == true ? ScanAll(destFolder) : null;
+        var progressArchiverResult  = new ProgressArchiverResult(scanResults);
+        Result = progressArchiverResult;
+        
+        foreach (var folder in _folders)
+        {
+            using var folderArchiver = new FolderArchiver(folder.FullName, _config);
+            var fileResults = folderArchiver.ArchiveTo(destFolder);
+            foreach (var fileArchiveResult in fileResults)
+            {
+                progressArchiverResult.UpdateProgress(folderArchiver);
+                yield return new MultiFolderFileArchiveResult(folder.FullName, fileArchiveResult);
+            }
+        }
+    }
+
+    public IAggregatedArchiverResult ScanAll(string? destFolder)
+    {
+        var results = new ScannedArchiverResults(_folders.Count);
+
+        foreach (var folder in _folders)
+        {
+            using var folderArchiver = new FolderArchiver(folder.FullName, _config);
+            _ = folderArchiver.ScanSrcFiles(destFolder).All(f => OnScanResult == null || OnScanResult.Invoke(f, folderArchiver));
+
+            IFolderArchiverResult result = folderArchiver;
+            results.Add(result);
+        }
+        
+        return results;
+    }
+
+    public readonly record struct MultiFolderFileArchiveResult(string Folder, FileArchiveResult FileResult);
 }

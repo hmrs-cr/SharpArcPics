@@ -4,14 +4,13 @@ namespace PicArchiver.Core.Configs;
 
 public static class DefaultFileArchiveConfig
 {
-    private static ArchiveConfig DefaultConfig { get; } = new()
+    public static ArchiveConfig DefaultConfig { get; } = new()
     { 
         MoveFiles = false,
         OverrideDestination = false,
         DeleteSourceFileIfDestExists = false,
         SubfolderTemplate = null,
-        FileNameTemplate = "{FileName}",
-        MetadaLoaders = "Default",
+        MetadataLoaders = "Default",
     };
 
     private static ArchiveConfig IgDefaultConfig { get; } = new()
@@ -21,8 +20,7 @@ public static class DefaultFileArchiveConfig
         DeleteSourceFileIfDestExists = true,
         Recursive = false,
         SubfolderTemplate = "{UserId}",
-        FileNameTemplate = "{FileName}",
-        MetadaLoaders = "IG,Default",
+        MetadataLoaders = "IG,Default",
     };
 
     private static ArchiveConfig PicDefaultConfig { get; } = new()
@@ -33,8 +31,7 @@ public static class DefaultFileArchiveConfig
         Recursive = true,
         SubfolderTemplate = "JPG/{FileYear}/{FileMonth}/{FileYear}-{FileMonth}-{FileDay}",
         SourceFileNameRegExPattern = @"(?i)\.(jpe?g|png|gif|bmp)$",
-        FileNameTemplate = "{FileName}",
-        MetadaLoaders = "Default,Exif,ChkSum",
+        MetadataLoaders = "Default,Exif,ChkSum",
     };
 
     private static ArchiveConfig RawPicDefaultConfig { get; } = new()
@@ -45,8 +42,7 @@ public static class DefaultFileArchiveConfig
         Recursive = true,
         SubfolderTemplate = "RAW/{FileYear}/{FileMonth}/{FileYear}-{FileMonth}-{FileDay}",
         SourceFileNameRegExPattern = @"(?i)\.(arw|dng|cr2|orf)$",
-        FileNameTemplate = "{FileName}",
-        MetadaLoaders = "Default,Exif,ChkSum",
+        MetadataLoaders = "Default,Exif,ChkSum",
     };
 
     private static ArchiveConfig VideoDefaultConfig { get; } = new()
@@ -57,8 +53,7 @@ public static class DefaultFileArchiveConfig
         Recursive = true,
         SourceFileNameRegExPattern = @"(?i)\.(mov|mp4)$",
         SubfolderTemplate = "Video/{FileYear}/{FileMonth}",
-        FileNameTemplate = "{FileName}",
-        MetadaLoaders = "Default,Exif,ChkSum",
+        MetadataLoaders = "Default,Exif,ChkSum",
     };
     
     private static ArchiveConfig RawPicAndVideoDefaultConfig { get; } = new()
@@ -68,9 +63,9 @@ public static class DefaultFileArchiveConfig
         DeleteSourceFileIfDestExists = false,
         SourceFileNameRegExPattern = @"(?i)\.(arw|dng|cr2|orf|mov|mp4)$",
         SubfolderTemplate = "NoMediaKind",
-        FileNameTemplate = "{FileName}",
-        MetadaLoaders = "Default",
+        MetadataLoaders = "Default",
         Recursive = true,
+        ReportProgress = true,
         MediaConfigs = new Dictionary<string, ArchiveConfig>
         {
             [FileMetadata.RawImageMediaKind] = RawPicDefaultConfig,
@@ -88,6 +83,6 @@ public static class DefaultFileArchiveConfig
         ["RPV"] = RawPicAndVideoDefaultConfig,
     };
 
-    public static ArchiveConfig? GetDefaultConfig(string name) => Configs.GetValueOrDefault(name);
+    public static ArchiveConfig? GetDefaultConfig(string? name = null) => name == null ? DefaultConfig : Configs.GetValueOrDefault(name);
     public static IEnumerable<string> GetConfigNames() => Configs.Keys;
 }

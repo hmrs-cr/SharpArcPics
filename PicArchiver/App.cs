@@ -8,6 +8,7 @@ public sealed class App
 {
     private static readonly ICollection<Command> Commands = [
         new ArchiverCommand(),
+        new ArchiverCommand(scanOnly: true),
         new MetadataCommand(),
         new IGBaseCommand()];
     

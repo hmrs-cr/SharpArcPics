@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PicArchiver.Core.Metadata;
-using PicArchiver.Core.Metadata.Loaders;
 
 namespace PicArchiver.Core.Configs;
 
@@ -11,6 +10,7 @@ public sealed class ArchiveConfig
     private List<IMetadataLoader>? _metadataLoaderInstances = null;
 
     public bool? DryRun { get; init; }
+    public bool? ReportProgress { get; init; }
 
     public long? MinDriveSize { get; init; }
     public bool? MoveFiles { get; init; }
@@ -26,7 +26,7 @@ public sealed class ArchiveConfig
     
     public bool? Recursive { get; init; }
     
-    public string? MetadaLoaders { get; init; }
+    public string? MetadataLoaders { get; init; }
     
     public Dictionary<string, object?>? TokenValues { get; init; }
     
@@ -39,12 +39,12 @@ public sealed class ArchiveConfig
             if (_metadataLoaderInstances != null)
                 return _metadataLoaderInstances;
             
-            if (MetadaLoaders == null)
+            if (MetadataLoaders == null)
             {
                 return null;
             }
             
-            var span = MetadaLoaders.AsSpan();
+            var span = MetadataLoaders.AsSpan();
             foreach (var range in span.Split(','))
             {
                 var metadataLoader = MetadataLoader.GetMetadataLoader(span[range].Trim());
@@ -76,8 +76,9 @@ public sealed class ArchiveConfig
         TokenValues = config1.TokenValues ?? TokenValues ?? config2?.TokenValues,
         DryRun = config1.DryRun ?? DryRun ?? config2?.DryRun,
         Recursive = config1.Recursive ?? Recursive ?? config2?.Recursive,
+        ReportProgress = config1.ReportProgress ?? ReportProgress ?? config2?.ReportProgress,
         
-        MetadaLoaders = onlyFirstLevelConfigValues ? null : config1.MetadaLoaders ?? MetadaLoaders,
+        MetadataLoaders = onlyFirstLevelConfigValues ? null : config1.MetadataLoaders ?? MetadataLoaders,
         MediaConfigs = onlyFirstLevelConfigValues ? null : MergeMediaConfigs(config1),
     };
 
@@ -86,7 +87,7 @@ public sealed class ArchiveConfig
         if (MediaConfigs is null)
             return loadedConfig.MediaConfigs?.ToDictionary(mc => mc.Key, mc => mc.Value.Merge(loadedConfig, this, true));
 
-        if (loadedConfig.MediaConfigs?.Any(mc => mc.Value.MediaConfigs is not null || mc.Value.MetadaLoaders is not null) == true)
+        if (loadedConfig.MediaConfigs?.Any(mc => mc.Value.MediaConfigs is not null || mc.Value.MetadataLoaders is not null) == true)
             throw new InvalidOperationException("Invalid config: Media specific configs cannot have other media specific configs or metadata loaders specified.");
         
         if (loadedConfig.MediaConfigs is null)
@@ -123,11 +124,23 @@ public sealed class ArchiveConfig
 
 public static class MetadataLoadersExtensions
 {
+    private static Dictionary<string, FileMetadata>? _scanMetadataCache;
+    
     public static bool LoadMetadata(this IEnumerable<IMetadataLoader>? metadataLoaderInstances, FileArchiveContext context)
     {
         if (metadataLoaderInstances is null)
         {
             return true;
+        }
+
+        if (context.Config.ReportProgress == true)
+        {
+            _scanMetadataCache ??= new Dictionary<string, FileMetadata>();
+            if (_scanMetadataCache.TryGetValue(context.SourceFileFullPath, out var metadata))
+            {
+                context.Metadata = metadata;
+                return true;
+            }
         }
 
         foreach (var metadataLoader in metadataLoaderInstances!)
@@ -137,7 +150,9 @@ public static class MetadataLoadersExtensions
                 return false;
             }
         }
-        
+
+        _scanMetadataCache?.TryAdd(context.SourceFileFullPath, context.Metadata);
+
         return true;
     }
     
