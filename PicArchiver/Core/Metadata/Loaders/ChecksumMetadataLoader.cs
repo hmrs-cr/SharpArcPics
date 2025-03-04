@@ -3,9 +3,17 @@ using Microsoft.Data.Sqlite;
 
 namespace PicArchiver.Core.Metadata.Loaders;
 
-public sealed class ChecksumMetadataLoader : MetadataLoader
+public sealed class ChecksumLiteMetadataLoader : ChecksumMetadataLoader
 {
+    protected override bool LiteMode => true;
+}
+
+public class ChecksumMetadataLoader : MetadataLoader
+{
+    private string? _dbFilePath;
     private SqliteConnection? _connection;
+
+    protected virtual bool LiteMode => false;
 
     public override bool Initialize(FileArchiveContext context)
     {
@@ -14,8 +22,9 @@ public sealed class ChecksumMetadataLoader : MetadataLoader
         
         var checksum = context.Metadata.GetChecksum();
         var size = context.Metadata.GetFileSize();
+        var dateTime = context.Metadata.GetFileDateTime();
             
-        var existingName = ChecksumExists(checksum, size);
+        var existingName = ChecksumExists(checksum, size, dateTime.Ticks);
         if (!string.IsNullOrEmpty(existingName))
         {
             context.Metadata[FileMetadata.ExistingPicNameKey] = existingName;
@@ -26,7 +35,6 @@ public sealed class ChecksumMetadataLoader : MetadataLoader
         if (!context.DryRun)
         {
             var name = context.DestFileFullPath.Replace(context.DestinationBasePath.TrimEnd('/'), ".");
-            var dateTime = context.Metadata.GetFileDateTime();
             if (dateTime == default)
                 return false;
             
@@ -38,21 +46,22 @@ public sealed class ChecksumMetadataLoader : MetadataLoader
 
     public override bool LoadMetadata(FileArchiveContext context)
     {
-        if (OpenDbConnection(context) == null)
-            return true;
-        
-        return LoadMetadata(context.SourceFileFullPath, context.Metadata);
+        context.Metadata.SetFileSize(context.SourceFileInfo.Length);
+        return base.LoadMetadata(context);
     }
 
     public override bool LoadMetadata(string path, FileMetadata metadata)
     {
-        using var stream = File.OpenRead(path);
-        var crcChecksum = new Crc64();
-        crcChecksum.Append(stream);
-        
-        metadata.SetChecksum(crcChecksum.GetCurrentHashAsUInt64());
-        metadata.SetFileSize(stream.Length);
-        
+        if (!LiteMode)
+        {
+            using var stream = File.OpenRead(path);
+            var crcChecksum = new Crc64();
+            crcChecksum.Append(stream);
+
+            metadata.SetChecksum(crcChecksum.GetCurrentHashAsUInt64());
+            metadata.SetFileSize(stream.Length);
+        }
+
         return true;
     }
 
@@ -67,11 +76,11 @@ public sealed class ChecksumMetadataLoader : MetadataLoader
         if (_connection != null) 
             return _connection;
 
-        var dbFilePath =  Path.Combine(context.DestinationBasePath, "checksums.db");
-        if (!File.Exists(dbFilePath) && context.DryRun)
+        _dbFilePath = Path.Combine(context.DestinationBasePath, "checksums.db");
+        if (context.DryRun && !File.Exists(_dbFilePath))
             return null;
         
-        _connection = new SqliteConnection($"Data Source={dbFilePath}");
+        _connection = new SqliteConnection($"Data Source={_dbFilePath}");
         try
         {
             _connection.Open();
@@ -115,14 +124,19 @@ public sealed class ChecksumMetadataLoader : MetadataLoader
         return command.ExecuteNonQuery();
     }
 
-    private string? ChecksumExists(ulong checksum, long size)
+    private string? ChecksumExists(ulong checksum, long size, long timestamp)
     {
         if (_connection == null)
             return null;
         
         using var command = _connection.CreateCommand();
-        command.CommandText = Sql.FindDuplicateSql;
-        command.Parameters.AddWithValue("$checksum", checksum);
+        command.CommandText = LiteMode ? Sql.FindDuplicateLiteSql : Sql.FindDuplicateSql;
+        
+        if (LiteMode)
+            command.Parameters.AddWithValue("$timestamp", timestamp);
+        else
+            command.Parameters.AddWithValue("$checksum", checksum);
+        
         command.Parameters.AddWithValue("$size", size);
 
         using var reader = command.ExecuteReader();
@@ -164,6 +178,7 @@ public sealed class ChecksumMetadataLoader : MetadataLoader
         
         public const string SelectSql = "SELECT checksum, size, timestamp FROM pictures WHERE name = $name";
         public const string FindDuplicateSql = "SELECT name FROM pictures WHERE checksum = $checksum AND size = $size";
+        public const string FindDuplicateLiteSql = "SELECT name FROM pictures WHERE timestamp = $timestamp AND size = $size";
     }
 }
 

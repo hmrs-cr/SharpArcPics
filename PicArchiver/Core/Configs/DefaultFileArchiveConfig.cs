@@ -63,7 +63,7 @@ public static class DefaultFileArchiveConfig
         DeleteSourceFileIfDestExists = false,
         SourceFileNameRegExPattern = @"(?i)\.(arw|dng|cr2|orf|mov|mp4)$",
         SubfolderTemplate = "NoMediaKind",
-        MetadataLoaders = "Default",
+        MetadataLoaders = "Default,ChkSumLite",
         Recursive = true,
         ReportProgress = true,
         MediaConfigs = new Dictionary<string, ArchiveConfig>

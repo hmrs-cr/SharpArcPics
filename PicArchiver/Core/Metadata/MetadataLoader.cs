@@ -50,7 +50,8 @@ public abstract class MetadataLoader : IMetadataLoader
             {"Default", CreateMetadataLoader<DefaultMetadataLoader>},
             {"IG", CreateMetadataLoader<IgMetadataLoader>},
             {"Exif", CreateMetadataLoader<ExifMetadataLoader>},
-            {"ChkSum", CreateMetadataLoader<ChecksumMetadataLoader>}
+            {"ChkSum", CreateMetadataLoader<ChecksumMetadataLoader>},
+            {"ChkSumLite", CreateMetadataLoader<ChecksumLiteMetadataLoader>}
         };
 
     private static readonly Dictionary<string, IMetadataLoader> MetadataLoadersInstances = new();
