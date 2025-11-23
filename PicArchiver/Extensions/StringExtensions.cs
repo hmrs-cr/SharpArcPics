@@ -18,6 +18,8 @@ public static partial class StringExtensions
         return template;
     }
     
+    public static ulong ComputeHash(this string input) => input.Aggregate(17ul, (current, c) => current * 31ul + c);
+    
     public static string ToHumanReadableString(this TimeSpan t, bool shortDesc = false)
     {
         var secondsStr = shortDesc ? "s" : " seconds";

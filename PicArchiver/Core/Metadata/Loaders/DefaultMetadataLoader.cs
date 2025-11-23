@@ -4,8 +4,8 @@ public sealed class DefaultMetadataLoader : MetadataLoader
 {
     public override bool Initialize(FileArchiveContext context)
     {
-        context.OverrideDestinationFile =  context is { OverrideDestinationFile: true, DestFileInfo.Exists: true } 
-                                               && context.DestFileInfo.Length != context.SourceFileInfo.Length;
+        context.OverrideDestinationFile =  context is { OverrideDestinationFile: true, DestFileInfo.Exists: true, SourceFileInfo.Length: > 1024 }
+                                           && context.DestFileInfo.Length != context.SourceFileInfo.Length;
         return base.Initialize(context);
     }
 

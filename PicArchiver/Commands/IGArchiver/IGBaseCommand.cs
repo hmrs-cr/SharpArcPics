@@ -7,7 +7,8 @@ public class IGBaseCommand : Command
     private static ICollection<Command> Commands { get; } =
     [
         new ScanCommand(),
-        new RemoveDuplicatesCommand()
+        new RemoveDuplicatesCommand(),
+        new GetRandomCommand()
     ];
     
     protected IGBaseCommand(string name, string description) : base($"{name}", description)
