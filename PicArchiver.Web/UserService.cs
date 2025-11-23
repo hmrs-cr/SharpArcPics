@@ -39,7 +39,7 @@ public class UserService : IUserService
     {
         var userDb = await this.redis.GetUserDatabaseAsync(userId);
         var allFavorites = await userDb.HashGetAllAsync("favs");
-        var result = allFavorites.OrderByDescending(f => f.Value).Select(f => f.Key.ToString()).ToList();
+        var result = allFavorites.OrderByDescending(f => f.Value).Select(f => f.Name.ToString()).ToList();
         return result;
     }
 }
