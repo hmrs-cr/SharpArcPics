@@ -102,7 +102,8 @@ public class RandomPool : IRandomProvider, IDisposable
                 if (needed <= 0) 
                     continue;
                 
-                _logger.LogInformation("Refilling {needed} items...", needed);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                    _logger.LogDebug("Refilling {needed} items...", needed);
                     
                 for (var i = 0; i < needed; i++)
                 {
@@ -118,8 +119,8 @@ public class RandomPool : IRandomProvider, IDisposable
                         break; 
                     }
                 }
-                
-                _logger.LogInformation("Refill complete. Going back to sleep.");
+                if (_logger.IsEnabled(LogLevel.Debug))
+                    _logger.LogDebug("Refill complete. Going back to sleep.");
             }
             catch (Exception ex)
             {
