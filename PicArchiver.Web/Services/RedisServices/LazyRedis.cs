@@ -2,7 +2,7 @@ using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using StackExchange.Redis.KeyspaceIsolation;
 
-namespace PicArchiver.Web.Data;
+namespace PicArchiver.Web.Services.RedisServices;
 
 public class LazyRedis : Lazy<Task<ConnectionMultiplexer>>
 {

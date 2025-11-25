@@ -1,64 +1,62 @@
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.Extensions.Options;
-using PicArchiver.Commands.IGArchiver;
 using PicArchiver.Core.Metadata;
 using PicArchiver.Extensions;
-using PicArchiver.Web.Data;
-using StackExchange.Redis;
 
-namespace PicArchiver.Web;
+namespace PicArchiver.Web.Services.RedisServices;
 
-public interface IPictureService
-{
-    Task<PictureStats?> GetRandomPictureData(Guid requestUserId);
-    Task<PictureStats?> GetPictureData(ulong pictureId, Guid requestUserId);
-    Task<int> IncrementPictureView(ulong pictureId, Guid requestUserId);
-    
-    string? GetContentType(string ext);
-    Task<int> Upvote(ulong pictureId, Guid uid, bool remove = false);
-    Task<int> Downvote(ulong pictureId, Guid uid, bool remove = false);
-    Task<int> Favorite(ulong pictureId, Guid uid, bool remove = false);
-
-    Task<string?> GetPictureThumbPath(ulong pictureId);
-    Task<ICollection<string>> GetTopRatedPictures();
-    Task<ICollection<string>> GetLowRatedPictures();
-}
-
-public class PictureService : IPictureService
+public class RedisPictureService : IPictureService
 {   
     private readonly ConcurrentDictionary<string, int> toprated = new();
     private readonly ConcurrentDictionary<string, int> lowrated = new();
-    
-    private readonly LazyRedis redis;
-    private readonly PictureServiceConfig config;
-    private readonly FileExtensionContentTypeProvider contentTypeProvider;
 
-    public PictureService(IOptions<PictureServiceConfig> config, LazyRedis redis)
+    private readonly IMetadataProvider metadataProvider;
+    private readonly IRandomProvider randomProvider;
+    private readonly LazyRedis redis;
+    private readonly IContentTypeProvider contentTypeProvider;
+    private readonly ILogger<RedisPictureService> logger;
+
+    public RedisPictureService(
+        IMetadataProvider metadataProvider,
+        IRandomProvider randomProvider,
+        LazyRedis redis, 
+        IContentTypeProvider contentTypeProvider,
+        ILogger<RedisPictureService> logger)
     {
+        this.metadataProvider = metadataProvider;
+        this.randomProvider = randomProvider;
         this.redis = redis;
-        this.config = config.Value;
-        this.contentTypeProvider = new FileExtensionContentTypeProvider();
+        this.contentTypeProvider = contentTypeProvider;
+        this.logger = logger;
     }
     
     public async Task<PictureStats?> GetRandomPictureData(Guid requestUserId)
     {
         _ = requestUserId;
-        
-        var fullPicturePath = GetRandomCommand.GetRandom(this.config.PicturesBasePath);
-        if (File.Exists(fullPicturePath))
+
+        var maxRetries = 10;
+        while (maxRetries-- > 0)
         {
-            var pictureId = fullPicturePath.ComputeHash();
-            var result = await GetPictureData(pictureId, requestUserId);
-            if (result != null)
+            var fullPicturePath = await this.randomProvider.GetNextRandomValueAsync();
+            if (File.Exists(fullPicturePath))
             {
-                return result;
+                var pictureId = fullPicturePath.ComputeHash();
+                var result = await GetPictureData(pictureId, requestUserId);
+                if (result != null)
+                {
+                    if (result.Views > 0)
+                    {
+                        this.logger.LogInformation("User {UID} already viewed picture {PID}. Selecting another picture [{c}].", requestUserId, pictureId, maxRetries);
+                        continue;
+                    }
+                    
+                    return result;
+                }
+
+                return await SavePicturePath(pictureId, fullPicturePath);
             }
-            
-            _ = SavePicturePath(pictureId, fullPicturePath);
-            return new PictureStats(fullPicturePath);
         }
-        
+
         return null;
     }
 
@@ -104,13 +102,13 @@ public class PictureService : IPictureService
         }
     }
     
-    public async Task<ICollection<string>> GetTopRatedPictures()
+    public async Task<ICollection<string>> GetTopRatedPicturesIds()
     {
         await UpdateVoteCont();
         return toprated.OrderByDescending(kv => kv.Value).Select(kv => kv.Key).ToList();
     }
     
-    public async Task<ICollection<string>> GetLowRatedPictures()
+    public async Task<ICollection<string>> GetLowRatedPicturesIds()
     {
         await UpdateVoteCont();
         return lowrated.OrderBy(kv => kv.Value).Select(kv => kv.Key).ToList();
@@ -128,6 +126,7 @@ public class PictureService : IPictureService
                 var pictureKey = $"{pictureId}";
                 var userDb = await this.redis.GetUserDatabaseAsync(requestUserId);
                 
+                var views = await userDb.HashGetAsync("views", pictureKey);
                 var isFav = await userDb.HashExistsAsync("favs", pictureKey);
                 var votes = await userDb.HashGetAsync("votes", pictureKey);
                 var isDowvoted = votes.HasValue && votes.StartsWith("down|");
@@ -136,15 +135,16 @@ public class PictureService : IPictureService
                 result.Favs = Convert.ToUInt32(isFav);
                 result.UpVotes = Convert.ToUInt32(isUpvoted);
                 result.DownVotes = Convert.ToUInt32(isDowvoted);
+                result.Views = Convert.ToUInt32(views.HasValue);
             }
             
-            return result;
+            return this.SetMetadatada(result);
         }
         
         return null;
     }
 
-    public string? GetContentType(string ext) => 
+    private string? GetContentType(string ext) => 
         this.contentTypeProvider.TryGetContentType(ext, out var contentType) ? contentType : null;
 
     public Task<int> Upvote(ulong pictureId, Guid requestUserId, bool remove = false)=> 
@@ -188,10 +188,11 @@ public class PictureService : IPictureService
         return 1;
     }
 
-    public async Task SavePicturePath(ulong pictureId, string picturePath)
+    public async Task<PictureStats> SavePicturePath(ulong pictureId, string picturePath)
     {
         var pictureDb = await this.redis.GetPictureDatabaseAsync(pictureId);
         await pictureDb.HashSetAsync("attributes", "path", picturePath);
+        return this.SetMetadatada(new PictureStats(picturePath));
     }
     
     public async Task<int> IncrementPictureView(ulong pictureId, Guid requestUserId)
@@ -215,9 +216,10 @@ public class PictureService : IPictureService
         await userDb.HashSetAsync("views", pictureKey, $"{DateTime.UtcNow:s}|{viewCount}");
         return viewCount;
     }
-}
 
-public class PictureServiceConfig
-{
-    public string PicturesBasePath { get; init; } = "/media/pictures-data";
+    private PictureStats SetMetadatada(PictureStats pictureStats)
+    {
+        pictureStats.MimeType = this.GetContentType(pictureStats.Ext);
+        return this.metadataProvider.SetMetadata(pictureStats);
+    }
 }

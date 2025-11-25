@@ -1,16 +1,17 @@
 using Microsoft.AspNetCore.Mvc;
-using PicArchiver.Core.Metadata.Loaders;
-using PicArchiver.Web;
-using PicArchiver.Web.Data;
+using Microsoft.AspNetCore.StaticFiles;
+using PicArchiver.Web.Services;
+using PicArchiver.Web.Services.Ig;
+using PicArchiver.Web.Services.RedisServices;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
-builder.Services.AddOpenApi();
-builder.Services.AddSingleton<IPictureService, PictureService>()
-                 .AddSingleton<IUserService, UserService>()
-                 .AddSingleton<LazyRedis>()
-       .Configure<PictureServiceConfig>(builder.Configuration)
-       .Configure<RedisConfig>(builder.Configuration);
+builder.Logging.AddConsole().AddDebug();
+builder.Services.AddOpenApi()
+                .AddSingleton<IContentTypeProvider, FileExtensionContentTypeProvider>()
+                .AddRedisServices(builder.Configuration)
+                .AddIgMetadataProvider(builder.Configuration);
+
 
 var app = builder.Build();
 
@@ -20,7 +21,6 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-
 
 var pictureApi = app.MapGroup("/picture");
 pictureApi.MapGet("/next", GetRandomPicture).WithName("GetNextPicture");
@@ -48,13 +48,13 @@ return;
 
 static async Task<IResult> GetTopRatedPictures(IPictureService pictureService)
 {
-    var result = await pictureService.GetTopRatedPictures();
+    var result = await pictureService.GetTopRatedPicturesIds();
     return Results.Ok(result);
 }
 
 static async Task<IResult> GetLowRatedPictures(IPictureService pictureService)
 {
-    var result = await pictureService.GetLowRatedPictures();
+    var result = await pictureService.GetLowRatedPicturesIds();
     return Results.Ok(result);
 }
 
@@ -113,7 +113,7 @@ static async Task<IResult> AddUser(IUserService userService, [FromHeader]Guid ui
     return Results.Ok();
 }
 
-static async Task<IResult> GetPictureThumbnail(IPictureService pictureService, ulong pictureId)
+static async Task<IResult> GetPictureThumbnail(IContentTypeProvider contentTypeProvider, IPictureService pictureService, ulong pictureId)
 {
     var path = await pictureService.GetPictureThumbPath(pictureId);
     if (path == null)
@@ -122,7 +122,7 @@ static async Task<IResult> GetPictureThumbnail(IPictureService pictureService, u
     }
     
     var ext = Path.GetExtension(path);
-    var contentType = pictureService.GetContentType(ext);
+    var contentType = contentTypeProvider.TryGetContentType(ext, out var mimeType) ? mimeType : null;
     return Results.File(path, contentType: contentType, fileDownloadName: $"{pictureId}-thumb{ext}",  enableRangeProcessing: true);
 }
 
@@ -145,16 +145,13 @@ static async Task<IResult> GetPicture(IPictureService pictureService, [FromHeade
     {
         return Results.NotFound();
     }
+
+
+    foreach (var metadata in pictureData.Metadata)
+    {
+        context.Response.Headers[metadata.Key] = metadata.Value;
+    }
     
-    var ext = Path.GetExtension(pictureData.FullFilePath);
-    var igFile = IgFile.Parse(pictureData.FullFilePath);
-    var downloadName = $"{igFile.UserName}{ext}";
-    var contentType = pictureService.GetContentType(ext);
-    
-    context.Response.Headers.Append("IG_UserName", igFile.UserName);
-    context.Response.Headers.Append("IG_UserId", igFile.UserId.ToString());
-    context.Response.Headers.Append("IG_PictureId", igFile.PictureId.ToString());
-    context.Response.Headers.Append("IG_PostId", igFile.PostId.ToString());
     context.Response.Headers.Append("InternalId", pictureData.PictureId.ToString());
     context.Response.Headers.Append("IsFav", pictureData.Favs.ToString());
     context.Response.Headers.Append("Upvoted", pictureData.UpVotes.ToString());
@@ -162,6 +159,7 @@ static async Task<IResult> GetPicture(IPictureService pictureService, [FromHeade
     
     _ = pictureService.IncrementPictureView(pictureData.PictureId, uid);
     
-    return Results.File(pictureData.FullFilePath, contentType: contentType, fileDownloadName: downloadName,  enableRangeProcessing: true);
+    return Results.File(pictureData.FullFilePath, contentType: pictureData.MimeType, 
+        fileDownloadName: pictureData.DownloadName,  enableRangeProcessing: true);
 }
 

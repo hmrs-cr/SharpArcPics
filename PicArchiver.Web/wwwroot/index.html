@@ -499,13 +499,14 @@
             if (userId) {
                 await updateFavorites();
                 await loadNewImage();
+                playCarrousel(30);
             } else {
                 alert('Error validating user.');
                 return false;
             }
         }
         
-        async function loadNewImage() {
+        async function loadNewImage(displaySpinner) {
             // Check if we can just move forward in history
             if (historyIndex < historyStack.length - 1) {
                 historyIndex++;
@@ -514,9 +515,10 @@
             }
 
             // Fetch new from API
-            updateUIState(true); // set loading state
+            if (!(displaySpinner === false))
+                updateUIState(true); // set loading state
 
-            const data = await renderImage();
+            const data = await renderImage(null, displaySpinner);
             // Add to history
             historyStack.push({...data});
             historyIndex++;
@@ -531,8 +533,10 @@
             }
         }
 
-        async function renderImage(data) {
-            updateUIState(true); // show loading spinner
+        async function renderImage(data, displaySpinner) {
+            if (!(displaySpinner === false))
+                updateUIState(true); // show loading spinner
+            
             const token = data?.token ? data.token : Math.floor(Math.random() * 999999999);
             let imageUrl = `/picture/next?token=${token}`;
             if (data?.id)
@@ -678,6 +682,12 @@
                 };
                 grid.appendChild(div);
             });
+        }
+        
+        function playCarrousel(delayInSeconds) {
+            setInterval(function() {
+                loadNewImage(false);
+            }, delayInSeconds * 1000);
         }
 
         // --- 3. Event Listeners ---

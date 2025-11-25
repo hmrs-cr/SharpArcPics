@@ -1,23 +1,10 @@
-using System.Collections.Concurrent;
-using PicArchiver.Web.Data;
-using StackExchange.Redis;
-using StackExchange.Redis.KeyspaceIsolation;
+namespace PicArchiver.Web.Services.RedisServices;
 
-namespace PicArchiver.Web;
-
-public interface IUserService
-{
-    Task<bool> AddUser(Guid userId);
-    Task<bool> IsValidUser(Guid userId);
-
-    Task<ICollection<string>> GetUserFavorites(Guid userId);
-}
-
-public class UserService : IUserService
+public class RedisUserService : IUserService
 {
     private readonly LazyRedis redis;
 
-    public UserService(LazyRedis redis)
+    public RedisUserService(LazyRedis redis)
     {
         this.redis = redis;
     }
