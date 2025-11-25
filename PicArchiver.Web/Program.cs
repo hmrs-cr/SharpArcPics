@@ -2,15 +2,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using PicArchiver.Web.Services;
 using PicArchiver.Web.Services.Ig;
+using PicArchiver.Web.Services.Picsum;
 using PicArchiver.Web.Services.RedisServices;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Logging.AddConsole().AddDebug();
 builder.Services.AddOpenApi()
-                .AddSingleton<IContentTypeProvider, FileExtensionContentTypeProvider>()
-                .AddRedisServices(builder.Configuration)
-                .AddIgMetadataProvider(builder.Configuration);
+    .AddSingleton<IContentTypeProvider, FileExtensionContentTypeProvider>()
+    .AddRedisServices(builder.Configuration)
+    .AddPicsumMetadataProvider(builder.Configuration);
+    //.AddIgMetadataProvider(builder.Configuration);
 
 
 var app = builder.Build();
