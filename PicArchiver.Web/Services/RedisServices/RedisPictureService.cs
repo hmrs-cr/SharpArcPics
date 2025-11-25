@@ -46,7 +46,8 @@ public class RedisPictureService : IPictureService
                 {
                     if (result.Views > 0)
                     {
-                        this.logger.LogInformation("User {UID} already viewed picture {PID}. Selecting another picture [{c}].", requestUserId, pictureId, maxRetries);
+                        if (this.logger.IsEnabled(LogLevel.Debug))
+                            this.logger.LogDebug("User {UID} already viewed picture {PID}. Selecting another picture [{c}].", requestUserId, pictureId, maxRetries);
                         continue;
                     }
                     
@@ -114,7 +115,7 @@ public class RedisPictureService : IPictureService
         return lowrated.OrderBy(kv => kv.Value).Select(kv => kv.Key).ToList();
     }
 
-    public async Task<PictureStats?> GetPictureData(ulong pictureId, Guid requestUserId)
+    public async Task<PictureStats?> GetPictureData(ulong pictureId, Guid requestUserId, bool onlyIfNotViewed = false)
     {
         var pictureDb = await this.redis.GetPictureDatabaseAsync(pictureId);
         var path = await pictureDb.HashGetAsync("attributes", "path");
@@ -125,8 +126,13 @@ public class RedisPictureService : IPictureService
             {
                 var pictureKey = $"{pictureId}";
                 var userDb = await this.redis.GetUserDatabaseAsync(requestUserId);
-                
                 var views = await userDb.HashGetAsync("views", pictureKey);
+                if (views.HasValue && onlyIfNotViewed)
+                {
+                    result.Views = 1;
+                    return result;
+                }
+                
                 var isFav = await userDb.HashExistsAsync("favs", pictureKey);
                 var votes = await userDb.HashGetAsync("votes", pictureKey);
                 var isDowvoted = votes.HasValue && votes.StartsWith("down|");

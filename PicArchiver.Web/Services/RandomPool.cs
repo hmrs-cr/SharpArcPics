@@ -114,7 +114,7 @@ public class RandomPool : IRandomProvider, IDisposable
                     var val = _metadataProvider.GetRandomPicturePath();
                     // Write to channel (TryWrite is efficient for Bounded channels)
                     // If false (full), we just stop trying.
-                    if (val != null && !_pool.Writer.TryWrite(val))
+                    if (val != null && IsValidFilePath(val) && !_pool.Writer.TryWrite(val))
                     {
                         break; 
                     }
@@ -128,6 +128,11 @@ public class RandomPool : IRandomProvider, IDisposable
                 _logger.LogError(ex, "Failed to refill.");
             }
         }
+    }
+
+    private bool IsValidFilePath(string val)
+    {
+        return !val.EndsWith(".mp4", StringComparison.InvariantCultureIgnoreCase);
     }
 
     public void Dispose()
