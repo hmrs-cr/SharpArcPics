@@ -72,7 +72,7 @@ public class RedisPictureService : IPictureService
         var db = await this.redis.GetDatabaseAsync();
         var server = await this.redis.GetServerAsync();
         var votes = new Dictionary<string, int>();
-        await foreach(var key in server.KeysAsync(pattern: LazyRedis.UserKeyPrefix + "*:votes"))
+        await foreach(var key in server.KeysAsync(pattern: redis.UserKeyPrefix + "*:votes"))
         {
             var allvotes = await db.HashGetAllAsync(key);
             foreach (var vote in allvotes)

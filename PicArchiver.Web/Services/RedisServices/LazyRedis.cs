@@ -6,15 +6,17 @@ namespace PicArchiver.Web.Services.RedisServices;
 
 public class LazyRedis : Lazy<Task<ConnectionMultiplexer>>
 {
-    private const string KeyPrefix = "picarchiver";
-    public const string UserKeyPrefix = KeyPrefix + ":user:";
-    private const string PictureKeyPrefix = KeyPrefix + ":picture:";
+    public readonly string UserKeyPrefix;
+    private readonly string _pictureKeyPrefix;
     
     public bool IsRedisConfigured { get; }
 
-    public LazyRedis(IOptions<RedisConfig> config) : base(() => ConnectionMultiplexer.ConnectAsync(config.Value.RedistHost!), isThreadSafe: true)
+    public LazyRedis(IOptions<RedisConfig> config, IMetadataProvider metadataProvider) : base(() => ConnectionMultiplexer.ConnectAsync(config.Value.RedistHost!), isThreadSafe: true)
     {
-        this.IsRedisConfigured = !string.IsNullOrEmpty(config.Value.RedistHost);
+        var keyPrefix = $"picvoter:{metadataProvider.Name}";
+        UserKeyPrefix = $"{keyPrefix}:user:";
+        _pictureKeyPrefix = $"{keyPrefix}:picture:";
+        IsRedisConfigured = !string.IsNullOrEmpty(config.Value.RedistHost);
     }
 
     public async ValueTask<IDatabase> GetDatabaseAsync()
@@ -32,7 +34,7 @@ public class LazyRedis : Lazy<Task<ConnectionMultiplexer>>
     public async ValueTask<IDatabase> GetPictureDatabaseAsync(ulong pictureId)
     {
         var db = await this.GetDatabaseAsync();
-        return db.WithKeyPrefix(PictureKeyPrefix + pictureId + ":");
+        return db.WithKeyPrefix(_pictureKeyPrefix + pictureId + ":");
     }
 
     public async ValueTask<IServer> GetServerAsync()

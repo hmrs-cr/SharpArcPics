@@ -4,6 +4,7 @@ namespace PicArchiver.Web.Services;
 
 public interface IMetadataProvider
 {
+    string Name { get; }
     PictureStats SetMetadata(PictureStats pictureData);
     string? GetRandomPicturePath();
     ulong? GetRandomPictureId();

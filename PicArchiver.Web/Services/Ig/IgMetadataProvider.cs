@@ -15,6 +15,8 @@ public class IgMetadataProvider : IMetadataProvider
         this.config = config.Value;
     }
 
+    public string Name => "ig";
+
     public PictureStats SetMetadata(PictureStats pictureData)
     {
         var igFile = IgFile.Parse(pictureData.FullFilePath);
