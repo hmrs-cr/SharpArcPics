@@ -8,13 +8,6 @@ namespace PicArchiver.Web.Services.Ig;
 
 public class IgMetadataProvider : IMetadataProvider
 {
-    private readonly IgMetadataConfig config;
-
-    public IgMetadataProvider(IOptions<IgMetadataConfig> config)
-    {
-        this.config = config.Value;
-    }
-
     public string Name => "ig";
 
     public PictureStats SetMetadata(PictureStats pictureData)
@@ -29,10 +22,6 @@ public class IgMetadataProvider : IMetadataProvider
 
         return pictureData;
     }
-
-    public string? GetRandomPicturePath() => GetRandomCommand.GetRandom(this.config.PicturesBasePath);
-
-    public ulong? GetRandomPictureId() => this.GetRandomPicturePath()?.ComputeHash();
 }
 
 public class IgMetadataConfig

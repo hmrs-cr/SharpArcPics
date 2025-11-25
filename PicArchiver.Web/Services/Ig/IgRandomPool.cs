@@ -1,16 +1,13 @@
 using System.Threading.Channels;
+using Microsoft.Extensions.Options;
+using PicArchiver.Commands.IGArchiver;
 
-namespace PicArchiver.Web.Services;
+namespace PicArchiver.Web.Services.Ig;
 
-public interface IRandomProvider
+public class IgRandomPool : IRandomProvider, IDisposable
 {
-    ValueTask<string> GetNextRandomValueAsync(CancellationToken ct = default);
-}
-
-public class RandomPool : IRandomProvider, IDisposable
-{
-    private readonly IMetadataProvider _metadataProvider;
-    private readonly ILogger<RandomPool> _logger;
+    private readonly IgMetadataConfig _config;
+    private readonly ILogger<IgRandomPool> _logger;
     private readonly Channel<string> _pool;
     private readonly int _minThreshold;
     private readonly int _maxCapacity;
@@ -25,10 +22,10 @@ public class RandomPool : IRandomProvider, IDisposable
     // Token to handle graceful shutdown
     private readonly CancellationTokenSource _cts = new CancellationTokenSource();
     private bool _disposed;
-
-    public RandomPool(IMetadataProvider metadataProvider, ILogger<RandomPool> logger)
+    
+    public IgRandomPool(IOptions<IgMetadataConfig> config, ILogger<IgRandomPool> logger)
     {
-        _metadataProvider = metadataProvider;
+        _config = config.Value;
         _logger = logger;
 
         _minThreshold = 1500;
@@ -111,7 +108,7 @@ public class RandomPool : IRandomProvider, IDisposable
                     if (_cts.IsCancellationRequested) 
                         break;
 
-                    var val = _metadataProvider.GetRandomPicturePath();
+                    var val = GetRandomCommand.GetRandom(_config.PicturesBasePath);
                     // Write to channel (TryWrite is efficient for Bounded channels)
                     // If false (full), we just stop trying.
                     if (val != null && IsValidFilePath(val) && !_pool.Writer.TryWrite(val))
