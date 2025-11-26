@@ -60,7 +60,7 @@
             justify-content: space-between;
             width: 100%;
             height: 100%;
-            padding: 1rem;
+            padding: 4px 1rem 1rem;
             box-sizing: border-box;
         }
 
@@ -145,7 +145,7 @@
             flex-grow: 1;
             display: flex; align-items: center; justify-content: center;
             width: 100%; overflow: hidden;
-            margin-bottom: 1rem; margin-top: 3rem;
+            margin-bottom: 0.6rem; margin-top: 0;
         }
 
         img {
@@ -158,6 +158,27 @@
         }
         img.loaded { opacity: 1; }
         img:active { transform: scale(0.98); }
+
+        /* Side Nav Buttons */
+        .nav-arrow {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 48px; height: 48px;
+            border-radius: 50%; border: none;
+            background-color: var(--nav-btn-bg);
+            color: var(--text-color);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 5;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 4px 6px var(--shadow);
+        }
+        .nav-arrow:hover { background-color: var(--nav-btn-hover); transform: translateY(-50%) scale(1.1); }
+        .nav-arrow:active { transform: translateY(-50%) scale(0.95); }
+        .nav-arrow:disabled { opacity: 0; pointer-events: none; } /* Hide if not usable */
+        .nav-arrow svg { width: 32px; height: 32px; fill: currentColor; }
+
+        .nav-arrow.prev { left: 1rem; }
+        .nav-arrow.next { right: 1rem; }
 
         /* --- Bottom Controls --- */
         .bottom-panel {
@@ -173,7 +194,7 @@
         .btn-vote, .btn-aux {
             background-color: var(--btn-bg);
             border: none; border-radius: 50%;
-            width: 50px; height: 50px;
+            width: 30px; height: 30px;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer;
             transition: transform 0.2s, background-color 0.2s, opacity 0.2s;
@@ -201,6 +222,14 @@
 
         /* Metadata */
         .metadata { text-align: center; }
+        .metadata a {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none; /* Remove underline */
+            text-transform: capitalize;
+            color: var(--text-color);
+        }
         h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
         p { margin: 0.25rem 0 0 0; font-size: 0.85rem; opacity: 0.7; }
 
@@ -333,6 +362,7 @@
         <button class="icon-btn" id="hamburgerBtn" title="Menu">
             <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
         </button>
+        
         <button class="icon-btn" id="infoBtn" title="Image Details">
             <svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/></svg>
         </button>
@@ -342,11 +372,22 @@
     <div id="app-container">
         <div class="image-wrapper">
             <div class="loader"></div>
-            <img id="display-image" src="" alt="Tap to load new image">
+            <!-- Side Navigation Buttons -->
+            <button class="nav-arrow prev" id="navBack" disabled title="Previous">
+                <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </button>
+            <button class="nav-arrow next" id="navFwd" title="Next">
+                <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+            </button>
+            <img id="display-image" src="" alt="Tap to load new image"/>
         </div>
         
         <div class="bottom-panel">
             <div class="controls">
+                <div class="metadata">
+                    <a id="meta-author">Loading...</a>
+                </div>
+                
                <!-- Vote Up -->
                 <button class="btn-vote up" id="btnUp">
                     <svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.58 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
@@ -361,10 +402,6 @@
                 <button class="btn-aux heart" id="btnFav" title="Add to Favorites">
                     <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                 </button>
-            </div>
-
-            <div class="metadata">
-                <a id="meta-author">Loading...</a>
             </div>
         </div>
     </div>
@@ -440,6 +477,7 @@
         const btnUp = document.getElementById('btnUp');
         const btnDown = document.getElementById('btnDown');
         const btnFav = document.getElementById('btnFav');
+        const navBack = document.getElementById('navBack');
 
         const sidebar = document.getElementById('sidebar');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -659,7 +697,8 @@
             // Favorite Button Status
             if(currentData.isFav) btnFav.classList.add('active');
             else btnFav.classList.remove('active');
-            
+
+            navBack.disabled = (historyIndex <= 0);
         }
 
         // --- 2. Logic: Favorites ---
@@ -762,8 +801,15 @@
             } else if (event.key === 'ArrowUp') {
                 btnUp.click();
                 event.preventDefault();
+            } else if (event.key === 'Escape') {
+                closeModal(infoModal);
+                closeModal(aboutModal);
+                closeModal(favModal)
             }
         });
+
+        document.getElementById('navFwd').addEventListener('click', loadNewImage);        // Arrow click = Next
+        document.getElementById('navBack').addEventListener('click', goBack);
 
         // Navigation
         imgElement.addEventListener('click', loadNewImage);
