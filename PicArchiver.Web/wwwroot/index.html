@@ -641,6 +641,9 @@
                         'uid': userId
                     }
                 });
+                
+                if (!response.ok) 
+                    return;
             }
             const pictureData = {};
             pictureData.author = data?.author || response?.headers.get('IG_UserName');
