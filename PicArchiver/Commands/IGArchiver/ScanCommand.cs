@@ -67,6 +67,23 @@ public class ScanCommand : IGBaseCommand
         }
     }
 
+    public static HashSet<string> ScanUserNames(string? directory, string? except = null)
+    {
+        var result = new HashSet<string>();
+        if (directory == null)
+            return result;
+        
+        foreach (var igFile in Directory.EnumerateFiles(directory, "*.*", SearchOption.AllDirectories)
+                     .Select(IgFile.Parse).Where(igf => igf.IsValid))
+        {
+            if (!igFile.UserName.Equals(except, StringComparison.OrdinalIgnoreCase))
+            {
+                result.Add(igFile.UserName);
+            }
+        }
+        return result;
+    }
+
     public static ScanResult Scan(string directory)
     {
         if (string.IsNullOrEmpty(directory))

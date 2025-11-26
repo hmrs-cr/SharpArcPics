@@ -8,7 +8,7 @@ public class IgRandomPool : IRandomProvider, IDisposable
 {
     private readonly PictureProvidersConfig _config;
     private readonly ILogger<IgRandomPool> _logger;
-    private readonly Channel<string> _pool;
+    private readonly Channel<KeyValuePair<string, object?>> _pool;
     private readonly int _minThreshold;
     private readonly int _maxCapacity;
 
@@ -38,7 +38,7 @@ public class IgRandomPool : IRandomProvider, IDisposable
             SingleReader = false, // Multiple threads can read
             FullMode = BoundedChannelFullMode.Wait // If full, writer waits (though our logic prevents this)
         };
-        _pool = Channel.CreateBounded<string>(options);
+        _pool = Channel.CreateBounded<KeyValuePair<string, object?>>(options);
 
         // Initialize and start the dedicated background thread
         _workerThread = new Thread(RefillLoop)
@@ -56,7 +56,7 @@ public class IgRandomPool : IRandomProvider, IDisposable
     /// <summary>
     /// Asynchronously gets a value. Thread-safe.
     /// </summary>
-    public async ValueTask<string> GetNextRandomValueAsync(CancellationToken ct = default)
+    public async ValueTask<KeyValuePair<string, object?>> GetNextRandomValueAsync(CancellationToken ct = default)
     {
         // 1. Try to read asynchronously
         var value = await _pool.Reader.ReadAsync(ct);
@@ -111,9 +111,18 @@ public class IgRandomPool : IRandomProvider, IDisposable
                     var val = GetRandomCommand.GetRandom(_config.PicturesBasePath);
                     // Write to channel (TryWrite is efficient for Bounded channels)
                     // If false (full), we just stop trying.
-                    if (val != null && IsValidFilePath(val) && !_pool.Writer.TryWrite(val))
+                    if (val != null && IsValidFilePath(val))
                     {
-                        break; 
+                        IEnumerable<string>? allUserNames = null;
+                        if (ScanCommand.ScanUserNames(Path.GetDirectoryName(val)) is { Count: > 1} userNames)
+                        {
+                            allUserNames = userNames;
+                        }
+                        
+                        if (!_pool.Writer.TryWrite(KeyValuePair.Create(val, (object?)allUserNames)))
+                        {
+                            break;
+                        }
                     }
                 }
                 if (_logger.IsEnabled(LogLevel.Debug))

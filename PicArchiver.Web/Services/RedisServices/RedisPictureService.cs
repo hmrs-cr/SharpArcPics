@@ -47,7 +47,8 @@ public class RedisPictureService : IPictureService
         var maxRetries = 10;
         while (maxRetries-- > 0)
         {
-            var fullPicturePath = await this.randomProvider.GetNextRandomValueAsync();
+            var pictureContextData = await this.randomProvider.GetNextRandomValueAsync();
+            var fullPicturePath = pictureContextData.Key;
             if (File.Exists(fullPicturePath))
             {
                 var pictureId = fullPicturePath.ComputeHash();
@@ -60,11 +61,13 @@ public class RedisPictureService : IPictureService
                             this.logger.LogDebug("User {UID} already viewed picture {PID}. Selecting another picture [{c}].", requestUserId, pictureId, maxRetries);
                         continue;
                     }
-                    
+
+                    result.ContextData = pictureContextData.Value;
                     return result;
                 }
 
-                return await SavePicturePath(pictureId, fullPicturePath);
+                result = await SavePicturePath(pictureId, fullPicturePath, pictureContextData.Value);
+                return result;
             }
         }
 
@@ -204,11 +207,11 @@ public class RedisPictureService : IPictureService
         return 1;
     }
 
-    public async Task<PictureStats> SavePicturePath(ulong pictureId, string picturePath)
+    public async Task<PictureStats> SavePicturePath(ulong pictureId, string picturePath, object? contextData = null)
     {
         var pictureDb = await this.redis.GetPictureDatabaseAsync(pictureId);
         await pictureDb.HashSetAsync("attributes", "path", picturePath);
-        return this.SetMetadatada(new PictureStats(picturePath));
+        return this.SetMetadatada(new PictureStats(picturePath) { ContextData  = contextData});
     }
     
     public async Task<int> IncrementPictureView(ulong pictureId, Guid requestUserId)

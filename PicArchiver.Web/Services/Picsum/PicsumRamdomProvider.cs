@@ -16,7 +16,7 @@ public class PicsumRamdomProvider : IRandomProvider
         Directory.CreateDirectory(_picFolder);
     }
     
-    public async ValueTask<string> GetNextRandomValueAsync(CancellationToken ct = default)
+    public async ValueTask<KeyValuePair<string, object?>> GetNextRandomValueAsync(CancellationToken ct = default)
     {
         var client = _httpClientFactory.CreateClient();
         var response = await client.GetAsync(url, ct);
@@ -32,6 +32,6 @@ public class PicsumRamdomProvider : IRandomProvider
         await downloadStream.CopyToAsync(fileStream, ct);
         await fileStream.FlushAsync(ct);
         
-        return fullFilePath;
+        return KeyValuePair.Create(fullFilePath, (object?)null);
     }
 }

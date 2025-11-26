@@ -379,8 +379,8 @@
                 <span class="detail-val" id="modal-author">...</span>
             </div>
             <div class="detail-row">
-                <span class="detail-label">Dimensions</span>
-                <span class="detail-val" id="modal-dims">...</span>
+                <span class="detail-label">Other Usernames</span>
+                <span class="detail-val" id="modal-other-usernames">...</span>
             </div>
             <div class="detail-row">
                 <span class="detail-label">Aspect Ratio</span>
@@ -390,7 +390,7 @@
                 <span class="detail-label">Image ID</span>
                 <span class="detail-val" id="modal-id">...</span>
             </div>
-            <a href="#" id="modal-link" class="detail-link" target="_blank">View on Unsplash</a>
+            <a href="#" id="modal-link" class="detail-link" target="_blank">View on Source</a>
         </div>
     </div>
 
@@ -606,6 +606,7 @@
             }
             const pictureData = {};
             pictureData.author = data?.author || response?.headers.get('IG_UserName');
+            pictureData.otherUserNames = data?.otherUserNames || response?.headers.get('IG_OtherUserNames');
             pictureData.id = data?.id || response?.headers.get('InternalId');
             pictureData.isFav = data?.isFav || Number(response?.headers.get('IsFav'));
             pictureData.upvoted = data?.upvoted || Number(response?.headers.get('Upvoted'));
@@ -617,6 +618,8 @@
             if (render) {
                 imgElement.src = pictureData.blobUrl;
                 authorText.innerText = pictureData.author;
+                if (pictureData.otherUserNames?.length)
+                    authorText.innerText = `${pictureData.author} [...]`;
                 authorText.href = pictureData.sourceUrl;
                 authorText.target = '_black';
                 imgElement.classList.add('loaded');
@@ -851,13 +854,9 @@
             if (historyIndex < 0) return;
             const d = historyStack[historyIndex];
             document.getElementById('modal-author').innerText = d.author;
-            document.getElementById('modal-dims').innerText = `${d.width} x ${d.height}`;
+            document.getElementById('modal-other-usernames').innerText = d.otherUserNames;
             document.getElementById('modal-id').innerText = d.id;
-            document.getElementById('modal-link').href = d.url;
-            // Aspect Ratio
-            const gcd = (a, b) => b ? gcd(b, a % b) : a;
-            const div = gcd(d.width, d.height);
-            document.getElementById('modal-aspect').innerText = `${d.width/div}:${d.height/div}`;
+            document.getElementById('modal-link').href = d.sourceUrl;
             openModal(infoModal);
         });
         document.getElementById('closeInfoModal').addEventListener('click', () => closeModal(infoModal));

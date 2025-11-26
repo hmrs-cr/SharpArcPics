@@ -1,3 +1,4 @@
+using PicArchiver.Commands.IGArchiver;
 using PicArchiver.Core.Metadata;
 using PicArchiver.Core.Metadata.Loaders;
 
@@ -10,7 +11,13 @@ public class IgMetadataProvider : IMetadataProvider
     public PictureStats SetMetadata(PictureStats pictureData)
     {
         var igFile = IgFile.Parse(pictureData.FullFilePath);
-        
+
+        if (pictureData.ContextData is IEnumerable<string> allUserName)
+        {
+            pictureData.Metadata["IG_OtherUserNames"] = string.Join(',', 
+                allUserName.Except(Enumerable.Empty<string>().Append(igFile.UserName)));
+        }
+
         pictureData.Metadata["IG_UserName"] = igFile.UserName;
         pictureData.Metadata["IG_UserId"] = igFile.UserId.ToString();
         pictureData.Metadata["IG_PictureId"] = igFile.PictureId.ToString();

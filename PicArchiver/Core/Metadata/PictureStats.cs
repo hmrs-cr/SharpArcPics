@@ -24,4 +24,6 @@ public record PictureStats(string FullFilePath)
 
     private long Timestamp { get; set; }
     public string? SourceUrl { get; set; }
+    
+    public object? ContextData { get; set; }
 }
