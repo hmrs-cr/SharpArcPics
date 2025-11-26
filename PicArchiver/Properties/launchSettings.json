@@ -4,21 +4,35 @@
     "Archive": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "commandLineArgs": "archive --config RawPic --source CAMERAS --destination /Users/hectormauriciorodriguez/Pictures/ifarchiverTEst",
+      "commandLineArgs": "ig get-random --folder /Volumes/homes/IGArchive/Photos/IGArchive",
+      "environmentVariables": {
+      }
+    },
+    "copy2nas": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "commandLineArgs": "archive --config RawPic --source /Users/hectormauriciorodriguez/Pictures/RAW --destination /Users/hectormauriciorodriguez/Pictures/ttttt",
+      "environmentVariables": {
+      }
+    },
+    "copy2local": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "commandLineArgs": "archive --config RPV  --source  /Users/hectormauriciorodriguez/Pictures/Test/SRC --destination /Users/hectormauriciorodriguez/Pictures/Test/DEST",
       "environmentVariables": {
       }
     },
     "Scan": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "commandLineArgs": "scan --config /Users/hectormauriciorodriguez/Pictures/ifarchiverTEst/archive-config.json --source CAMERAS --destination /Users/hectormauriciorodriguez/Pictures/ifarchiverTEst",
+      "commandLineArgs": "scan --DryRun=y --MetadataLoaders=Exif,ChkSum --source /Users/hectormauriciorodriguez/Pictures/RAW --destination /Users/hectormauriciorodriguez/Pictures/NNN --config RPV",
       "environmentVariables": {
       }
     },
-    "Archive IG": {
+    "GetRandom IG": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "commandLineArgs": "archive --config IG --source /Users/hectormauriciorodriguez/Downloads --destination /Users/hectormauriciorodriguez/Pictures/IGArchive",
+      "commandLineArgs": "ig get-random --folder /Volumes/homes/IGArchive/Photos/IGArchive",
       "environmentVariables": {
       }
     },

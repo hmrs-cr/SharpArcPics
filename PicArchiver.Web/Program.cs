@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using PicArchiver.Web.Services;
-using PicArchiver.Web.Services.Ig;
-using PicArchiver.Web.Services.Picsum;
 using PicArchiver.Web.Services.RedisServices;
 
 var builder = WebApplication.CreateSlimBuilder(args);
@@ -11,8 +9,7 @@ builder.Logging.AddConsole().AddDebug();
 builder.Services.AddOpenApi()
     .AddSingleton<IContentTypeProvider, FileExtensionContentTypeProvider>()
     .AddRedisServices(builder.Configuration)
-    .AddPicsumMetadataProvider(builder.Configuration);
-    //.AddIgMetadataProvider(builder.Configuration);
+    .AddMetadataProvider(builder.Configuration);
 
 
 var app = builder.Build();
@@ -91,9 +88,9 @@ static async Task<IResult> FavPictuReremove(IUserService userService, IPictureSe
 
 static async Task<IResult> GetUser(IUserService userService, [FromHeader]Guid uid)
 {
-    if (await userService.IsValidUser(uid))
+    if (await userService.GetUserData(uid) is { } userData)
     {
-        return Results.Ok(uid);
+        return Results.Ok(userData);
     }
     
     return Results.NotFound();
@@ -111,8 +108,8 @@ static async Task<IResult> AddUser(IUserService userService, [FromHeader]Guid ui
         return Results.Conflict();
     }
     
-    await userService.AddUser(uid);
-    return Results.Ok();
+    var newUser = await userService.AddUser(uid);
+    return Results.Ok(newUser);
 }
 
 static async Task<IResult> GetPictureThumbnail(IContentTypeProvider contentTypeProvider, IPictureService pictureService, ulong pictureId)
@@ -158,6 +155,7 @@ static async Task<IResult> GetPicture(IPictureService pictureService, [FromHeade
     context.Response.Headers.Append("IsFav", pictureData.Favs.ToString());
     context.Response.Headers.Append("Upvoted", pictureData.UpVotes.ToString());
     context.Response.Headers.Append("Downvoted", pictureData.DownVotes.ToString());
+    context.Response.Headers.Append("SourceUrl", pictureData.SourceUrl);
     
     _ = pictureService.IncrementPictureView(pictureData.PictureId, uid);
     

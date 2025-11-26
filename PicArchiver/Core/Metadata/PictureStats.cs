@@ -23,4 +23,5 @@ public record PictureStats(string FullFilePath)
     public IDictionary<string, string> Metadata => field ??= new Dictionary<string, string>();
 
     private long Timestamp { get; set; }
+    public string? SourceUrl { get; set; }
 }

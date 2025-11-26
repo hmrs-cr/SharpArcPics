@@ -309,17 +309,17 @@
             <li class="menu-item" id="menuFavs">
                 <!-- Heart Icon -->
                 <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                My Favorites
+                <span id="menu-favs-label">My Favorites</span>
             </li>
             <li class="menu-item" id="menuTop">
                 <!-- Heart Icon -->
                 <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                Top Rated
+                <span id="menu-top-label">Top Rated</span>
             </li>
             <li class="menu-item" id="menuLow">
                 <!-- Heart Icon -->
                 <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                Low Rated
+                <span id="menu-low-label">Low Rated</span>
             </li>
         </ul>
         <div class="menu-item theme-row" id="menuThemeToggle">
@@ -347,12 +347,7 @@
         
         <div class="bottom-panel">
             <div class="controls">
-                <!-- Back Button -->
-                <button class="btn-aux" id="btnBack" title="Previous Image" disabled>
-                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-                </button>
-
-                <!-- Vote Up -->
+               <!-- Vote Up -->
                 <button class="btn-vote up" id="btnUp">
                     <svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.58 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
                 </button>
@@ -370,7 +365,6 @@
 
             <div class="metadata">
                 <a id="meta-author">Loading...</a>
-                <p id="meta-dims">Tap image for next</p>
             </div>
         </div>
     </div>
@@ -431,7 +425,6 @@
         let historyIndex = -1;
         let favorites = []
         let userId = null;
-        let historyToken = Math.floor(Math.random() * 999999999);
         
         let currentPictureData = {
             id: 0,
@@ -443,11 +436,9 @@
         // --- DOM Elements ---
         const imgElement = document.getElementById('display-image');
         const authorText = document.getElementById('meta-author');
-        const dimsText = document.getElementById('meta-dims');
         
         const btnUp = document.getElementById('btnUp');
         const btnDown = document.getElementById('btnDown');
-        const btnBack = document.getElementById('btnBack');
         const btnFav = document.getElementById('btnFav');
 
         const sidebar = document.getElementById('sidebar');
@@ -462,6 +453,7 @@
 
         async function init() {
             userId = localStorage.getItem('userId');
+            let userData = null;
             if (userId) {
                 const response = await fetch('/user', {
                     method: 'GET',
@@ -473,6 +465,8 @@
                 if (!response.ok) {
                     console.warn(`User '${userId}' is not valid. Creating new one.`);
                     userId = null;
+                } else {
+                    userData = await response.json();
                 }
             }
 
@@ -488,6 +482,7 @@
                     });
 
                     if (response.ok) {
+                        userData = await response.json();
                         localStorage.setItem('userId', userId);
                         return true;
                     } else {
@@ -497,12 +492,56 @@
             }
 
             if (userId) {
+                await initUi(userId, userData);
                 await updateFavorites();
                 await loadNewImage();
-                playCarrousel(30);
+                ///playCarrousel(30);
             } else {
                 alert('Error validating user.');
                 return false;
+            }
+        }
+        
+        async function initUi(uid, userData) {
+            if (!userData) {
+                const response = await fetch('/user', {
+                    method: 'GET',
+                    headers: {
+                        'uid': uid
+                    }
+                });
+                
+                if (response.ok) {
+                    userData = await response.json();
+                }
+            }
+            
+            if (userData) {
+                updateLabelText('menu-favs-label', userData.favsLabel);
+                updateLabelText('menu-top-label', userData.topRatedLabel);
+                updateLabelText('menu-low-label', userData.lowRatedLabel);
+            }
+        }
+        
+        function updateLabelText(id, text) {
+            const e = document.getElementById(id);
+            e.textContent = text || e.textContent;
+        }
+        
+        async function preload(count)
+        {
+            for (let c = 0; c < count; c++) {
+                const data = await renderImage(null, false, false);
+                historyStack.push({...data});
+            }
+
+            const max = 100;
+            if (historyStack.length > max)
+            {
+                const i = historyStack.length - max;
+                historyStack.splice(0, i);
+                historyIndex = historyIndex - i;
+                console.log(`History too big, removed ${i} items at the beginning, new index is ${historyIndex}`);
             }
         }
         
@@ -510,7 +549,14 @@
             // Check if we can just move forward in history
             if (historyIndex < historyStack.length - 1) {
                 historyIndex++;
-                await renderImage(historyStack[historyIndex]);
+                console.log("Rendering image from history index:" + historyIndex);
+                currentPictureData = historyStack[historyIndex];
+                await renderImage(currentPictureData);
+                
+                if (historyIndex === historyStack.length - 4) {
+                    const ignored = preload(10);
+                }
+                
                 return;
             }
 
@@ -518,10 +564,14 @@
             if (!(displaySpinner === false))
                 updateUIState(true); // set loading state
 
+            console.log("Rendering image from server");
             const data = await renderImage(null, displaySpinner);
             // Add to history
             historyStack.push({...data});
             historyIndex++;
+            currentPictureData = historyStack[historyIndex];
+            
+            const ignored = preload(10);
 
             updateUIState(false);
         }
@@ -529,45 +579,53 @@
         function goBack() {
             if (historyIndex > 0) {
                 historyIndex--;
-                renderImage(historyStack[historyIndex]);
+                currentPictureData = historyStack[historyIndex];
+                renderImage(currentPictureData);
             }
         }
 
-        async function renderImage(data, displaySpinner) {
-            if (!(displaySpinner === false))
+        async function renderImage(data, displaySpinner = true, render = true) {
+            if (render && (!(displaySpinner === false)))
                 updateUIState(true); // show loading spinner
             
+            let response = null;
             const token = data?.token ? data.token : Math.floor(Math.random() * 999999999);
-            let imageUrl = `/picture/next?token=${token}`;
-            if (data?.id)
-            {
-                imageUrl = `/picture/${data?.id}?token=${data.token || token}`;
-            }
-            
-            const response = await fetch(imageUrl, {
-                method: 'GET',
-                headers: {
-                    'uid': userId
+
+            if (!data?.blobUrl) {
+                let imageUrl = `/picture/next?token=${token}`;
+                if (data?.id) {
+                    imageUrl = `/picture/${data?.id}?token=${data.token || token}`;
                 }
-            });
+                
+                response = await fetch(imageUrl, {
+                    method: 'GET',
+                    headers: {
+                        'uid': userId
+                    }
+                });
+            }
+            const pictureData = {};
+            pictureData.author = data?.author || response?.headers.get('IG_UserName');
+            pictureData.id = data?.id || response?.headers.get('InternalId');
+            pictureData.isFav = data?.isFav || Number(response?.headers.get('IsFav'));
+            pictureData.upvoted = data?.upvoted || Number(response?.headers.get('Upvoted'));
+            pictureData.downvoted = data?.downvoted || Number(response?.headers.get('Downvoted'));
+            pictureData.token = data?.token || token;
+            pictureData.blobUrl = data?.blobUrl || URL.createObjectURL(await response?.blob());
+            pictureData.sourceUrl = data?.sourceUrl || response?.headers.get('SourceUrl');
             
-            const userName = response.headers.get('IG_UserName');
-            currentPictureData.id = response.headers.get('InternalId');
-            currentPictureData.isFav = Number(response.headers.get('IsFav'));
-            currentPictureData.upvoted = Number(response.headers.get('Upvoted'));
-            currentPictureData.downvoted = Number(response.headers.get('Downvoted'));
-            currentPictureData.token = token
-            
-            imgElement.src = URL.createObjectURL(await response.blob());
-            authorText.innerText = userName;
-            authorText.href = `https://www.instagram.com/${userName}/`;
-            authorText.target = '_black';
-            imgElement.classList.add('loaded');
+            if (render) {
+                imgElement.src = pictureData.blobUrl;
+                authorText.innerText = pictureData.author;
+                authorText.href = pictureData.sourceUrl;
+                authorText.target = '_black';
+                imgElement.classList.add('loaded');
 
-            // Update UI buttons
-            updateUIState(false);
+                // Update UI buttons
+                updateUIState(false);
+            }
 
-            return currentPictureData
+            return pictureData
         }
 
         function updateUIState(isLoading) {
@@ -594,10 +652,7 @@
                 btnDown.classList.add('active');
             else
                 btnDown.classList.remove('active');
-
-            // Back Button Status
-            btnBack.disabled = (historyIndex <= 0);
-
+            
             // Favorite Button Status
             if(currentData.isFav) btnFav.classList.add('active');
             else btnFav.classList.remove('active');
@@ -625,7 +680,7 @@
             }
 
             currentData.token = Math.floor(Math.random() * 999999999);
-            const response = await fetch(`/picture/${currentPictureData.id}/fav`, {
+            const response = await fetch(`/picture/${currentData.id}/fav`, {
                 method: method,
                 headers: {
                     'uid': userId
@@ -675,7 +730,7 @@
                     const pictureData = await renderImage({id: item});
                     historyStack.push({...pictureData});
                     historyIndex = historyStack.length - 1;
-                    debugger
+                    currentPictureData = historyStack[historyIndex];
                     updateUIState(false);
                     closeModal(favModal);
                     closeSidebar();
@@ -691,10 +746,24 @@
         }
 
         // --- 3. Event Listeners ---
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft' || event.keyCode === 37) {
+                goBack();
+                event.preventDefault();
+            } else if (event.key === 'ArrowRight' || event.keyCode === 39) {
+                loadNewImage();
+                event.preventDefault();
+            } else if (event.key === 'ArrowDown') {
+                btnDown.click();
+                event.preventDefault();
+            } else if (event.key === 'ArrowUp') {
+                btnUp.click();
+                event.preventDefault();
+            }
+        });
 
         // Navigation
         imgElement.addEventListener('click', loadNewImage);
-        btnBack.addEventListener('click', (e) => { e.stopPropagation(); goBack(); });
         
         // Voting
         btnUp.addEventListener('click', (e) => { 
@@ -831,9 +900,11 @@
             if (e.target == favModal) closeModal(favModal);
         });
 
-        // --- Init ---
-        init();
-
+        document.addEventListener("DOMContentLoaded", function() {
+            // --- Init ---
+            init();
+        });
+        
     </script>
 </body>
 </html>

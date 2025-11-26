@@ -6,7 +6,7 @@ namespace PicArchiver.Web.Services.Ig;
 
 public class IgRandomPool : IRandomProvider, IDisposable
 {
-    private readonly IgMetadataConfig _config;
+    private readonly PictureProvidersConfig _config;
     private readonly ILogger<IgRandomPool> _logger;
     private readonly Channel<string> _pool;
     private readonly int _minThreshold;
@@ -23,7 +23,7 @@ public class IgRandomPool : IRandomProvider, IDisposable
     private readonly CancellationTokenSource _cts = new CancellationTokenSource();
     private bool _disposed;
     
-    public IgRandomPool(IOptions<IgMetadataConfig> config, ILogger<IgRandomPool> logger)
+    public IgRandomPool(IOptions<PictureProvidersConfig> config, ILogger<IgRandomPool> logger)
     {
         _config = config.Value;
         _logger = logger;

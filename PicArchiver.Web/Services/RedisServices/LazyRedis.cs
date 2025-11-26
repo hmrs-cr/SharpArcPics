@@ -6,16 +6,16 @@ namespace PicArchiver.Web.Services.RedisServices;
 
 public class LazyRedis : Lazy<Task<ConnectionMultiplexer>>
 {
-    public readonly string UserKeyPrefix;
+    public const string BasePrefix = "picvoter";
+    public const string UserKeyPrefix = BasePrefix + ":users:";
+    
     private readonly string _pictureKeyPrefix;
     
     public bool IsRedisConfigured { get; }
 
     public LazyRedis(IOptions<RedisConfig> config, IMetadataProvider metadataProvider) : base(() => ConnectionMultiplexer.ConnectAsync(config.Value.RedistHost!), isThreadSafe: true)
     {
-        var keyPrefix = $"picvoter:{metadataProvider.Name}";
-        UserKeyPrefix = $"{keyPrefix}:user:";
-        _pictureKeyPrefix = $"{keyPrefix}:picture:";
+        _pictureKeyPrefix = $"{BasePrefix}:pics:{metadataProvider.Name}:";
         IsRedisConfigured = !string.IsNullOrEmpty(config.Value.RedistHost);
     }
 

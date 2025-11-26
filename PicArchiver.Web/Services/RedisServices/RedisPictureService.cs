@@ -16,6 +16,11 @@ public class RedisPictureService : IPictureService
     private readonly IContentTypeProvider contentTypeProvider;
     private readonly ILogger<RedisPictureService> logger;
 
+    private readonly string picSetName;
+    private readonly string votesHashKey;
+    private readonly string favsHashKey;
+    private readonly string viewsHashKey;
+
     public RedisPictureService(
         IMetadataProvider metadataProvider,
         IRandomProvider randomProvider,
@@ -28,6 +33,11 @@ public class RedisPictureService : IPictureService
         this.redis = redis;
         this.contentTypeProvider = contentTypeProvider;
         this.logger = logger;
+        
+        this.picSetName = metadataProvider.Name;
+        this.votesHashKey = $"votes:{this.picSetName}";
+        this.favsHashKey = $"favs:{this.picSetName}";
+        this.viewsHashKey = $"views:{this.picSetName}";
     }
     
     public async Task<PictureStats?> GetRandomPictureData(Guid requestUserId)
@@ -72,7 +82,7 @@ public class RedisPictureService : IPictureService
         var db = await this.redis.GetDatabaseAsync();
         var server = await this.redis.GetServerAsync();
         var votes = new Dictionary<string, int>();
-        await foreach(var key in server.KeysAsync(pattern: redis.UserKeyPrefix + "*:votes"))
+        await foreach(var key in server.KeysAsync(pattern: LazyRedis.UserKeyPrefix + $"*:{this.votesHashKey}"))
         {
             var allvotes = await db.HashGetAllAsync(key);
             foreach (var vote in allvotes)
@@ -126,15 +136,15 @@ public class RedisPictureService : IPictureService
             {
                 var pictureKey = $"{pictureId}";
                 var userDb = await this.redis.GetUserDatabaseAsync(requestUserId);
-                var views = await userDb.HashGetAsync("views", pictureKey);
+                var views = await userDb.HashGetAsync(this.viewsHashKey, pictureKey);
                 if (views.HasValue && onlyIfNotViewed)
                 {
                     result.Views = 1;
                     return result;
                 }
                 
-                var isFav = await userDb.HashExistsAsync("favs", pictureKey);
-                var votes = await userDb.HashGetAsync("votes", pictureKey);
+                var isFav = await userDb.HashExistsAsync(this.favsHashKey, pictureKey);
+                var votes = await userDb.HashGetAsync(this.votesHashKey, pictureKey);
                 var isDowvoted = votes.HasValue && votes.StartsWith("down|");
                 var isUpvoted = votes.HasValue && votes.StartsWith("up|");
                 
@@ -166,11 +176,11 @@ public class RedisPictureService : IPictureService
 
         if (remove)
         {
-            await userDb.HashDeleteAsync("favs", pictureKey);
+            await userDb.HashDeleteAsync(this.favsHashKey, pictureKey);
         }
         else
         {
-            await userDb.HashSetAsync("favs", pictureKey, $"{DateTime.UtcNow:s}");
+            await userDb.HashSetAsync(this.favsHashKey, pictureKey, $"{DateTime.UtcNow:s}");
         }
 
         return 1;
@@ -183,12 +193,12 @@ public class RedisPictureService : IPictureService
 
         if (remove)
         {
-            await userDb.HashDeleteAsync("votes", pictureKey);
+            await userDb.HashDeleteAsync(this.votesHashKey, pictureKey);
         }
         else
         {
             var vote = isUp ? "up" : "down";
-            await userDb.HashSetAsync("votes", pictureKey, $"{vote}|{DateTime.UtcNow:s}");
+            await userDb.HashSetAsync(this.votesHashKey, pictureKey, $"{vote}|{DateTime.UtcNow:s}");
         }
 
         return 1;
@@ -206,7 +216,7 @@ public class RedisPictureService : IPictureService
         var pictureKey = $"{pictureId}";
         var userDb = await this.redis.GetUserDatabaseAsync(requestUserId);
         
-        var views = await userDb.HashGetAsync("views", pictureKey);
+        var views = await userDb.HashGetAsync(this.viewsHashKey, pictureKey);
         var viewCount = 1;
         if (views.HasValue)
         {
@@ -219,7 +229,7 @@ public class RedisPictureService : IPictureService
             }
         }
         
-        await userDb.HashSetAsync("views", pictureKey, $"{DateTime.UtcNow:s}|{viewCount}");
+        await userDb.HashSetAsync(this.viewsHashKey, pictureKey, $"{DateTime.UtcNow:s}|{viewCount}");
         return viewCount;
     }
 
