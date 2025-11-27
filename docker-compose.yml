@@ -10,7 +10,6 @@ services:
     volumes:
       - ${PICTURES_BASE_PATH}:/media/pictures-data
     environment:
-      - ASPNETCORE_URLS="https://+:4430"
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - PictureProviders__Default=ig
       - RedistHost=redis-picvoter,password=${REDIS_PASS}
