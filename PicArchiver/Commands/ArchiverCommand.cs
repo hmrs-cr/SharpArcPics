@@ -15,7 +15,7 @@ public class ArchiverCommand : BaseCommand, ICommandHandler
 
     const ConsoleColor HeaderColor = ConsoleColor.Cyan;
     
-    internal ArchiverCommand(bool scanOnly = false) : base(
+    public ArchiverCommand(bool scanOnly = false) : base(
         name: scanOnly ? "scan" :
                          "archive", 
         

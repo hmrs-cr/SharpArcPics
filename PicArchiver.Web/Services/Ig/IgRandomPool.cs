@@ -51,6 +51,8 @@ public class IgRandomPool : IRandomProvider, IDisposable
 
         // Signal immediately to perform the initial fill
         _refillSignal.Set();
+        
+        logger.LogInformation("IG RamdomProvider started. Pic Path: '{PicturesBasePath}'", _config.PicturesBasePath);
     }
 
     /// <summary>

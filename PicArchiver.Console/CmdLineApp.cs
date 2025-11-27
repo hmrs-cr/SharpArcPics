@@ -2,9 +2,9 @@ using System.CommandLine;
 using PicArchiver.Commands;
 using PicArchiver.Commands.IGArchiver;
 
-namespace PicArchiver;
+namespace PicArchiver.Console;
 
-public sealed class App
+public sealed class CmdLineApp
 {
     private static readonly ICollection<Command> Commands = [
         new ArchiverCommand(),
@@ -14,7 +14,7 @@ public sealed class App
     
     private static readonly RootCommand RootCommand;
 
-    static App()
+    static CmdLineApp()
     {
         RootCommand = new RootCommand("Picture archiver");
         foreach (var command in Commands)
@@ -31,7 +31,7 @@ public sealed class App
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Error executing command: {e.Message}");
+            System.Console.WriteLine($"Error executing command: {e.Message}");
             return -1;
         }
     }

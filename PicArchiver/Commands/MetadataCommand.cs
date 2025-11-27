@@ -6,7 +6,7 @@ namespace PicArchiver.Commands;
 
 public class MetadataCommand : BaseCommand
 {
-    internal MetadataCommand() : base("metadata", "Reads metadata from the specified file using the specified metadata loaders.")
+    public MetadataCommand() : base("metadata", "Reads metadata from the specified file using the specified metadata loaders.")
     {
         var loadersOption = new Option<string>(
             name: "--loaders",

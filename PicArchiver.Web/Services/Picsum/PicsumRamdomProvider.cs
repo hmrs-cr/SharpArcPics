@@ -9,11 +9,14 @@ public class PicsumRamdomProvider : IRandomProvider
     private readonly IHttpClientFactory _httpClientFactory;
     private string _picFolder;
 
-    public PicsumRamdomProvider(IHttpClientFactory  httpClientFactory, IOptions<PictureProvidersConfig> config)
+    public PicsumRamdomProvider(IHttpClientFactory httpClientFactory, IOptions<PictureProvidersConfig> config,
+        ILogger<PicsumRamdomProvider> logger)
     {
         _httpClientFactory = httpClientFactory;
         _picFolder = config.Value.PicturesBasePath;
         Directory.CreateDirectory(_picFolder);
+        
+        logger.LogInformation("Picsum RamdomProvider started. Pic Path: '{PicturesBasePath}'", config.Value.PicturesBasePath);
     }
     
     public async ValueTask<KeyValuePair<string, object?>> GetNextRandomValueAsync(CancellationToken ct = default)

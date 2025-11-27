@@ -49,26 +49,24 @@ public class RedisPictureService : IPictureService
         {
             var pictureContextData = await this.randomProvider.GetNextRandomValueAsync();
             var fullPicturePath = pictureContextData.Key;
-            if (File.Exists(fullPicturePath))
+            var pictureId = fullPicturePath.ComputeHash();
+            var result = await GetPictureData(pictureId, requestUserId, true);
+            if (result != null)
             {
-                var pictureId = fullPicturePath.ComputeHash();
-                var result = await GetPictureData(pictureId, requestUserId);
-                if (result != null)
+                if (result.Views > 0)
                 {
-                    if (result.Views > 0)
-                    {
-                        if (this.logger.IsEnabled(LogLevel.Debug))
-                            this.logger.LogDebug("User {UID} already viewed picture {PID}. Selecting another picture [{c}].", requestUserId, pictureId, maxRetries);
-                        continue;
-                    }
-
-                    result.ContextData = pictureContextData.Value;
-                    return result;
+                    if (this.logger.IsEnabled(LogLevel.Debug))
+                        this.logger.LogDebug(
+                            "User {UID} already viewed picture {PID}. Selecting another picture [{c}].", requestUserId,
+                            pictureId, maxRetries);
+                    continue;
                 }
 
-                result = await SavePicturePath(pictureId, fullPicturePath, pictureContextData.Value);
+                result.ContextData = pictureContextData.Value;
                 return result;
             }
+
+            return SavePicturePath(pictureId, fullPicturePath, pictureContextData.Value);
         }
 
         return null;
@@ -132,7 +130,7 @@ public class RedisPictureService : IPictureService
     {
         var pictureDb = await this.redis.GetPictureDatabaseAsync(pictureId);
         var path = await pictureDb.HashGetAsync("attributes", "path");
-        if (path.HasValue)
+        if (path.HasValue && File.Exists(path))
         {
             var result = new PictureStats(path.ToString());
             if (requestUserId != Guid.Empty)
@@ -146,8 +144,13 @@ public class RedisPictureService : IPictureService
                     return result;
                 }
                 
-                var isFav = await userDb.HashExistsAsync(this.favsHashKey, pictureKey);
-                var votes = await userDb.HashGetAsync(this.votesHashKey, pictureKey);
+                var isFavTask = userDb.HashExistsAsync(this.favsHashKey, pictureKey);
+                var votesTask = userDb.HashGetAsync(this.votesHashKey, pictureKey);
+                
+                await Task.WhenAll(isFavTask, votesTask);
+                var isFav = isFavTask.Result;
+                var votes = votesTask.Result;
+                
                 var isDowvoted = votes.HasValue && votes.StartsWith("down|");
                 var isUpvoted = votes.HasValue && votes.StartsWith("up|");
                 
@@ -207,11 +210,22 @@ public class RedisPictureService : IPictureService
         return 1;
     }
 
-    public async Task<PictureStats> SavePicturePath(ulong pictureId, string picturePath, object? contextData = null)
+    private PictureStats SavePicturePath(ulong pictureId, string picturePath, object? contextData = null)
     {
-        var pictureDb = await this.redis.GetPictureDatabaseAsync(pictureId);
-        await pictureDb.HashSetAsync("attributes", "path", picturePath);
+        _ = SaveToDbAsync(pictureId, picturePath);
         return this.SetMetadatada(new PictureStats(picturePath) { ContextData  = contextData});
+        
+        async Task SaveToDbAsync(ulong picId, string path)
+        {
+            var pictureDb = await this.redis.GetPictureDatabaseAsync(picId);
+            var existingPath = await pictureDb.HashGetAsync("attributes", "path");
+            if (existingPath.HasValue && existingPath.ToString() != path)
+            {
+                logger.LogWarning("Id collision detected for {id}: '{existingPath}' and {path}", picId, existingPath, path);
+            }
+            
+            await pictureDb.HashSetAsync("attributes", "path", picturePath);
+        }
     }
     
     public async Task<int> IncrementPictureView(ulong pictureId, Guid requestUserId)

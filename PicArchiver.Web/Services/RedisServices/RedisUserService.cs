@@ -19,14 +19,7 @@ public class RedisUserService : IUserService
     {
         var userDb = await this.redis.GetUserDatabaseAsync(userId);
         await userDb.HashSetAsync("attributes", "datetime-created", DateTime.UtcNow.ToString("s"));
-        return new UserData
-        {
-            Id = userId,
-            Favs = [],
-            FavsLabel = this.config.FavsLabel,
-            LowRatedLabel = this.config.LowRatedLabel,
-            TopRatedLabel = this.config.TopRatedLabel,
-        };;
+        return UserData.Create(userId, this.config);
     }
 
     public async Task<bool> IsValidUser(Guid userId)
@@ -46,15 +39,7 @@ public class RedisUserService : IUserService
         
         var allFavorites = await userDb.HashGetAllAsync(this.favsHashKey);
         var favs = allFavorites.OrderByDescending(f => f.Value).Select(f => f.Name.ToString()).ToList();
-        var result = new UserData
-        {
-             Id = userId,
-             Favs = favs,
-             FavsLabel = this.config.FavsLabel,
-             LowRatedLabel = this.config.LowRatedLabel,
-             TopRatedLabel = this.config.TopRatedLabel,
-        };
-        
+        var result = UserData.Create(userId, this.config, favs);
         return result;
     }
 
