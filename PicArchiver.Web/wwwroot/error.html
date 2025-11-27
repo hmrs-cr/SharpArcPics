@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Monkey Business</title>
+    <style>
+        /* Dark Theme Setup */
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            padding: 2rem;
+        }
+
+        /* The Monkey Icon */
+        .monkey-icon {
+            font-size: 8rem;
+            display: block;
+            margin-bottom: 1rem;
+            animation: shake 2.5s infinite;
+            transform-origin: center;
+        }
+
+        /* Error Code Heading */
+        h1 {
+            font-size: 5rem;
+            margin: 0;
+            color: #ff4757;
+            letter-spacing: -2px;
+            line-height: 1;
+        }
+
+        /* Funny Subtitle */
+        h2 {
+            font-size: 1.5rem;
+            color: #f1c40f; /* Banana Yellow */
+            margin-top: 10px;
+            margin-bottom: 2rem;
+        }
+
+        /* The Message Body */
+        p.message {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            border-left: 4px solid #f1c40f;
+            padding-left: 15px;
+            display: inline-block;
+            text-align: left;
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Action Button */
+        .btn {
+            background-color: transparent;
+            color: #f1c40f;
+            border: 2px solid #f1c40f;
+            padding: 10px 20px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #f1c40f;
+            color: #1a1a1a;
+        }
+
+        @keyframes shake {
+            0% { transform: rotate(0deg); }
+            10% { transform: rotate(-10deg); }
+            20% { transform: rotate(10deg); }
+            30% { transform: rotate(-10deg); }
+            40% { transform: rotate(10deg); }
+            50% { transform: rotate(0deg); }
+            100% { transform: rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <span class="monkey-icon" id="emoji-display">🙈</span>
+
+    <h1 id="error-code">500</h1>
+    <h2 id="error-title">Internal Server Chaos</h2>
+
+    <p class="message" id="error-message">
+        Oops soemthing whnet wrong.<br>
+        we have a team of monkeys investigating.
+    </p>
+
+    <div>
+        <a href="/" class="btn">Take Me Home</a>
+    </div>
+</div>
+
+<script>
+    // 1. Get the query parameter "code" from the URL (e.g., ?code=404)
+    const urlParams = new URLSearchParams(window.location.search);
+    let code = urlParams.get('code');
+
+    // Default to '500' if no code is provided
+    if (!code) {
+        code = '500';
+    }
+
+    // 2. Define the funny messages
+    const errorContent = {
+        '404': {
+            emoji: '🍌',
+            title: 'Page Not Found',
+            text: "The monkeys serached everywhere.<br>They checked under the rug. They checked the banana tree.<br>This page is gnoe."
+        },
+        '4040': {
+            emoji: '🦍🍌',
+            title: 'Monkey Not Found',
+            text: "The monkeys serached everywhere.<br>They checked under the rug. They checked the banana tree.<br>But that monkey is gnoe.",
+            displayCode: 404
+        },
+        '403': {
+            emoji: '🦍',
+            title: 'Verboten!',
+            text: "The Alpha Male says NO.<br>You do not have enough bananas to enter this area.<br>Access Denied."
+        },
+        '418': {
+            emoji: '🫖',
+            title: 'I am a Teapot',
+            text: "I am short and stout.<br>The monkeys don't know how to brew coffee.<br>Check your RFC 2324."
+        },
+        '500': {
+            emoji: '🙈',
+            title: 'Internal Chaos',
+            text: "Oops soemthing whnet wrong.<br>we have a team of monkeys investigating."
+        },
+        '503': {
+            emoji: '💤',
+            title: 'Be Right Back',
+            text: "The servers are taking a nap.<br>Too much monkey business today.<br>Try again in a few minutes."
+        }
+    };
+
+    // 3. Select the fallback if the code isn't in our list
+    const content = errorContent[code] || errorContent['500'];
+
+    // 4. Update the HTML elements
+    document.getElementById('error-code').textContent = content.displayCode || code;
+    document.getElementById('emoji-display').textContent = content.emoji;
+    document.getElementById('error-title').textContent = content.title;
+    document.getElementById('error-message').innerHTML = content.text;
+
+    // Update document title for browser tabs
+    document.title = `${code} - Monkey Business`;
+</script>
+
+</body>
+</html>

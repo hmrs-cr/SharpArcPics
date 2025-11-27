@@ -220,7 +220,7 @@
                 await loadNewImage();
                 ///playCarrousel(30);
             } else {
-                alert('Error validating user.');
+                window.location.href = 'error.html?code=4040'
                 return false;
             }
         }
@@ -320,21 +320,32 @@
             const token = data?.token ? data.token : Math.floor(Math.random() * 999999999);
 
             if (!data?.blobUrl) {
-                let imageUrl = `/picture/next?token=${token}`;
-                if (data?.id) {
-                    imageUrl = `/picture/${data?.id}?token=${data.token || token}`;
-                }
-                
-                response = await fetch(imageUrl, {
-                    method: 'GET',
-                    headers: {
-                        'uid': userId
+                let retries = 10;
+                while (retries-- > 0) {
+                    let imageUrl = `/picture/next?token=${token}`;
+                    if (data?.id) {
+                        imageUrl = `/picture/${data?.id}?token=${data.token || token}`;
                     }
-                });
-                
-                if (!response.ok) 
-                    return;
+
+                    response = await fetch(imageUrl, {
+                        method: 'GET',
+                        headers: {
+                            'uid': userId
+                        }
+                    });
+
+                    if (response.ok) {
+                        break
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 1000))
+                }
+
+                if (!response.ok) {
+                    return 
+                }
             }
+            
             const pictureData = {};
             pictureData.author = data?.author || response?.headers.get('IG_UserName');
             pictureData.otherUserNames = data?.otherUserNames || response?.headers.get('IG_OtherUserNames');

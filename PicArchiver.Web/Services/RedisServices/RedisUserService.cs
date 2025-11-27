@@ -5,12 +5,15 @@ namespace PicArchiver.Web.Services.RedisServices;
 public class RedisUserService : IUserService
 {
     private readonly LazyRedis redis;
+    private readonly ILogger<RedisUserService> logger;
     private readonly string favsHashKey;
     private readonly PictureProvidersConfig config;
 
-    public RedisUserService(LazyRedis redis, IMetadataProvider metadataProvider, IOptions<PictureProvidersConfig> config)
+    public RedisUserService(LazyRedis redis, IMetadataProvider metadataProvider, 
+        IOptions<PictureProvidersConfig> config, ILogger<RedisUserService> logger)
     {
         this.redis = redis;
+        this.logger = logger;
         this.config = config.Value;
         this.favsHashKey = $"favs:{metadataProvider.Name}";
     }
@@ -19,6 +22,7 @@ public class RedisUserService : IUserService
     {
         var userDb = await this.redis.GetUserDatabaseAsync(userId);
         await userDb.HashSetAsync("attributes", "datetime-created", DateTime.UtcNow.ToString("s"));
+        this.logger.LogInformation("New User with Id {userId} created.", userId);
         return UserData.Create(userId, this.config);
     }
 
