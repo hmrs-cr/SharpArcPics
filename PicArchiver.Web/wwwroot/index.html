@@ -199,18 +199,15 @@
             if (!userId) {
                 let retries = 5;
                 while (retries-- > 0) {
-                    userId = crypto.randomUUID()
                     const response = await fetch('/user', {
-                        method: 'POST',
-                        headers: {
-                            'uid': userId
-                        }
+                        method: 'POST'
                     });
 
                     if (response.ok) {
                         userData = await response.json();
+                        userId = userData.id;
                         localStorage.setItem('userId', userId);
-                        return true;
+                        break;
                     } else {
                         userId = null;
                     }

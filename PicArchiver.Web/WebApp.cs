@@ -143,19 +143,9 @@ public sealed class WebApp
         return Results.NotFound();
     }
 
-    static async Task<IResult> AddUser(IUserService userService, [FromHeader] Guid uid)
+    static async Task<IResult> AddUser(IUserService userService)
     {
-        if (uid == Guid.Empty)
-        {
-            return Results.BadRequest();
-        }
-
-        if (await userService.IsValidUser(uid))
-        {
-            return Results.Conflict();
-        }
-
-        var newUser = await userService.AddUser(uid);
+        var newUser = await userService.AddUser();
         return Results.Ok(newUser);
     }
 

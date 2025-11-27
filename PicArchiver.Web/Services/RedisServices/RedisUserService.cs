@@ -22,6 +22,12 @@ public class RedisUserService : IUserService
         return UserData.Create(userId, this.config);
     }
 
+    public Task<UserData> AddUser()
+    {
+        var uid = Guid.NewGuid();
+        return this.AddUser(uid);
+    }
+
     public async Task<bool> IsValidUser(Guid userId)
     {
         var userDb = await this.redis.GetUserDatabaseAsync(userId);

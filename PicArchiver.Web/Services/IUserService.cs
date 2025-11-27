@@ -3,6 +3,7 @@ namespace PicArchiver.Web.Services;
 public interface IUserService
 {
     Task<UserData> AddUser(Guid userId);
+    Task<UserData> AddUser();
     Task<bool> IsValidUser(Guid userId);
     
     Task<UserData?> GetUserData(Guid userId);
