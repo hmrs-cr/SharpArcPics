@@ -12,8 +12,7 @@ public sealed class WebApp
     {
         var args = Environment.GetCommandLineArgs();
         var builder = WebApplication.CreateSlimBuilder(args);
-
-        builder.Logging.AddConsole().AddDebug();
+        
         builder.Services.AddOpenApi()
             .AddSingleton<IContentTypeProvider, FileExtensionContentTypeProvider>()
             .AddRedisServices(builder.Configuration)
@@ -22,7 +21,7 @@ public sealed class WebApp
         WebApplication = builder.Build();
         
         WebApplication.UseDefaultFiles();
-        //WebApplication.UseHttpsRedirection();
+        WebApplication.UseHttpsRedirection();
         WebApplication.UseStaticFiles();
         
         if (WebApplication.Environment.IsDevelopment())
