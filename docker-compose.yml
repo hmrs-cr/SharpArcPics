@@ -4,7 +4,7 @@ services:
     container_name: ${DOCKER_CONTAINER_NAME}
     restart: unless-stopped
     ports:
-      - "9988:4430"
+      - "9988:8080"
     depends_on:
       - redis-picvoter
     volumes:
