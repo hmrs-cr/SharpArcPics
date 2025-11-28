@@ -49,6 +49,15 @@
         <button class="icon-btn" id="hamburgerBtn" title="Menu">
             <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
         </button>
+
+        <div>
+            <span id="autor-label-top"></span>
+            <span class="emo-container">
+                <span id="emo-up">👍🏼</span>
+                <span id="emo-down">👎🏼</span>
+                <span id="emo-fav">❤️️</span>
+            </span>
+        </div>
         
         <button class="icon-btn" id="infoBtn" title="Image Details">
             <svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/></svg>
@@ -59,17 +68,10 @@
     <div id="app-container">
         <div class="image-wrapper">
             <div class="loader"></div>
-            <!-- Side Navigation Buttons -->
-            <button class="nav-arrow prev" id="navBack" disabled title="Previous">
-                <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-            </button>
-            <button class="nav-arrow next" id="navFwd" title="Next">
-                <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-            </button>
             <img id="display-image" src="" alt="Tap to load new image"/>
         </div>
         
-        <div class="bottom-panel">
+        <div id="vote-panel" class="bottom-panel desk-only">
             <div class="controls">
                 <div class="metadata">
                     <a id="meta-author">Loading...</a>
@@ -150,6 +152,11 @@
         let favorites = []
         let userId = null;
         let userData;
+        
+        const audio = {
+            'like': new Audio('/media/audio/like.mp3'),
+            'unlike': new Audio('/media/audio/like-remove.mp3')
+        }
 
         let currentPictureData = {
             id: 0,
@@ -165,7 +172,6 @@
         const btnUp = document.getElementById('btnUp');
         const btnDown = document.getElementById('btnDown');
         const btnFav = document.getElementById('btnFav');
-        const navBack = document.getElementById('navBack');
 
         const sidebar = document.getElementById('sidebar');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -177,6 +183,10 @@
 
         // --- 1. Logic: Loading & History ---
 
+        function isTouchScreen() {
+            return 'ontouchstart' in document.documentElement;
+        }
+        
         async function init() {
             userId = localStorage.getItem('userId');
             userData = null;
@@ -249,11 +259,25 @@
                 updateLabelText('app-version-label', userData.appInfo.appVersion);
                 updateLabelText('app-developer-label', userData.appInfo.developer);
             }
+            
+            if (isTouchScreen()) {
+                document.getElementById('vote-panel').style.display = 'none';
+            }
         }
         
         function updateLabelText(id, text) {
             const e = document.getElementById(id);
             e.textContent = text || e.textContent;
+        }
+
+        function show(id) {
+            const e = document.getElementById(id);
+            e.style.display = 'inline';
+        }
+
+        function hide(id) {
+            const e = document.getElementById(id);
+            e.style.display = 'none';
         }
         
         async function preload(count)
@@ -263,11 +287,17 @@
                 historyStack.push({...data});
             }
 
-            const max = 100;
+            const max = 48;
             if (historyStack.length > max)
             {
                 const i = historyStack.length - max;
-                historyStack.splice(0, i);
+                const removed = historyStack.splice(0, i);
+                removed.forEach(i => {
+                    if (i.blobUrl) {
+                        URL.revokeObjectURL(i.blobUrl);
+                        console.debug(`Removed ${i.blobUrl}`);
+                    }
+                });
                 historyIndex = historyIndex - i;
                 console.log(`History too big, removed ${i} items at the beginning, new index is ${historyIndex}`);
             }
@@ -360,6 +390,7 @@
             if (render) {
                 imgElement.src = pictureData.blobUrl;
                 authorText.innerText = pictureData.author;
+                updateLabelText('autor-label-top', pictureData.author)
                 if (pictureData.otherUserNames?.length)
                     authorText.innerText = `${pictureData.author} [...]`;
                 authorText.href = pictureData.sourceUrl;
@@ -388,21 +419,34 @@
                 currentData = historyStack[historyIndex];
             }
 
-            if (currentData.upvoted)
+            if (currentData.upvoted) {
                 btnUp.classList.add('active');
-            else
+                show('emo-up');
+            }
+            else {
                 btnUp.classList.remove('active');
+                hide('emo-up');
+            }
 
-            if (currentData.downvoted)
+            if (currentData.downvoted) {
                 btnDown.classList.add('active');
-            else
+                show('emo-down');
+            }
+            else {
                 btnDown.classList.remove('active');
+                hide('emo-down');
+            }
             
             // Favorite Button Status
-            if(currentData.isFav) btnFav.classList.add('active');
-            else btnFav.classList.remove('active');
-
-            navBack.disabled = (historyIndex <= 0);
+            if(currentData.isFav) {
+                btnFav.classList.add('active');
+                show('emo-fav');
+            }
+            else {
+                btnFav.classList.remove('active');
+                hide('emo-fav');
+                
+            }
         }
 
         // --- 2. Logic: Favorites ---
@@ -416,12 +460,16 @@
             let method;
             if (currentData.isFav) {
                 btnFav.classList.remove('active');
+                hide('emo-fav')
+                playAudio('unlike');
                 method = 'DELETE';
                 currentData.isFav = 0;
             } else {
                 // Add
                 btnFav.classList.add('active');
+                show('emo-fav')
                 method = 'PUT';
+                playAudio('like');
                 currentData.isFav = 1;
             }
 
@@ -434,6 +482,12 @@
             });
             
             await updateFavorites(await response.json())
+        }
+        
+        async function playAudio(audioName)
+        {
+            audio[audioName].position = 0;
+            await audio[audioName].play();
         }
         
         async function updateFavorites(favList) {
@@ -454,7 +508,8 @@
         function renderFavGrid() {
             renderGrid(favorites, userData?.appInfo?.favsLabel);
         }
-        
+
+        function tt(a,b,c) { console.log(a,b,c); }
         function renderGrid(renderItems, title) {
             const grid = document.getElementById('favGrid');
             const msg = document.getElementById('noFavsMsg');
@@ -467,12 +522,18 @@
             msg.style.display = 'none';
             
             updateLabelText("favModalTitle", title)
-
             renderItems.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'fav-item';
                 // Use small thumbnail for grid
-                div.innerHTML = `<img src="/picture/${item}/thumb" alt="Fav">`;
+                fetch(`/picture/${item}/thumb`, {headers: { 'uid': userId }})
+                    .then(r => r.blob())
+                    .then(b => {
+                        const url = URL.createObjectURL(b); 
+                        div.innerHTML = `<img src="${url}" alt="Fav">`
+                        div.firstElementChild.onload = () => URL.revokeObjectURL(url);
+                    });
+                
                 div.onclick = async () => {
                     // Load this favorite into main view
                     const pictureData = await renderImage({id: item});
@@ -513,12 +574,6 @@
                 closeModal(favModal)
             }
         });
-
-        document.getElementById('navFwd').addEventListener('click', loadNewImage);        // Arrow click = Next
-        document.getElementById('navBack').addEventListener('click', goBack);
-
-        // Navigation
-        imgElement.addEventListener('click', loadNewImage);
         
         // Voting
         btnUp.addEventListener('click', (e) => { 
@@ -529,13 +584,20 @@
             if (historyIndex >= 0) {
                 currentData = historyStack[historyIndex];
             }
-            
+
+            hide('emo-down');
             let method = 'DELETE';
             currentData.upvoted = 0;
+            currentData.downvoted = 0;
             if(btnUp.classList.contains('active')) {
                 btnDown.classList.remove('active');
+                show('emo-up');
+                playAudio('like');
                 method = 'PUT';
                 currentData.upvoted = 1;
+            } else {
+                hide('emo-up');
+                playAudio('unlike');
             }
             
             currentData.token = Math.floor(Math.random() * 999999999);
@@ -554,13 +616,20 @@
             if (historyIndex >= 0) {
                 currentData = historyStack[historyIndex];
             }
-            
+
+            hide('emo-up');
             let method = 'DELETE';
+            currentData.upvoted = 0;
             currentData.downvoted = 0;
             if(btnDown.classList.contains('active')) {
+                show('emo-down');
+                playAudio('like');
                 btnUp.classList.remove('active');
                 method = 'PUT';
                 currentData.downvoted = 1;
+            } else {
+                hide('emo-down');
+                playAudio('unlike');
             }
 
             currentData.token = Math.floor(Math.random() * 999999999);
@@ -651,11 +720,146 @@
             if (e.target == favModal) closeModal(favModal);
         });
 
+        if (!isTouchScreen()) {
+            imgElement.addEventListener("click", handleInput);
+        }
+        function handleInput(e) {
+            let clientX;
+
+            // Check if it's a touch or mouse event
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+            } else {
+                clientX = e.clientX;
+            }
+
+            const screenWidth = window.innerWidth;
+
+            if (clientX < screenWidth / 2) {
+                goBack();
+            } else {
+                loadNewImage();
+            }
+        }
+        
         document.addEventListener("DOMContentLoaded", function() {
             // --- Init ---
             init();
         });
         
+    </script>
+
+    <script>
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        const body = document.body;
+
+        if (isTouchScreen()) {
+            document.addEventListener("DOMContentLoaded", () => {
+
+                // Listen for touch start
+                imgElement.addEventListener('touchstart', function (event) {
+                    touchStartX = event.changedTouches[0].screenX;
+                    touchStartY = event.changedTouches[0].screenY;
+                }, false);
+
+                // Listen for touch end
+                imgElement.addEventListener('touchend', function (event) {
+                    touchEndX = event.changedTouches[0].screenX;
+                    touchEndY = event.changedTouches[0].screenY;
+                    handleGesture();
+                }, false);
+
+                imgElement.addEventListener('dblclick', function () {
+                    authorText.click();
+                });
+            });
+
+            let pressTimer;
+            const holdDuration = 500; // milliseconds for a long press
+
+            imgElement.addEventListener('touchstart', (event) => {
+                event.preventDefault();
+                pressTimer = setTimeout(() => {
+                    toggleFavorite();
+                }, holdDuration);
+            });
+
+            imgElement.addEventListener('touchend', () => clearTimeout(pressTimer));
+            imgElement.addEventListener('touchcancel', () => clearTimeout(pressTimer));
+        }
+
+        function handleGesture() {
+            const xDiff = touchEndX - touchStartX;
+            const yDiff = touchEndY - touchStartY;
+
+            // Threshold to consider it a swipe (prevent accidental taps)
+            const threshold = 50;
+
+            if (Math.abs(xDiff) > Math.abs(yDiff)) {
+                // Horizontal Swipe (Left or Right)
+                if (Math.abs(xDiff) > threshold) {
+                    if (xDiff > 0) {
+                        actionRight();
+                    } else {
+                        actionLeft();
+                    }
+                }
+            } else {
+                // Vertical Swipe (Up or Down)
+                if (Math.abs(yDiff) > threshold) {
+                    if (yDiff > 0) {
+                        actionDown();
+                    } else {
+                        actionUp();
+                    }
+                }
+            }
+        }
+
+        // --- ACTIONS ---
+
+        // 1. Swipe Up: Floating Heart
+        function actionUp() {
+            btnUp.click();
+        }
+
+        // 2. Swipe Down: Broken Heart
+        function actionDown() {
+            btnDown.click();
+        }
+
+        // 3. Swipe Left: Change Background Color
+        function actionLeft() {
+            loadNewImage();
+        }
+
+        // 4. Swipe Right: Display Toast Message
+        function actionRight() {
+            goBack();
+        }
+
+        // Helper to spawn emojis
+        function createEmoji(char, animationClass) {
+            const el = document.createElement('div');
+            el.innerText = char;
+            el.classList.add('emoji-anim');
+            el.classList.add(animationClass);
+            document.getElementById('emo-container').appendChild(el);
+
+            // Clean up DOM after animation finishes
+            setTimeout(() => {
+                el.remove();
+            }, 1000);
+
+            setTimeout(() => {
+              alert(animationClass);
+            }, 1500);
+        }
+
     </script>
 </body>
 </html>
