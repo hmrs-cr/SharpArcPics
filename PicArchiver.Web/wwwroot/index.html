@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Voter Ultimate</title>
     <link rel="stylesheet" href="main.css">
+    <link rel="icon" type="image/svg+xml" href="media/image/favicon.svg">
 </head>
 <body>
 
@@ -537,8 +538,8 @@
                 div.onclick = async () => {
                     // Load this favorite into main view
                     const pictureData = await renderImage({id: item});
-                    historyStack.push({...pictureData});
-                    historyIndex = historyStack.length - 1;
+                    historyIndex = historyIndex + 1;
+                    historyStack.splice(historyIndex, 0, {...pictureData});
                     currentPictureData = historyStack[historyIndex];
                     updateUIState(false);
                     closeModal(favModal);
