@@ -125,22 +125,28 @@ public class RedisPictureService : IPictureService
         await UpdateVoteCont();
         return lowrated.OrderBy(kv => kv.Value).Select(kv => kv.Key).ToList();
     }
-
-    public async Task<PictureStats?> GetPictureData(ulong pictureId, Guid requestUserId, bool onlyIfNotViewed = false)
+    
+    public async Task<PictureStats?> GetPictureData(ulong pictureId, Guid? requestUserId, bool onlyIfNotViewed = false)
     {
         var pictureDb = await this.redis.GetPictureDatabaseAsync(pictureId);
         var path = await pictureDb.HashGetAsync("attributes", "path");
         if (path.HasValue && File.Exists(path))
         {
             var result = new PictureStats(path.ToString());
-            if (requestUserId != Guid.Empty)
+            if (requestUserId.HasValue)
             {
                 var pictureKey = $"{pictureId}";
-                var userDb = await this.redis.GetUserDatabaseAsync(requestUserId);
+                var userDb = await this.redis.GetUserDatabaseAsync(requestUserId.Value);
                 var views = await userDb.HashGetAsync(this.viewsHashKey, pictureKey);
                 if (views.HasValue && onlyIfNotViewed)
                 {
                     result.Views = 1;
+                    return result;
+                }
+
+                if (!views.HasValue)
+                {
+                    // My First view
                     return result;
                 }
                 

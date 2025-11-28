@@ -7,13 +7,15 @@ public interface IUserService
     Task<bool> IsValidUser(Guid userId);
     
     Task<UserData?> GetUserData(Guid userId);
+    
+    Task<UserData?> GetCurrentUserData();
 
     Task<ICollection<string>> GetUserFavorites(Guid userId);
 }
 
 public class UserData
 {
-    public Guid Id { get; init; }
+    public Guid Id { get; set; }
     public ICollection<string>? Favs { get; init; }
     
     public required AppInfo AppInfo { get; init; }

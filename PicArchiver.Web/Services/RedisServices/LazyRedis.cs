@@ -1,3 +1,4 @@
+using System.Security.Authentication;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using StackExchange.Redis.KeyspaceIsolation;
@@ -6,6 +7,7 @@ namespace PicArchiver.Web.Services.RedisServices;
 
 public class LazyRedis : Lazy<Task<ConnectionMultiplexer>>
 {
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<LazyRedis> _logger;
     public const string BasePrefix = "picvoter";
     public const string UserKeyPrefix = BasePrefix + ":users:";
@@ -16,10 +18,12 @@ public class LazyRedis : Lazy<Task<ConnectionMultiplexer>>
     public bool IsRedisConfigured { get; }
 
     public LazyRedis(IOptions<RedisConfig> config, IMetadataProvider metadataProvider,
+        IHttpContextAccessor httpContextAccessor,
         ILogger<LazyRedis> logger) : base(() => ConnectionMultiplexer.ConnectAsync(config.Value.RedistHost!), isThreadSafe: true)
     {
 
         _config = config.Value;
+        _httpContextAccessor = httpContextAccessor;
         _logger = logger;
         _pictureKeyPrefix = $"{BasePrefix}:pics:{metadataProvider.Name}:";
         IsRedisConfigured = !string.IsNullOrEmpty(config.Value.RedistHost);
@@ -41,14 +45,54 @@ public class LazyRedis : Lazy<Task<ConnectionMultiplexer>>
 
     public async ValueTask<IDatabase> GetUserDatabaseAsync(Guid userId)
     {
-        var db = await this.GetDatabaseAsync();
-        return db.WithKeyPrefix(UserKeyPrefix + userId + ":");
+        if (userId != Guid.Empty)
+        {
+            return (await this.GetDatabaseAsync()).WithKeyPrefix(UserKeyPrefix + userId + ":");
+        }
+        
+        var db = GetCurrentUserDatabase();
+        if (db == null)
+        {
+            throw new AuthenticationException("No current user found.");
+        }
+
+        return db;
     }
     
+    public IDatabase? GetCurrentUserDatabase()
+    {
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext?.Items.TryGetValue("UserDb", out var db) == true && db is IDatabase userDb)
+        {
+            return userDb;
+        }
+        
+        return null;
+    }
+    
+    public IDatabase? GetCurrentPictureDatabase()
+    {
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext?.Items.TryGetValue("PictureDb", out var db) == true && db is IDatabase pictureDb)
+        {
+            return pictureDb;
+        }
+        
+        return null;
+    }
+
     public async ValueTask<IDatabase> GetPictureDatabaseAsync(ulong pictureId)
     {
-        var db = await this.GetDatabaseAsync();
-        return db.WithKeyPrefix(_pictureKeyPrefix + pictureId + ":");
+        if (pictureId == 0)
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext?.Items.TryGetValue("PictureDb", out var db) == true && db is IDatabase pictureDb)
+            {
+                return pictureDb;
+            }
+        }
+
+        return (await this.GetDatabaseAsync()).WithKeyPrefix(_pictureKeyPrefix + pictureId + ":");
     }
 
     public async ValueTask<IServer> GetServerAsync()
@@ -62,4 +106,9 @@ public class LazyRedis : Lazy<Task<ConnectionMultiplexer>>
 public class RedisConfig
 {
     public string RedistHost { get; set; } = "localhost:6379";
+}
+
+public static class RedisDbExtensions
+{
+
 }
