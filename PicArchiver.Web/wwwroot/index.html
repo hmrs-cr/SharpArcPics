@@ -9,886 +9,924 @@
 </head>
 <body>
 
-    <!-- Sidebar -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <span class="sidebar-title">Menu</span>
-            <div class="icon-btn" id="closeSidebar" style="width:32px; height:32px; border:none; box-shadow:none; background:transparent;">
-                <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-            </div>
+<!-- Sidebar -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <span class="sidebar-title">Menu</span>
+        <div class="icon-btn" id="closeSidebar" style="width:32px; height:32px; border:none; box-shadow:none; background:transparent;">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
         </div>
-        <ul class="menu-list">
-            <li class="menu-item" id="menuAbout">
-                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                About & Contact
-            </li>
-            <li class="menu-item" id="menuFavs">
-                <!-- Heart Icon -->
-                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                <span id="menu-favs-label">My Favorites</span>
-            </li>
-            <li class="menu-item" id="menuTop">
-                <!-- Heart Icon -->
-                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                <span id="menu-top-label">Top Rated</span>
-            </li>
-            <li class="menu-item" id="menuLow">
-                <!-- Heart Icon -->
-                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                <span id="menu-low-label">Low Rated</span>
-            </li>
-        </ul>
-        <div class="menu-item theme-row" id="menuThemeToggle">
-            <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
-            <span>Switch Theme</span>
-        </div>
-    </nav>
+    </div>
+    <ul class="menu-list">
+        <li class="menu-item" id="menuAbout">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            About & Contact
+        </li>
+        <li class="menu-item" id="menuFavs">
+            <!-- Heart Icon -->
+            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <span id="menu-favs-label">My Favorites</span>
+        </li>
+        <li class="menu-item" id="menuTop">
+            <!-- Heart Icon -->
+            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <span id="menu-top-label">Top Rated</span>
+        </li>
+        <li class="menu-item" id="menuLow">
+            <!-- Heart Icon -->
+            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <span id="menu-low-label">Low Rated</span>
+        </li>
+    </ul>
+    <div class="menu-item theme-row" id="menuThemeToggle">
+        <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+        <span>Switch Theme</span>
+    </div>
+</nav>
 
-    <!-- Top Toolbar -->
-    <div class="top-toolbar">
-        <button class="icon-btn" id="hamburgerBtn" title="Menu">
-            <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-        </button>
+<!-- Top Toolbar -->
+<div class="top-toolbar">
+    <button class="icon-btn" id="hamburgerBtn" title="Menu">
+        <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+    </button>
 
-        <div>
-            <span id="autor-label-top"></span>
-            <span class="emo-container">
+    <div>
+        <span id="autor-label-top"></span>
+        <span class="emo-container">
                 <span id="emo-up">👍🏼</span>
                 <span id="emo-down">👎🏼</span>
                 <span id="emo-fav">❤️️</span>
             </span>
-        </div>
-        
-        <button class="icon-btn" id="infoBtn" title="Image Details">
-            <svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/></svg>
-        </button>
     </div>
 
-    <!-- Main App Container -->
-    <div id="app-container">
-        <div class="image-wrapper">
-            <div class="loader"></div>
-            <img id="display-image" src="" alt="Tap to load new image"/>
-        </div>
-        
-        <div id="vote-panel" class="bottom-panel desk-only">
-            <div class="controls">
-                <div class="metadata">
-                    <a id="meta-author">Loading...</a>
-                </div>
-                
-               <!-- Vote Up -->
-                <button class="btn-vote up" id="btnUp">
-                    <svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.58 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
-                </button>
-                
-                <!-- Vote Down -->
-                <button class="btn-vote down" id="btnDown">
-                    <svg viewBox="0 0 24 24"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>
-                </button>
+    <button class="icon-btn" id="infoBtn" title="Image Details">
+        <svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/></svg>
+    </button>
+</div>
 
-                <!-- Favorite Button -->
-                <button class="btn-aux heart" id="btnFav" title="Add to Favorites">
-                    <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                </button>
-            </div>
-        </div>
+<!-- Main App Container -->
+<div id="app-container">
+    <div class="image-wrapper">
+        <div class="loader"></div>
+        <img id="display-image" src="" alt="Tap to load new image"/>
     </div>
 
-    <!-- Info Modal -->
-    <div id="infoModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" id="closeInfoModal">&times;</span>
-            <h2 style="margin-bottom: 1rem;">Image Details</h2>
-            <div class="detail-row">
-                <span class="detail-label">Author</span>
-                <span class="detail-val" id="modal-author">...</span>
+    <div id="vote-panel" class="bottom-panel desk-only">
+        <div class="controls">
+            <div class="metadata">
+                <a id="meta-author">Loading...</a>
             </div>
-            <div class="detail-row">
-                <span class="detail-label">Other Usernames</span>
-                <span class="detail-val" id="modal-other-usernames">...</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Image ID</span>
-                <span class="detail-val" id="modal-id">...</span>
-            </div>
-            <a href="#" id="view-more-link" class="detail-link">View more...</a>
-            <a href="#" id="modal-link" class="detail-link" target="_blank">View on Source</a>
+
+            <!-- Vote Up -->
+            <button class="btn-vote up" id="btnUp">
+                <svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.58 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
+            </button>
+
+            <!-- Vote Down -->
+            <button class="btn-vote down" id="btnDown">
+                <svg viewBox="0 0 24 24"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>
+            </button>
+
+            <!-- Favorite Button -->
+            <button class="btn-aux heart" id="btnFav" title="Add to Favorites">
+                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
         </div>
     </div>
+</div>
 
-    <!-- About Modal -->
-    <div id="aboutModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" id="closeAboutModal">&times;</span>
-            <h2 style="margin-bottom: 0.5rem;">About <span id="app-name-label"></span></h2>
-            <p style="opacity: 0.7; margin-bottom: 1rem;">Version <span id="app-version-label" ></span></p>
-            <p id="app-desc-label" style="line-height: 1.6; margin-bottom: 1rem;">
-                Browse, vote, and collect high-quality photography.
-            </p>
-            <div class="detail-row"><span class="detail-label">Developer</span><span id="app-developer-label" class="detail-val">Your Name</span></div>
+<!-- Info Modal -->
+<div id="infoModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" id="closeInfoModal">&times;</span>
+        <h2 style="margin-bottom: 1rem;">Image Details</h2>
+        <div class="detail-row">
+            <span class="detail-label">Author</span>
+            <span class="detail-val" id="modal-author">...</span>
         </div>
-    </div>
-
-    <!-- Favorites Modal -->
-    <div id="favModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" id="closeFavModal">&times;</span>
-            <h2 id="favModalTitle" style="margin-bottom: 0.5rem;">My Favorites</h2>
-            <div id="favGrid" class="fav-grid">
-                <!-- Thumbs injected here -->
-            </div>
-            <p id="noFavsMsg" class="no-favs">No favorites yet.</p>
+        <div class="detail-row">
+            <span class="detail-label">Other Usernames</span>
+            <span class="detail-val" id="modal-other-usernames">...</span>
         </div>
+        <div class="detail-row">
+            <span class="detail-label">Image ID</span>
+            <span class="detail-val" id="modal-id">...</span>
+        </div>
+        <a href="#" id="view-more-link" class="detail-link">View more...</a>
+        <a href="#" id="modal-link" class="detail-link" target="_blank">View on Source</a>
     </div>
+</div>
 
-    <script>
-        // --- State Management ---
-        let historyStack = [];
-        let historyIndex = -1;
-        let favorites = []
-        let userId = null;
-        let userData;
-        
-        const audio = {
-            'like': new Audio('/media/audio/like.mp3'),
-            'unlike': new Audio('/media/audio/unlike.mp3'),
-            'fav': new Audio('/media/audio/fav.mp3')
+<!-- About Modal -->
+<div id="aboutModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" id="closeAboutModal">&times;</span>
+        <h2 style="margin-bottom: 0.5rem;">About <span id="app-name-label"></span></h2>
+        <p style="opacity: 0.7; margin-bottom: 1rem;">Version <span id="app-version-label" ></span></p>
+        <p id="app-desc-label" style="line-height: 1.6; margin-bottom: 1rem;">
+            Browse, vote, and collect high-quality photography.
+        </p>
+        <div class="detail-row"><span class="detail-label">Developer</span><span id="app-developer-label" class="detail-val">Your Name</span></div>
+    </div>
+</div>
+
+<!-- Favorites Modal -->
+<div id="favModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" id="closeFavModal">&times;</span>
+        <h2 id="favModalTitle" style="margin-bottom: 0.5rem;">My Favorites</h2>
+        <div id="favGrid" class="fav-grid">
+            <!-- Thumbs injected here -->
+        </div>
+        <p id="noFavsMsg" class="no-favs">No favorites yet.</p>
+    </div>
+</div>
+
+<script>
+    // --- State Management ---
+    let historyStack = [];
+    let historyIndex = -1;
+    let favorites = []
+    let userId = null;
+    let userData;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentSetName = urlParams.get('picset') ?? 'random';
+    const currentSet = [];
+    let currentSetIndex = -1;
+
+    const audio = {
+        'like': new Audio('/media/audio/like.mp3'),
+        'unlike': new Audio('/media/audio/unlike.mp3'),
+        'fav': new Audio('/media/audio/fav.mp3')
+    }
+
+    let currentPictureData = {
+        id: 0,
+        isFav: false,
+        downvoted: false,
+        upvoted: false
+    };
+
+    // --- DOM Elements ---
+    const imgElement = document.getElementById('display-image');
+    const authorText = document.getElementById('meta-author');
+
+    const btnUp = document.getElementById('btnUp');
+    const btnDown = document.getElementById('btnDown');
+    const btnFav = document.getElementById('btnFav');
+
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    // Modals
+    const infoModal = document.getElementById('infoModal');
+    const aboutModal = document.getElementById('aboutModal');
+    const favModal = document.getElementById('favModal');
+    const sourceLink =  document.getElementById('modal-link');
+
+    // --- 1. Logic: Loading & History ---
+
+    function isTouchScreen() {
+        return 'ontouchstart' in document.documentElement;
+    }
+
+    async function init() {
+        userId = localStorage.getItem('userId');
+        userData = null;
+        if (userId) {
+            const response = await fetch('/user', {
+                method: 'GET',
+                headers: {
+                    'uid': userId
+                }
+            });
+
+            if (!response.ok) {
+                console.warn(`User '${userId}' is not valid. Creating new one.`);
+                userId = null;
+            } else {
+                userData = await response.json();
+            }
         }
 
-        let currentPictureData = {
-            id: 0,
-            isFav: false,
-            downvoted: false,
-            upvoted: false
-        };
-
-        // --- DOM Elements ---
-        const imgElement = document.getElementById('display-image');
-        const authorText = document.getElementById('meta-author');
-        
-        const btnUp = document.getElementById('btnUp');
-        const btnDown = document.getElementById('btnDown');
-        const btnFav = document.getElementById('btnFav');
-
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-        
-        // Modals
-        const infoModal = document.getElementById('infoModal');
-        const aboutModal = document.getElementById('aboutModal');
-        const favModal = document.getElementById('favModal');
-        const sourceLink =  document.getElementById('modal-link');
-
-        // --- 1. Logic: Loading & History ---
-
-        function isTouchScreen() {
-            return 'ontouchstart' in document.documentElement;
-        }
-        
-        async function init() {
-            userId = localStorage.getItem('userId');
-            userData = null;
-            if (userId) {
+        if (!userId) {
+            let retries = 5;
+            while (retries-- > 0) {
                 const response = await fetch('/user', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    userData = await response.json();
+                    userId = userData.id;
+                    localStorage.setItem('userId', userId);
+                    break;
+                } else {
+                    userId = null;
+                }
+            }
+        }
+
+        if (userId) {
+            if (currentSetName !== 'random') {
+                const response = await fetch(`/picture/set/${currentSetName}`, {
                     method: 'GET',
                     headers: {
                         'uid': userId
                     }
                 });
-                
-                if (!response.ok) {
-                    console.warn(`User '${userId}' is not valid. Creating new one.`);
-                    userId = null;
-                } else {
-                    userData = await response.json();
+
+                if (response.ok) {
+                    currentSet.length = 0;
+                    const set = await response.json();
+                    currentSet.push(...set);
+                    currentSetIndex = 0;
                 }
             }
 
-            if (!userId) {
-                let retries = 5;
-                while (retries-- > 0) {
-                    const response = await fetch('/user', {
-                        method: 'POST'
-                    });
+            await initUi(userId, userData);
+            await updateFavorites(userData?.favs);
+            await loadNewImage();
+            ///playCarrousel(30);
+        } else {
+            window.location.href = 'error.html?code=4040'
+            return false;
+        }
+    }
 
-                    if (response.ok) {
-                        userData = await response.json();
-                        userId = userData.id;
-                        localStorage.setItem('userId', userId);
-                        break;
-                    } else {
-                        userId = null;
-                    }
+    async function initUi(uid, userData) {
+        if (!userData) {
+            const response = await fetch('/user', {
+                method: 'GET',
+                headers: {
+                    'uid': uid
                 }
-            }
+            });
 
-            if (userId) {
-                await initUi(userId, userData);
-                await updateFavorites(userData?.favs);
-                await loadNewImage();
-                ///playCarrousel(30);
-            } else {
-                window.location.href = 'error.html?code=4040'
-                return false;
+            if (response.ok) {
+                userData = await response.json();
             }
         }
-        
-        async function initUi(uid, userData) {
-            if (!userData) {
-                const response = await fetch('/user', {
+
+        if (userData?.appInfo) {
+            updateLabelText('menu-favs-label', userData.appInfo.favsLabel);
+            updateLabelText('menu-top-label', userData.appInfo.topRatedLabel);
+            updateLabelText('menu-low-label', userData.appInfo.lowRatedLabel);
+
+            updateLabelText('app-name-label', userData.appInfo.appName);
+            updateLabelText('app-desc-label', userData.appInfo.appDescription);
+            updateLabelText('app-version-label', userData.appInfo.appVersion);
+            updateLabelText('app-developer-label', userData.appInfo.developer);
+        }
+
+        if (isTouchScreen()) {
+            document.getElementById('vote-panel').style.display = 'none';
+        }
+    }
+
+    function updateLabelText(id, text) {
+        const e = document.getElementById(id);
+        e.textContent = text || e.textContent;
+    }
+
+    function show(id) {
+        const e = document.getElementById(id);
+        e.style.display = 'inline';
+    }
+
+    function hide(id) {
+        const e = document.getElementById(id);
+        e.style.display = 'none';
+    }
+
+    async function preload(count)
+    {
+        let max = 30;
+
+        console.log(`Preloading ${count} images`);
+        for (let c = 0; c < count; c++) {
+            const data = await renderImage(null, false, false);
+            historyStack.push({...data});
+        }
+
+        if (historyStack.length > max)
+        {
+            const i = historyStack.length - max;
+            const removed = historyStack.splice(0, i);
+            removed.forEach(i => {
+                if (i.blobUrl) {
+                    URL.revokeObjectURL(i.blobUrl);
+                    console.debug(`Removed ${i.blobUrl}`);
+                }
+            });
+            historyIndex = historyIndex - i;
+            console.log(`History too big, removed ${i} items at the beginning, new index is ${historyIndex}, history lenght ${historyStack.length}`);
+        }
+    }
+
+    async function loadNewImage(displaySpinner) {
+        const maxPreloadCount = 5;
+        const preloadTriggerIndex = historyStack.length - 3;
+
+        // Check if we can just move forward in history
+        if (historyIndex < historyStack.length - 1) {
+            historyIndex++;
+            console.log("Rendering image from history index:" + historyIndex);
+            currentPictureData = historyStack[historyIndex];
+            await renderImage(currentPictureData);
+
+            if (historyIndex === preloadTriggerIndex) {
+                const ignored = preload(maxPreloadCount);
+            }
+
+            return;
+        }
+
+        // Fetch new from API
+        if (!(displaySpinner === false))
+            updateUIState(true); // set loading state
+
+        console.log("Rendering image from server");
+        const data = await renderImage(null, displaySpinner);
+        // Add to history
+        historyStack.push({...data});
+        historyIndex++;
+        currentPictureData = historyStack[historyIndex];
+
+        const ignored = preload(maxPreloadCount);
+
+        updateUIState(false);
+    }
+
+    function goBack() {
+        if (historyIndex > 0) {
+            historyIndex--;
+            currentPictureData = historyStack[historyIndex];
+            renderImage(currentPictureData);
+        }
+    }
+
+    async function renderImage(data, displaySpinner = true, render = true) {
+        if (render && (!(displaySpinner === false)))
+            updateUIState(true); // show loading spinner
+
+        let response = null;
+        const token = data?.token ? data.token : Math.floor(Math.random() * 999999999);
+
+        if (!data?.blobUrl) {
+            let retries = 10;
+            while (retries-- > 0) {
+                let imageUrl = `/picture/next?token=${token}`;
+                let picId = data?.id;
+                if (currentSet.length > 0 && currentSetIndex > -1 && currentSetIndex < currentSet.length) {
+                    picId = currentSet[currentSetIndex];
+                    if (++currentSetIndex === currentSet.length)
+                        currentSetIndex = 0;
+                }
+
+                if (picId) {
+                    imageUrl = `/picture/${picId}?token=${data?.token || token}`;
+                }
+
+                response = await fetch(imageUrl, {
                     method: 'GET',
                     headers: {
-                        'uid': uid
+                        'uid': userId
                     }
                 });
-                
+
                 if (response.ok) {
-                    userData = await response.json();
+                    break
                 }
-            }
-            
-            if (userData?.appInfo) {
-                updateLabelText('menu-favs-label', userData.appInfo.favsLabel);
-                updateLabelText('menu-top-label', userData.appInfo.topRatedLabel);
-                updateLabelText('menu-low-label', userData.appInfo.lowRatedLabel);
 
-                updateLabelText('app-name-label', userData.appInfo.appName);
-                updateLabelText('app-desc-label', userData.appInfo.appDescription);
-                updateLabelText('app-version-label', userData.appInfo.appVersion);
-                updateLabelText('app-developer-label', userData.appInfo.developer);
-            }
-            
-            if (isTouchScreen()) {
-                document.getElementById('vote-panel').style.display = 'none';
-            }
-        }
-        
-        function updateLabelText(id, text) {
-            const e = document.getElementById(id);
-            e.textContent = text || e.textContent;
-        }
-
-        function show(id) {
-            const e = document.getElementById(id);
-            e.style.display = 'inline';
-        }
-
-        function hide(id) {
-            const e = document.getElementById(id);
-            e.style.display = 'none';
-        }
-        
-        async function preload(count)
-        {
-            console.log(`Preloading ${count} images`);
-            for (let c = 0; c < count; c++) {
-                const data = await renderImage(null, false, false);
-                historyStack.push({...data});
+                await new Promise(resolve => setTimeout(resolve, 1000))
             }
 
-            const max = 30;
-            if (historyStack.length > max)
-            {
-                const i = historyStack.length - max;
-                const removed = historyStack.splice(0, i);
-                removed.forEach(i => {
-                    if (i.blobUrl) {
-                        URL.revokeObjectURL(i.blobUrl);
-                        console.debug(`Removed ${i.blobUrl}`);
-                    }
-                });
-                historyIndex = historyIndex - i;
-                console.log(`History too big, removed ${i} items at the beginning, new index is ${historyIndex}, history lenght ${historyStack.length}`);
+            if (!response.ok) {
+                return
             }
         }
-        
-        async function loadNewImage(displaySpinner) {
-            const maxPreloadCount = 5;
-            const preloadTriggerIndex = historyStack.length - 3;
-            
-            // Check if we can just move forward in history
-            if (historyIndex < historyStack.length - 1) {
-                historyIndex++;
-                console.log("Rendering image from history index:" + historyIndex);
-                currentPictureData = historyStack[historyIndex];
-                await renderImage(currentPictureData);
-                
-                if (historyIndex === preloadTriggerIndex) {
-                    const ignored = preload(maxPreloadCount);
+
+        const pictureData = {};
+        pictureData.author = data?.author || response?.headers.get('IG_UserName');
+        pictureData.otherUserNames = data?.otherUserNames || response?.headers.get('IG_OtherUserNames');
+        pictureData.userId = data?.userId || response?.headers.get('IG_UserId');
+        pictureData.id = data?.id || response?.headers.get('InternalId');
+        pictureData.isFav = data?.isFav || Number(response?.headers.get('IsFav'));
+        pictureData.upvoted = data?.upvoted || Number(response?.headers.get('Upvoted'));
+        pictureData.downvoted = data?.downvoted || Number(response?.headers.get('Downvoted'));
+        pictureData.token = data?.token || token;
+        pictureData.blobUrl = data?.blobUrl || URL.createObjectURL(await response?.blob());
+        pictureData.sourceUrl = data?.sourceUrl || response?.headers.get('SourceUrl');
+
+        if (render) {
+            imgElement.src = pictureData.blobUrl;
+            authorText.innerText = pictureData.author;
+            let toplabelText = pictureData.author;
+            if (currentSet.length > 0 && currentSetIndex > -1) {
+                const hi = historyIndex > -1 ? historyIndex : 0;
+                let i = hi + currentSetIndex;
+                if (i > currentSet.length) {
+                    // HELP
                 }
-                
-                return;
+                toplabelText = `${toplabelText} [${i}/${currentSet.length}]`
             }
+            updateLabelText('autor-label-top', toplabelText)
+            if (pictureData.otherUserNames?.length)
+                authorText.innerText = `${pictureData.author} [...]`;
+            authorText.href = pictureData.sourceUrl;
+            authorText.target = '_black';
+            imgElement.classList.add('loaded');
 
-            // Fetch new from API
-            if (!(displaySpinner === false))
-                updateUIState(true); // set loading state
-
-            console.log("Rendering image from server");
-            const data = await renderImage(null, displaySpinner);
-            // Add to history
-            historyStack.push({...data});
-            historyIndex++;
-            currentPictureData = historyStack[historyIndex];
-            
-            const ignored = preload(maxPreloadCount);
-
+            // Update UI buttons
             updateUIState(false);
         }
 
-        function goBack() {
-            if (historyIndex > 0) {
-                historyIndex--;
-                currentPictureData = historyStack[historyIndex];
-                renderImage(currentPictureData);
-            }
+        return pictureData
+    }
+
+    function updateUIState(isLoading) {
+        // Reset Vote Buttons
+        if(isLoading) {
+            imgElement.classList.remove('loaded');
+            authorText.innerText = "Loading...";
+            //dimsText.innerText = "...";
+            btnUp.classList.remove('active');
+            btnDown.classList.remove('active');
         }
 
-        async function renderImage(data, displaySpinner = true, render = true) {
-            if (render && (!(displaySpinner === false)))
-                updateUIState(true); // show loading spinner
-            
-            let response = null;
-            const token = data?.token ? data.token : Math.floor(Math.random() * 999999999);
-
-            if (!data?.blobUrl) {
-                let retries = 10;
-                while (retries-- > 0) {
-                    let imageUrl = `/picture/next?token=${token}`;
-                    if (data?.id) {
-                        imageUrl = `/picture/${data?.id}?token=${data.token || token}`;
-                    }
-
-                    response = await fetch(imageUrl, {
-                        method: 'GET',
-                        headers: {
-                            'uid': userId
-                        }
-                    });
-
-                    if (response.ok) {
-                        break
-                    }
-
-                    await new Promise(resolve => setTimeout(resolve, 1000))
-                }
-
-                if (!response.ok) {
-                    return 
-                }
-            }
-            
-            const pictureData = {};
-            pictureData.author = data?.author || response?.headers.get('IG_UserName');
-            pictureData.otherUserNames = data?.otherUserNames || response?.headers.get('IG_OtherUserNames');
-            pictureData.userId = data?.userId || response?.headers.get('IG_UserId');
-            pictureData.id = data?.id || response?.headers.get('InternalId');
-            pictureData.isFav = data?.isFav || Number(response?.headers.get('IsFav'));
-            pictureData.upvoted = data?.upvoted || Number(response?.headers.get('Upvoted'));
-            pictureData.downvoted = data?.downvoted || Number(response?.headers.get('Downvoted'));
-            pictureData.token = data?.token || token;
-            pictureData.blobUrl = data?.blobUrl || URL.createObjectURL(await response?.blob());
-            pictureData.sourceUrl = data?.sourceUrl || response?.headers.get('SourceUrl');
-            
-            if (render) {
-                imgElement.src = pictureData.blobUrl;
-                authorText.innerText = pictureData.author;
-                updateLabelText('autor-label-top', pictureData.author)
-                if (pictureData.otherUserNames?.length)
-                    authorText.innerText = `${pictureData.author} [...]`;
-                authorText.href = pictureData.sourceUrl;
-                authorText.target = '_black';
-                imgElement.classList.add('loaded');
-
-                // Update UI buttons
-                updateUIState(false);
-            }
-
-            return pictureData
+        let currentData = currentPictureData;
+        if (historyIndex >= 0) {
+            currentData = historyStack[historyIndex];
         }
 
-        function updateUIState(isLoading) {
-            // Reset Vote Buttons
-            if(isLoading) {
-                imgElement.classList.remove('loaded');
-                authorText.innerText = "Loading...";
-                //dimsText.innerText = "...";
-                btnUp.classList.remove('active');
-                btnDown.classList.remove('active');
-            }
-
-            let currentData = currentPictureData;
-            if (historyIndex >= 0) {
-                currentData = historyStack[historyIndex];
-            }
-
-            if (currentData.upvoted) {
-                btnUp.classList.add('active');
-                show('emo-up');
-            }
-            else {
-                btnUp.classList.remove('active');
-                hide('emo-up');
-            }
-
-            if (currentData.downvoted) {
-                btnDown.classList.add('active');
-                show('emo-down');
-            }
-            else {
-                btnDown.classList.remove('active');
-                hide('emo-down');
-            }
-            
-            // Favorite Button Status
-            if(currentData.isFav) {
-                btnFav.classList.add('active');
-                show('emo-fav');
-            }
-            else {
-                btnFav.classList.remove('active');
-                hide('emo-fav');
-                
-            }
+        if (currentData.upvoted) {
+            btnUp.classList.add('active');
+            show('emo-up');
+        }
+        else {
+            btnUp.classList.remove('active');
+            hide('emo-up');
         }
 
-        // --- 2. Logic: Favorites ---
+        if (currentData.downvoted) {
+            btnDown.classList.add('active');
+            show('emo-down');
+        }
+        else {
+            btnDown.classList.remove('active');
+            hide('emo-down');
+        }
 
-        async function toggleFavorite() {
-            let currentData = currentPictureData;
-            if (historyIndex >= 0) {
-                currentData = historyStack[historyIndex];
+        // Favorite Button Status
+        if(currentData.isFav) {
+            btnFav.classList.add('active');
+            show('emo-fav');
+        }
+        else {
+            btnFav.classList.remove('active');
+            hide('emo-fav');
+
+        }
+    }
+
+    // --- 2. Logic: Favorites ---
+
+    async function toggleFavorite() {
+        let currentData = currentPictureData;
+        if (historyIndex >= 0) {
+            currentData = historyStack[historyIndex];
+        }
+
+        let method;
+        if (currentData.isFav) {
+            btnFav.classList.remove('active');
+            hide('emo-fav')
+            method = 'DELETE';
+            currentData.isFav = 0;
+        } else {
+            // Add
+            btnFav.classList.add('active');
+            show('emo-fav')
+            method = 'PUT';
+            playAudio('fav');
+            currentData.isFav = 1;
+        }
+
+        currentData.token = Math.floor(Math.random() * 999999999);
+        const response = await fetch(`/picture/${currentData.id}/fav`, {
+            method: method,
+            headers: {
+                'uid': userId
             }
+        });
 
-            let method;
-            if (currentData.isFav) {
-                btnFav.classList.remove('active');
-                hide('emo-fav')
-                method = 'DELETE';
-                currentData.isFav = 0;
-            } else {
-                // Add
-                btnFav.classList.add('active');
-                show('emo-fav')
-                method = 'PUT';
-                playAudio('fav');
-                currentData.isFav = 1;
-            }
+        await updateFavorites(await response.json())
+    }
 
-            currentData.token = Math.floor(Math.random() * 999999999);
-            const response = await fetch(`/picture/${currentData.id}/fav`, {
-                method: method,
+    async function playAudio(audioName)
+    {
+        audio[audioName].position = 0;
+        await audio[audioName].play();
+    }
+
+    async function updateFavorites(favList) {
+        if (!favList) {
+            const response = await fetch('/user/favs', {
+                method: 'GET',
                 headers: {
                     'uid': userId
                 }
             });
-            
-            await updateFavorites(await response.json())
+
+            favList = await response.json();
         }
-        
-        async function playAudio(audioName)
-        {
-            audio[audioName].position = 0;
-            await audio[audioName].play();
+
+        favorites = favList;
+    }
+
+    function renderFavGrid() {
+        renderGrid(favorites, userData?.appInfo?.favsLabel);
+    }
+
+    function renderGrid(renderItems, title) {
+        const grid = document.getElementById('favGrid');
+        const msg = document.getElementById('noFavsMsg');
+        grid.innerHTML = '';
+
+        if (!title) {
+            title = `Total ${renderItems.length}`
         }
-        
-        async function updateFavorites(favList) {
-            if (!favList) {
-                const response = await fetch('/user/favs', {
-                    method: 'GET',
+        else {
+            title = `${title} (${renderItems.length})`
+        }
+        updateLabelText("favModalTitle", title);
+
+        if (renderItems.length === 0) {
+            msg.style.display = 'block';
+            return;
+        }
+
+        msg.style.display = 'none';
+        renderItems.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'fav-item';
+            // Use small thumbnail for grid
+            fetch(`/picture/${item}/thumb`, {headers: { 'uid': userId }})
+                .then(r => r.blob())
+                .then(b => {
+                    const url = URL.createObjectURL(b);
+                    div.innerHTML = `<img src="${url}" alt="Fav">`
+                    div.firstElementChild.onload = () => URL.revokeObjectURL(url);
+                });
+
+            div.onclick = async () => {
+                // Load this favorite into main view
+                const pictureData = await renderImage({id: item});
+                historyIndex = historyIndex + 1;
+                historyStack.splice(historyIndex, 0, {...pictureData});
+                currentPictureData = historyStack[historyIndex];
+                updateUIState(false);
+                closeModal(favModal);
+                closeSidebar();
+            };
+            grid.appendChild(div);
+        });
+    }
+
+    function playCarrousel(delayInSeconds) {
+        setInterval(function() {
+            loadNewImage(false);
+        }, delayInSeconds * 1000);
+    }
+
+    // --- 3. Event Listeners ---
+    document.addEventListener('keydown', async (event) => {
+        if (event.key === 'ArrowLeft' || event.keyCode === 37) {
+            goBack();
+            event.preventDefault();
+        } else if (event.key === 'ArrowRight' || event.keyCode === 39) {
+            await loadNewImage();
+            event.preventDefault();
+        } else if (event.key === 'ArrowDown') {
+            btnDown.click();
+            event.preventDefault();
+        } else if (event.key === 'ArrowUp') {
+            btnUp.click();
+            event.preventDefault();
+        } else if (event.key === 'Escape') {
+            closeModal(infoModal);
+            closeModal(aboutModal);
+            closeModal(favModal)
+        } else if (event.key === 'm' || event.key === 'M') {
+            await showMoreFromSameUser();
+        } else if (event.key === 's' || event.key === 'S') {
+            sourceLink.href = historyStack[historyIndex].sourceUrl;
+            sourceLink.click();
+        } else if (event.key === 'Backspace') {
+            if ((event.ctrlKey || event.metaKey) && event.shiftKey) {
+                const data = historyStack[historyIndex];
+                const response = await fetch(`/picture/${data.id}?token=${data.token}`, {
+                    method: 'DELETE',
                     headers: {
                         'uid': userId
                     }
                 });
 
-                favList = await response.json();
-            }
-            
-            favorites = favList;
-        }
-
-        function renderFavGrid() {
-            renderGrid(favorites, userData?.appInfo?.favsLabel);
-        }
-        
-        function renderGrid(renderItems, title) {
-            const grid = document.getElementById('favGrid');
-            const msg = document.getElementById('noFavsMsg');
-            grid.innerHTML = '';
-            
-            if (!title) {
-                title = `Total ${renderItems.length}`
-            }
-            else {
-                title = `${title} (${renderItems.length})`
-            }
-            updateLabelText("favModalTitle", title);
-            
-            if (renderItems.length === 0) {
-                msg.style.display = 'block';
-                return;
-            }
-            
-            msg.style.display = 'none';
-            renderItems.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'fav-item';
-                // Use small thumbnail for grid
-                fetch(`/picture/${item}/thumb`, {headers: { 'uid': userId }})
-                    .then(r => r.blob())
-                    .then(b => {
-                        const url = URL.createObjectURL(b); 
-                        div.innerHTML = `<img src="${url}" alt="Fav">`
-                        div.firstElementChild.onload = () => URL.revokeObjectURL(url);
-                    });
-                
-                div.onclick = async () => {
-                    // Load this favorite into main view
-                    const pictureData = await renderImage({id: item});
-                    historyIndex = historyIndex + 1;
-                    historyStack.splice(historyIndex, 0, {...pictureData});
-                    currentPictureData = historyStack[historyIndex];
-                    updateUIState(false);
-                    closeModal(favModal);
-                    closeSidebar();
-                };
-                grid.appendChild(div);
-            });
-        }
-        
-        function playCarrousel(delayInSeconds) {
-            setInterval(function() {
-                loadNewImage(false);
-            }, delayInSeconds * 1000);
-        }
-
-        // --- 3. Event Listeners ---
-        document.addEventListener('keydown', async (event) => {
-            if (event.key === 'ArrowLeft' || event.keyCode === 37) {
-                goBack();
-                event.preventDefault();
-            } else if (event.key === 'ArrowRight' || event.keyCode === 39) {
-                await loadNewImage();
-                event.preventDefault();
-            } else if (event.key === 'ArrowDown') {
-                btnDown.click();
-                event.preventDefault();
-            } else if (event.key === 'ArrowUp') {
-                btnUp.click();
-                event.preventDefault();
-            } else if (event.key === 'Escape') {
-                closeModal(infoModal);
-                closeModal(aboutModal);
-                closeModal(favModal)
-            } else if (event.key === 'm' || event.key === 'M') {
-                await showMoreFromSameUser();
-            } else if (event.key === 's' || event.key === 'S') {
-                sourceLink.href = historyStack[historyIndex].sourceUrl;
-                sourceLink.click();
-            } else if (event.key === 'Backspace') {
-                if ((event.ctrlKey || event.metaKey) && event.shiftKey) {
-                    const data = historyStack[historyIndex];
-                    const response = await fetch(`/picture/${data.id}?token=${data.token}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'uid': userId
-                        }
-                    });
-
-                    if (response.ok) {
-                        await loadNewImage();
-                        if (historyIndex > 0) {
-                            historyStack.splice(historyIndex - 1, 1);
-                        }
+                if (response.ok) {
+                    await loadNewImage();
+                    if (historyIndex > 0) {
+                        historyStack.splice(historyIndex - 1, 1);
                     }
                 }
             }
-        });
-        
-        // Voting
-        btnUp.addEventListener('click', (e) => { 
-            e.stopPropagation(); 
-            btnUp.classList.toggle('active');
+        }
+    });
 
-            let currentData = currentPictureData;
-            if (historyIndex >= 0) {
-                currentData = historyStack[historyIndex];
-            }
+    // Voting
+    btnUp.addEventListener('click', (e) => {
+        e.stopPropagation();
+        btnUp.classList.toggle('active');
 
-            hide('emo-down');
-            let method = 'DELETE';
-            currentData.upvoted = 0;
-            currentData.downvoted = 0;
-            if(btnUp.classList.contains('active')) {
-                btnDown.classList.remove('active');
-                show('emo-up');
-                playAudio('like');
-                method = 'PUT';
-                currentData.upvoted = 1;
-            } else {
-                hide('emo-up');
-            }
-            
-            currentData.token = Math.floor(Math.random() * 999999999);
-            fetch(`/picture/${currentData.id}/up`, {
-                method: method,
-                headers: {
-                    'uid': userId
-                }
-            });
-        });
-        btnDown.addEventListener('click', (e) => { 
-            e.stopPropagation(); 
-            btnDown.classList.toggle('active');
+        let currentData = currentPictureData;
+        if (historyIndex >= 0) {
+            currentData = historyStack[historyIndex];
+        }
 
-            let currentData = currentPictureData;
-            if (historyIndex >= 0) {
-                currentData = historyStack[historyIndex];
-            }
-
+        hide('emo-down');
+        let method = 'DELETE';
+        currentData.upvoted = 0;
+        currentData.downvoted = 0;
+        if(btnUp.classList.contains('active')) {
+            btnDown.classList.remove('active');
+            show('emo-up');
+            playAudio('like');
+            method = 'PUT';
+            currentData.upvoted = 1;
+        } else {
             hide('emo-up');
-            let method = 'DELETE';
-            currentData.upvoted = 0;
-            currentData.downvoted = 0;
-            if(btnDown.classList.contains('active')) {
-                show('emo-down');
-                playAudio('unlike');
-                btnUp.classList.remove('active');
-                method = 'PUT';
-                currentData.downvoted = 1;
-            } else {
-                hide('emo-down');
+        }
+
+        currentData.token = Math.floor(Math.random() * 999999999);
+        fetch(`/picture/${currentData.id}/up`, {
+            method: method,
+            headers: {
+                'uid': userId
             }
-
-            currentData.token = Math.floor(Math.random() * 999999999);
-            fetch(`/picture/${currentData.id}/down`, {
-                method: method,
-                headers: {
-                    'uid': userId
-                }
-            })
         });
+    });
+    btnDown.addEventListener('click', (e) => {
+        e.stopPropagation();
+        btnDown.classList.toggle('active');
 
-        // Favorites
-        btnFav.addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(); });
-
-        // Sidebar
-        const hamburgerBtn = document.getElementById('hamburgerBtn');
-        const closeSidebarBtn = document.getElementById('closeSidebar');
-        
-        function openSidebar() { sidebar.classList.add('active'); sidebarOverlay.classList.add('active'); }
-        function closeSidebar() { sidebar.classList.remove('active'); sidebarOverlay.classList.remove('active'); }
-        
-        hamburgerBtn.addEventListener('click', openSidebar);
-        closeSidebarBtn.addEventListener('click', closeSidebar);
-        sidebarOverlay.addEventListener('click', closeSidebar);
-
-        // Theme
-        const menuThemeToggle = document.getElementById('menuThemeToggle');
-        function toggleTheme() {
-            const current = document.documentElement.getAttribute('data-theme');
-            document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+        let currentData = currentPictureData;
+        if (historyIndex >= 0) {
+            currentData = historyStack[historyIndex];
         }
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.setAttribute('data-theme', 'dark');
+
+        hide('emo-up');
+        let method = 'DELETE';
+        currentData.upvoted = 0;
+        currentData.downvoted = 0;
+        if(btnDown.classList.contains('active')) {
+            show('emo-down');
+            playAudio('unlike');
+            btnUp.classList.remove('active');
+            method = 'PUT';
+            currentData.downvoted = 1;
+        } else {
+            hide('emo-down');
         }
-        menuThemeToggle.addEventListener('click', toggleTheme);
 
-        // Modals
-        function openModal(el) { el.style.display = 'flex'; closeSidebar(); }
-        function closeModal(el) { el.style.display = 'none'; }
-
-        async function showMoreFromSameUser() {
-            let currentData = currentPictureData;
-            if (historyIndex >= 0) {
-                currentData = historyStack[historyIndex];
+        currentData.token = Math.floor(Math.random() * 999999999);
+        fetch(`/picture/${currentData.id}/down`, {
+            method: method,
+            headers: {
+                'uid': userId
             }
+        })
+    });
 
-            const setId = currentData.userId;
-            const response = await fetch(`/picture/set/${setId}`, {
-                method: 'GET',
-                headers: {
-                    'uid': userId
-                }
-            });
-            
-            renderGrid(await response.json(), `${currentData.author}`);
-            openModal(favModal);
-            closeModal(infoModal);
+    // Favorites
+    btnFav.addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(); });
+
+    // Sidebar
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const closeSidebarBtn = document.getElementById('closeSidebar');
+
+    function openSidebar() { sidebar.classList.add('active'); sidebarOverlay.classList.add('active'); }
+    function closeSidebar() { sidebar.classList.remove('active'); sidebarOverlay.classList.remove('active'); }
+
+    hamburgerBtn.addEventListener('click', openSidebar);
+    closeSidebarBtn.addEventListener('click', closeSidebar);
+    sidebarOverlay.addEventListener('click', closeSidebar);
+
+    // Theme
+    const menuThemeToggle = document.getElementById('menuThemeToggle');
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
+    menuThemeToggle.addEventListener('click', toggleTheme);
+
+    // Modals
+    function openModal(el) { el.style.display = 'flex'; closeSidebar(); }
+    function closeModal(el) { el.style.display = 'none'; }
+
+    async function showMoreFromSameUser() {
+        let currentData = currentPictureData;
+        if (historyIndex >= 0) {
+            currentData = historyStack[historyIndex];
         }
 
-        // Info Modal
-        document.getElementById('view-more-link').addEventListener('click', async (e) => {
-            e.preventDefault();
-            await showMoreFromSameUser();
-        });
-        
-        document.getElementById('infoBtn').addEventListener('click', () => {
-            if (historyIndex < 0) return;
-            const d = historyStack[historyIndex];
-            document.getElementById('modal-author').innerText = d.author;
-            document.getElementById('modal-other-usernames').innerText = d.otherUserNames;
-            document.getElementById('modal-id').innerText = d.id;
-            sourceLink.href = d.sourceUrl;
-            openModal(infoModal);
-        });
-        document.getElementById('closeInfoModal').addEventListener('click', () => closeModal(infoModal));
-
-        // About Modal
-        document.getElementById('menuAbout').addEventListener('click', () => openModal(aboutModal));
-        document.getElementById('closeAboutModal').addEventListener('click', () => closeModal(aboutModal));
-
-        // Fav Modal
-        document.getElementById('menuFavs').addEventListener('click', () => {
-            renderFavGrid();
-            openModal(favModal);
-        });
-        document.getElementById('menuTop').addEventListener('click', async () => {
-            const response = await fetch(`/picture/toprated`, {
-                method: 'GET',
-                headers: {
-                    'uid': userId
-                }
-            });
-            renderGrid(await response.json(), userData?.appInfo?.topRatedLabel);
-            openModal(favModal);
-        });
-        document.getElementById('menuLow').addEventListener('click', async () => {
-            const response = await fetch(`/picture/lowrated`, {
-                method: 'GET',
-                headers: {
-                    'uid': userId
-                }
-            });
-            renderGrid(await response.json(), userData?.appInfo?.lowRatedLabel);
-            openModal(favModal);
-        });
-        document.getElementById('closeFavModal').addEventListener('click', () => closeModal(favModal));
-
-        // Click Outside Modals
-        window.addEventListener('click', (e) => {
-            if (e.target == infoModal) closeModal(infoModal);
-            if (e.target == aboutModal) closeModal(aboutModal);
-            if (e.target == favModal) closeModal(favModal);
-        });
-
-        if (!isTouchScreen()) {
-            imgElement.addEventListener("click", handleInput);
-        }
-        function handleInput(e) {
-            let clientX;
-
-            // Check if it's a touch or mouse event
-            if (e.touches) {
-                clientX = e.touches[0].clientX;
-            } else {
-                clientX = e.clientX;
+        const setId = currentData.userId;
+        const response = await fetch(`/picture/set/${setId}`, {
+            method: 'GET',
+            headers: {
+                'uid': userId
             }
-
-            const screenWidth = window.innerWidth;
-
-            if (clientX < screenWidth / 2) {
-                goBack();
-            } else {
-                loadNewImage();
-            }
-        }
-        
-        document.addEventListener("DOMContentLoaded", function() {
-            // --- Init ---
-            init();
         });
-        
-    </script>
 
-    <script>
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let touchEndX = 0;
-        let touchEndY = 0;
+        renderGrid(await response.json(), `${currentData.author}`);
+        openModal(favModal);
+        closeModal(infoModal);
+    }
 
-        const body = document.body;
+    // Info Modal
+    document.getElementById('view-more-link').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await showMoreFromSameUser();
+    });
 
-        if (isTouchScreen()) {
-            document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById('infoBtn').addEventListener('click', () => {
+        if (historyIndex < 0) return;
+        const d = historyStack[historyIndex];
+        document.getElementById('modal-author').innerText = d.author;
+        document.getElementById('modal-other-usernames').innerText = d.otherUserNames;
+        document.getElementById('modal-id').innerText = d.id;
+        sourceLink.href = d.sourceUrl;
+        openModal(infoModal);
+    });
+    document.getElementById('closeInfoModal').addEventListener('click', () => closeModal(infoModal));
 
-                // Listen for touch start
-                imgElement.addEventListener('touchstart', function (event) {
-                    touchStartX = event.changedTouches[0].screenX;
-                    touchStartY = event.changedTouches[0].screenY;
-                }, false);
+    // About Modal
+    document.getElementById('menuAbout').addEventListener('click', () => openModal(aboutModal));
+    document.getElementById('closeAboutModal').addEventListener('click', () => closeModal(aboutModal));
 
-                // Listen for touch end
-                imgElement.addEventListener('touchend', function (event) {
-                    touchEndX = event.changedTouches[0].screenX;
-                    touchEndY = event.changedTouches[0].screenY;
-                    handleGesture();
-                }, false);
+    // Fav Modal
+    document.getElementById('menuFavs').addEventListener('click', () => {
+        renderFavGrid();
+        openModal(favModal);
+    });
+    document.getElementById('menuTop').addEventListener('click', async () => {
+        const response = await fetch(`/picture/toprated`, {
+            method: 'GET',
+            headers: {
+                'uid': userId
+            }
+        });
+        renderGrid(await response.json(), userData?.appInfo?.topRatedLabel);
+        openModal(favModal);
+    });
+    document.getElementById('menuLow').addEventListener('click', async () => {
+        const response = await fetch(`/picture/lowrated`, {
+            method: 'GET',
+            headers: {
+                'uid': userId
+            }
+        });
+        renderGrid(await response.json(), userData?.appInfo?.lowRatedLabel);
+        openModal(favModal);
+    });
+    document.getElementById('closeFavModal').addEventListener('click', () => closeModal(favModal));
 
-                imgElement.addEventListener('dblclick', function () {
-                    authorText.click();
-                });
-            });
+    // Click Outside Modals
+    window.addEventListener('click', (e) => {
+        if (e.target == infoModal) closeModal(infoModal);
+        if (e.target == aboutModal) closeModal(aboutModal);
+        if (e.target == favModal) closeModal(favModal);
+    });
 
-            let pressTimer;
-            const holdDuration = 600; // milliseconds for a long press
+    if (!isTouchScreen()) {
+        imgElement.addEventListener("click", handleInput);
+    }
+    function handleInput(e) {
+        let clientX;
 
-            imgElement.addEventListener('touchstart', (event) => {
-                event.preventDefault();
-                pressTimer = setTimeout(() => {
-                    toggleFavorite();
-                }, holdDuration);
-            });
-
-            imgElement.addEventListener('touchend', () => clearTimeout(pressTimer));
-            imgElement.addEventListener('touchcancel', () => clearTimeout(pressTimer));
+        // Check if it's a touch or mouse event
+        if (e.touches) {
+            clientX = e.touches[0].clientX;
+        } else {
+            clientX = e.clientX;
         }
 
-        function handleGesture() {
-            const xDiff = touchEndX - touchStartX;
-            const yDiff = touchEndY - touchStartY;
+        const screenWidth = window.innerWidth;
 
-            // Threshold to consider it a swipe (prevent accidental taps)
-            const threshold = 55;
+        if (clientX < screenWidth / 2) {
+            goBack();
+        } else {
+            loadNewImage();
+        }
+    }
 
-            if (Math.abs(xDiff) > Math.abs(yDiff)) {
-                // Horizontal Swipe (Left or Right)
-                if (Math.abs(xDiff) > threshold) {
-                    if (xDiff > 0) {
-                        actionRight();
-                    } else {
-                        actionLeft();
-                    }
+    document.addEventListener("DOMContentLoaded", function() {
+        // --- Init ---
+        init();
+    });
+
+</script>
+
+<script>
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
+    const body = document.body;
+
+    if (isTouchScreen()) {
+        document.addEventListener("DOMContentLoaded", () => {
+
+            // Listen for touch start
+            imgElement.addEventListener('touchstart', function (event) {
+                touchStartX = event.changedTouches[0].screenX;
+                touchStartY = event.changedTouches[0].screenY;
+            }, false);
+
+            // Listen for touch end
+            imgElement.addEventListener('touchend', function (event) {
+                touchEndX = event.changedTouches[0].screenX;
+                touchEndY = event.changedTouches[0].screenY;
+                handleGesture();
+            }, false);
+
+            imgElement.addEventListener('dblclick', function () {
+                authorText.click();
+            });
+        });
+
+        let pressTimer;
+        const holdDuration = 600; // milliseconds for a long press
+
+        imgElement.addEventListener('touchstart', (event) => {
+            event.preventDefault();
+            pressTimer = setTimeout(() => {
+                toggleFavorite();
+            }, holdDuration);
+        });
+
+        imgElement.addEventListener('touchend', () => clearTimeout(pressTimer));
+        imgElement.addEventListener('touchcancel', () => clearTimeout(pressTimer));
+    }
+
+    function handleGesture() {
+        const xDiff = touchEndX - touchStartX;
+        const yDiff = touchEndY - touchStartY;
+
+        // Threshold to consider it a swipe (prevent accidental taps)
+        const threshold = 55;
+
+        if (Math.abs(xDiff) > Math.abs(yDiff)) {
+            // Horizontal Swipe (Left or Right)
+            if (Math.abs(xDiff) > threshold) {
+                if (xDiff > 0) {
+                    actionRight();
+                } else {
+                    actionLeft();
                 }
-            } else {
-                // Vertical Swipe (Up or Down)
-                if (Math.abs(yDiff) > threshold) {
-                    if (yDiff > 0) {
-                        actionDown();
-                    } else {
-                        actionUp();
-                    }
+            }
+        } else {
+            // Vertical Swipe (Up or Down)
+            if (Math.abs(yDiff) > threshold) {
+                if (yDiff > 0) {
+                    actionDown();
+                } else {
+                    actionUp();
                 }
             }
         }
+    }
 
-        // --- ACTIONS ---
+    // --- ACTIONS ---
 
-        // 1. Swipe Up
-        const actionUp = () => loadNewImage();
-        // 2. Swipe Down
-        const actionDown = () =>  goBack();
+    // 1. Swipe Up
+    const actionUp = () => loadNewImage();
+    // 2. Swipe Down
+    const actionDown = () =>  goBack();
 
-        // 3. Swipe Left: Dislike
-        const actionLeft = () => {
-            btnDown.click();
-        }
-        // 4. Swipe Right: Like
-        const actionRight = () => {
-            btnUp.click();
-        }
-    </script>
+    // 3. Swipe Left: Dislike
+    const actionLeft = () => {
+        btnDown.click();
+    }
+    // 4. Swipe Right: Like
+    const actionRight = () => {
+        btnUp.click();
+    }
+</script>
 </body>
 </html>
