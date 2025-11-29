@@ -517,14 +517,21 @@
             const grid = document.getElementById('favGrid');
             const msg = document.getElementById('noFavsMsg');
             grid.innerHTML = '';
-
+            
+            if (!title) {
+                title = `Total ${renderItems.length}`
+            }
+            else {
+                title = `${title} (${renderItems.length})`
+            }
+            updateLabelText("favModalTitle", title);
+            
             if (renderItems.length === 0) {
                 msg.style.display = 'block';
                 return;
             }
-            msg.style.display = 'none';
             
-            updateLabelText("favModalTitle", title)
+            msg.style.display = 'none';
             renderItems.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'fav-item';
@@ -707,8 +714,7 @@
                 }
             });
             
-            const data = await response.json();
-            renderGrid(data, `${currentData.author} (${data.length})`);
+            renderGrid(await response.json(), `${currentData.author}`);
             openModal(favModal);
             closeModal(infoModal);
         }
@@ -878,20 +884,10 @@
         // 3. Swipe Left: Dislike
         const actionLeft = () => {
             btnDown.click();
-            setTimeout(() => {
-                if (btnDown.classList.contains('active')) {
-                    loadNewImage();
-                }
-            }, 950);
         }
         // 4. Swipe Right: Like
         const actionRight = () => {
             btnUp.click();
-            setTimeout(() => {
-                if (btnUp.classList.contains('active')) {
-                    loadNewImage();
-                }
-            }, 850);
         }
     </script>
 </body>
