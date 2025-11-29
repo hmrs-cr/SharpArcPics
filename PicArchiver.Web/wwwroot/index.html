@@ -155,6 +155,7 @@
     const currentSetName = urlParams.get('picset') ?? 'random';
     const currentSet = [];
     let currentSetIndex = -1;
+    let currentDisplaySetIndex = 0;
 
     const audio = {
         'like': new Audio('/media/audio/like.mp3'),
@@ -327,6 +328,7 @@
     }
 
     async function loadNewImage(displaySpinner) {
+        currentDisplaySetIndex++;
         const maxPreloadCount = 5;
         const preloadTriggerIndex = historyStack.length - 3;
 
@@ -339,6 +341,10 @@
 
             if (historyIndex === preloadTriggerIndex) {
                 const ignored = preload(maxPreloadCount);
+            }
+
+            if (currentSet.length > 0 && currentDisplaySetIndex >= currentSet.length) {
+                currentDisplaySetIndex = 0;
             }
 
             return;
@@ -363,8 +369,20 @@
     function goBack() {
         if (historyIndex > 0) {
             historyIndex--;
+            
+            if (currentDisplaySetIndex === 0) {
+                currentDisplaySetIndex = currentSet.length;
+            } else if (currentDisplaySetIndex === 1) {
+                currentDisplaySetIndex = currentSet.length + 1;
+            }
+            
+            currentDisplaySetIndex--;
             currentPictureData = historyStack[historyIndex];
             renderImage(currentPictureData);
+            
+            if (currentSet.length > 0 && currentDisplaySetIndex <= 1) {
+               //currentDisplaySetIndex = currentSet.length - 1;
+            }
         }
     }
 
@@ -426,12 +444,7 @@
             authorText.innerText = pictureData.author;
             let toplabelText = pictureData.author;
             if (currentSet.length > 0 && currentSetIndex > -1) {
-                const hi = historyIndex > -1 ? historyIndex : 0;
-                let i = hi + currentSetIndex;
-                if (i > currentSet.length) {
-                    // HELP
-                }
-                toplabelText = `${toplabelText} [${i}/${currentSet.length}]`
+                toplabelText = `${toplabelText} [${currentDisplaySetIndex}/${currentSet.length}]`
             }
             updateLabelText('autor-label-top', toplabelText)
             if (pictureData.otherUserNames?.length)
@@ -548,10 +561,10 @@
     }
 
     function renderFavGrid() {
-        renderGrid(favorites, userData?.appInfo?.favsLabel);
+        renderGrid(favorites, userData?.appInfo?.favsLabel, 'favorites');
     }
 
-    function renderGrid(renderItems, title) {
+    function renderGrid(renderItems, title, setId) {
         const grid = document.getElementById('favGrid');
         const msg = document.getElementById('noFavsMsg');
         grid.innerHTML = '';
@@ -570,7 +583,7 @@
         }
 
         msg.style.display = 'none';
-        renderItems.forEach(item => {
+        renderItems.forEach((item, i) => {
             const div = document.createElement('div');
             div.className = 'fav-item';
             // Use small thumbnail for grid
@@ -578,12 +591,11 @@
                 .then(r => r.blob())
                 .then(b => {
                     const url = URL.createObjectURL(b);
-                    div.innerHTML = `<img src="${url}" alt="Fav">`
+                    div.innerHTML = `<img data-index="${i}" src="${url}" alt="Fav">`
                     div.firstElementChild.onload = () => URL.revokeObjectURL(url);
                 });
 
             div.onclick = async () => {
-                // Load this favorite into main view
                 const pictureData = await renderImage({id: item});
                 historyIndex = historyIndex + 1;
                 historyStack.splice(historyIndex, 0, {...pictureData});
@@ -621,7 +633,7 @@
             closeModal(aboutModal);
             closeModal(favModal)
         } else if (event.key === 'm' || event.key === 'M') {
-            await showMoreFromSameUser();
+            await showMoreFromSameUser(event.ctrlKey);
         } else if (event.key === 's' || event.key === 'S') {
             sourceLink.href = historyStack[historyIndex].sourceUrl;
             sourceLink.click();
@@ -738,13 +750,18 @@
     function openModal(el) { el.style.display = 'flex'; closeSidebar(); }
     function closeModal(el) { el.style.display = 'none'; }
 
-    async function showMoreFromSameUser() {
+    async function showMoreFromSameUser(isPicSet) {
         let currentData = currentPictureData;
         if (historyIndex >= 0) {
             currentData = historyStack[historyIndex];
         }
 
         const setId = currentData.userId;
+        if (isPicSet) {
+            window.location.href = `/?picset=${setId}`;
+            return;
+        }
+        
         const response = await fetch(`/picture/set/${setId}`, {
             method: 'GET',
             headers: {
@@ -752,7 +769,7 @@
             }
         });
 
-        renderGrid(await response.json(), `${currentData.author}`);
+        renderGrid(await response.json(), `${currentData.author}`, setId);
         openModal(favModal);
         closeModal(infoModal);
     }
@@ -790,7 +807,7 @@
                 'uid': userId
             }
         });
-        renderGrid(await response.json(), userData?.appInfo?.topRatedLabel);
+        renderGrid(await response.json(), userData?.appInfo?.topRatedLabel, 'toprated');
         openModal(favModal);
     });
     document.getElementById('menuLow').addEventListener('click', async () => {
@@ -800,7 +817,7 @@
                 'uid': userId
             }
         });
-        renderGrid(await response.json(), userData?.appInfo?.lowRatedLabel);
+        renderGrid(await response.json(), userData?.appInfo?.lowRatedLabel, 'lowrated');
         openModal(favModal);
     });
     document.getElementById('closeFavModal').addEventListener('click', () => closeModal(favModal));
