@@ -19,6 +19,8 @@ public class UserData
     public ICollection<string>? Favs { get; init; }
     
     public required AppInfo AppInfo { get; init; }
+    
+    public bool IsAdmin => HasRoles("Admin");
 
     public static UserData Create(Guid userId, PictureProvidersConfig config, ICollection<string>? favs = null) => new()
     {
@@ -36,7 +38,7 @@ public class UserData
         }
     };
 
-    public bool HasRoles(IEnumerable<string> roles)
+    public bool HasRoles(params IEnumerable<string> roles)
     {
         // No roles implement for now.
         // TODO: Implement roles.

@@ -182,6 +182,16 @@ public class RedisPictureService : IPictureService
         return result;
     }
 
+    public Task<ICollection<string>> GetDeletedIds()
+    {
+        return Task.FromResult<ICollection<string>>([]);
+    }
+
+    public Task<ICollection<string>> GetIncomingIds()
+    {
+        return Task.FromResult<ICollection<string>>([]);
+    }
+
     public async Task<bool> DeletePicture(ulong pictureId)
     {
         var pictureDb = await this.redis.GetPictureDatabaseAsync(pictureId);
