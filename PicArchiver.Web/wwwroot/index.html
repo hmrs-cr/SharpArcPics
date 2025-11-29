@@ -19,9 +19,11 @@
         </div>
     </div>
     <ul class="menu-list">
-        <li class="menu-item" id="menuAbout">
-            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-            About & Contact
+        <li class="menu-item" id="menuRandom">
+            <svg viewBox="0 0 48 48">
+                <path d="M8 0L0 6V8H1V15H4V10H7V15H15V8H16V6L14 4.5V1H11V2.25L8 0ZM9 10H12V13H9V10Z" />
+            </svg>
+            Random
         </li>
         <li class="menu-item" id="menuFavs">
             <!-- Heart Icon -->
@@ -37,6 +39,10 @@
             <!-- Heart Icon -->
             <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             <span id="menu-low-label">Low Rated</span>
+        </li>
+        <li class="menu-item" id="menuAbout">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            About & Contact
         </li>
     </ul>
     <div class="menu-item theme-row" id="menuThemeToggle">
@@ -153,6 +159,7 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const currentSetName = urlParams.get('picset') ?? 'random';
+    const curentPicId = urlParams.get('picid') ?? '';
     const currentSet = [];
     let currentSetIndex = -1;
     let currentDisplaySetIndex = 0;
@@ -242,6 +249,13 @@
                 if (response.ok) {
                     currentSet.length = 0;
                     const set = await response.json();
+                    if (curentPicId) {
+                        const index = set.indexOf(curentPicId);
+                        if (index > -1) {
+                            set.splice(index, 1);
+                            currentSet.push(curentPicId);
+                        }
+                    }
                     currentSet.push(...set);
                     currentSetIndex = 0;
                 }
@@ -561,7 +575,7 @@
     }
 
     function renderFavGrid() {
-        renderGrid(favorites, userData?.appInfo?.favsLabel, 'favorites');
+        renderGrid(favorites, userData?.appInfo?.favsLabel, 'my-favs');
     }
 
     function renderGrid(renderItems, title, setId) {
@@ -596,13 +610,9 @@
                 });
 
             div.onclick = async () => {
-                const pictureData = await renderImage({id: item});
-                historyIndex = historyIndex + 1;
-                historyStack.splice(historyIndex, 0, {...pictureData});
-                currentPictureData = historyStack[historyIndex];
-                updateUIState(false);
                 closeModal(favModal);
                 closeSidebar();
+                window.location.href = `/?picset=${setId}&picid=${item}`;
             };
             grid.appendChild(div);
         });
@@ -654,6 +664,8 @@
                     }
                 }
             }
+        } else if (event.key === 'h' || event.key === 'H') {
+            window.location.href = '/';
         }
     });
 
@@ -795,13 +807,14 @@
     document.getElementById('menuAbout').addEventListener('click', () => openModal(aboutModal));
     document.getElementById('closeAboutModal').addEventListener('click', () => closeModal(aboutModal));
 
+    document.getElementById('menuRandom').addEventListener('click', () => window.location.href = '/');
     // Fav Modal
     document.getElementById('menuFavs').addEventListener('click', () => {
         renderFavGrid();
         openModal(favModal);
     });
     document.getElementById('menuTop').addEventListener('click', async () => {
-        const response = await fetch(`/picture/toprated`, {
+        const response = await fetch(`/picture/set/toprated`, {
             method: 'GET',
             headers: {
                 'uid': userId
@@ -811,7 +824,7 @@
         openModal(favModal);
     });
     document.getElementById('menuLow').addEventListener('click', async () => {
-        const response = await fetch(`/picture/lowrated`, {
+        const response = await fetch(`/picture/set/lowrated`, {
             method: 'GET',
             headers: {
                 'uid': userId

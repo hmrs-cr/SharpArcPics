@@ -15,9 +15,10 @@ internal static class PictureEndpoints
         pictureApi.MapGet("/{pictureId}", GetPictureById).WithName("GetPicture");
         pictureApi.MapDelete("/{pictureId}", DeletePictureById).WithName("DeletePictureById").AddEndpointFilter(ValidRoleFilter.IsAdminUserFilter);
         pictureApi.MapGet("/{pictureId}/thumb", GetPictureThumbnail).WithName("GetPictureThumbnail");
-        pictureApi.MapGet("/toprated", GetTopRatedPictures).WithName("GetTopRatedPictures");
-        pictureApi.MapGet("/lowrated", GetLowRatedPictures).WithName("GetLowRatedPictures");
-        pictureApi.Map("/set/{setId}", GetImageSet).WithName("GetImageSet");
+        pictureApi.MapGet("/set/toprated", GetTopRatedPictures).WithName("GetTopRatedPictures");
+        pictureApi.MapGet("/set/lowrated", GetLowRatedPictures).WithName("GetLowRatedPictures");
+        pictureApi.MapGet("/set/my-favs", GetMyFavorites).WithName("GetMyFavoritesSet").AddEndpointFilter<ValidUserFilter>();
+        pictureApi.MapGet("/set/{setId}", GetImageSet).WithName("GetImageSet");
 
         pictureApi.MapPut("/{pictureId}/up", UpvotePicture).WithName("UpvotePicture");
         pictureApi.MapDelete("/{pictureId}/up", UpvotePictureRemove).WithName("UpvotePictureRemove");
@@ -29,6 +30,11 @@ internal static class PictureEndpoints
         pictureApi.MapDelete("/{pictureId}/fav", FavPictuReremove).WithName("FavPictuReremove");
 
         return routeBuilder;
+    }
+    
+    private static async Task<IResult> GetMyFavorites(IUserService userService)
+    {
+        return Results.Ok(await userService.GetUserFavorites(Guid.Empty));
     }
     
     private static async Task<IResult> GetImageSet(IPictureService pictureService, ulong setId)
@@ -114,7 +120,6 @@ internal static class PictureEndpoints
         {
             return Results.NotFound();
         }
-
 
         foreach (var metadata in pictureData.Metadata)
         {
