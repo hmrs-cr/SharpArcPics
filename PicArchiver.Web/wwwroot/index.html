@@ -110,13 +110,10 @@
                 <span class="detail-val" id="modal-other-usernames">...</span>
             </div>
             <div class="detail-row">
-                <span class="detail-label">Aspect Ratio</span>
-                <span class="detail-val" id="modal-aspect">...</span>
-            </div>
-            <div class="detail-row">
                 <span class="detail-label">Image ID</span>
                 <span class="detail-val" id="modal-id">...</span>
             </div>
+            <a href="#" id="view-more-link" class="detail-link">View more...</a>
             <a href="#" id="modal-link" class="detail-link" target="_blank">View on Source</a>
         </div>
     </div>
@@ -156,7 +153,8 @@
         
         const audio = {
             'like': new Audio('/media/audio/like.mp3'),
-            'unlike': new Audio('/media/audio/like-remove.mp3')
+            'unlike': new Audio('/media/audio/unlike.mp3'),
+            'fav': new Audio('/media/audio/fav.mp3')
         }
 
         let currentPictureData = {
@@ -181,6 +179,7 @@
         const infoModal = document.getElementById('infoModal');
         const aboutModal = document.getElementById('aboutModal');
         const favModal = document.getElementById('favModal');
+        const sourceLink =  document.getElementById('modal-link');
 
         // --- 1. Logic: Loading & History ---
 
@@ -283,12 +282,13 @@
         
         async function preload(count)
         {
+            console.log(`Preloading ${count} images`);
             for (let c = 0; c < count; c++) {
                 const data = await renderImage(null, false, false);
                 historyStack.push({...data});
             }
 
-            const max = 48;
+            const max = 30;
             if (historyStack.length > max)
             {
                 const i = historyStack.length - max;
@@ -300,11 +300,14 @@
                     }
                 });
                 historyIndex = historyIndex - i;
-                console.log(`History too big, removed ${i} items at the beginning, new index is ${historyIndex}`);
+                console.log(`History too big, removed ${i} items at the beginning, new index is ${historyIndex}, history lenght ${historyStack.length}`);
             }
         }
         
         async function loadNewImage(displaySpinner) {
+            const maxPreloadCount = 5;
+            const preloadTriggerIndex = historyStack.length - 3;
+            
             // Check if we can just move forward in history
             if (historyIndex < historyStack.length - 1) {
                 historyIndex++;
@@ -312,8 +315,8 @@
                 currentPictureData = historyStack[historyIndex];
                 await renderImage(currentPictureData);
                 
-                if (historyIndex === historyStack.length - 4) {
-                    const ignored = preload(10);
+                if (historyIndex === preloadTriggerIndex) {
+                    const ignored = preload(maxPreloadCount);
                 }
                 
                 return;
@@ -330,7 +333,7 @@
             historyIndex++;
             currentPictureData = historyStack[historyIndex];
             
-            const ignored = preload(10);
+            const ignored = preload(maxPreloadCount);
 
             updateUIState(false);
         }
@@ -380,6 +383,7 @@
             const pictureData = {};
             pictureData.author = data?.author || response?.headers.get('IG_UserName');
             pictureData.otherUserNames = data?.otherUserNames || response?.headers.get('IG_OtherUserNames');
+            pictureData.userId = data?.userId || response?.headers.get('IG_UserId');
             pictureData.id = data?.id || response?.headers.get('InternalId');
             pictureData.isFav = data?.isFav || Number(response?.headers.get('IsFav'));
             pictureData.upvoted = data?.upvoted || Number(response?.headers.get('Upvoted'));
@@ -462,7 +466,6 @@
             if (currentData.isFav) {
                 btnFav.classList.remove('active');
                 hide('emo-fav')
-                playAudio('unlike');
                 method = 'DELETE';
                 currentData.isFav = 0;
             } else {
@@ -470,7 +473,7 @@
                 btnFav.classList.add('active');
                 show('emo-fav')
                 method = 'PUT';
-                playAudio('like');
+                playAudio('fav');
                 currentData.isFav = 1;
             }
 
@@ -509,8 +512,7 @@
         function renderFavGrid() {
             renderGrid(favorites, userData?.appInfo?.favsLabel);
         }
-
-        function tt(a,b,c) { console.log(a,b,c); }
+        
         function renderGrid(renderItems, title) {
             const grid = document.getElementById('favGrid');
             const msg = document.getElementById('noFavsMsg');
@@ -556,12 +558,12 @@
         }
 
         // --- 3. Event Listeners ---
-        document.addEventListener('keydown', (event) => {
+        document.addEventListener('keydown', async (event) => {
             if (event.key === 'ArrowLeft' || event.keyCode === 37) {
                 goBack();
                 event.preventDefault();
             } else if (event.key === 'ArrowRight' || event.keyCode === 39) {
-                loadNewImage();
+                await loadNewImage();
                 event.preventDefault();
             } else if (event.key === 'ArrowDown') {
                 btnDown.click();
@@ -573,6 +575,28 @@
                 closeModal(infoModal);
                 closeModal(aboutModal);
                 closeModal(favModal)
+            } else if (event.key === 'm' || event.key === 'M') {
+                await showMoreFromSameUser();
+            } else if (event.key === 's' || event.key === 'S') {
+                sourceLink.href = historyStack[historyIndex].sourceUrl;
+                sourceLink.click();
+            } else if (event.key === 'Backspace') {
+                if ((event.ctrlKey || event.metaKey) && event.shiftKey) {
+                    const data = historyStack[historyIndex];
+                    const response = await fetch(`/picture/${data.id}?token=${data.token}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'uid': userId
+                        }
+                    });
+
+                    if (response.ok) {
+                        await loadNewImage();
+                        if (historyIndex > 0) {
+                            historyStack.splice(historyIndex - 1, 1);
+                        }
+                    }
+                }
             }
         });
         
@@ -598,7 +622,6 @@
                 currentData.upvoted = 1;
             } else {
                 hide('emo-up');
-                playAudio('unlike');
             }
             
             currentData.token = Math.floor(Math.random() * 999999999);
@@ -607,7 +630,7 @@
                 headers: {
                     'uid': userId
                 }
-            })
+            });
         });
         btnDown.addEventListener('click', (e) => { 
             e.stopPropagation(); 
@@ -624,13 +647,12 @@
             currentData.downvoted = 0;
             if(btnDown.classList.contains('active')) {
                 show('emo-down');
-                playAudio('like');
+                playAudio('unlike');
                 btnUp.classList.remove('active');
                 method = 'PUT';
                 currentData.downvoted = 1;
             } else {
                 hide('emo-down');
-                playAudio('unlike');
             }
 
             currentData.token = Math.floor(Math.random() * 999999999);
@@ -671,14 +693,39 @@
         function openModal(el) { el.style.display = 'flex'; closeSidebar(); }
         function closeModal(el) { el.style.display = 'none'; }
 
+        async function showMoreFromSameUser() {
+            let currentData = currentPictureData;
+            if (historyIndex >= 0) {
+                currentData = historyStack[historyIndex];
+            }
+
+            const setId = currentData.userId;
+            const response = await fetch(`/picture/set/${setId}`, {
+                method: 'GET',
+                headers: {
+                    'uid': userId
+                }
+            });
+            
+            const data = await response.json();
+            renderGrid(data, `${currentData.author} (${data.length})`);
+            openModal(favModal);
+            closeModal(infoModal);
+        }
+
         // Info Modal
+        document.getElementById('view-more-link').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await showMoreFromSameUser();
+        });
+        
         document.getElementById('infoBtn').addEventListener('click', () => {
             if (historyIndex < 0) return;
             const d = historyStack[historyIndex];
             document.getElementById('modal-author').innerText = d.author;
             document.getElementById('modal-other-usernames').innerText = d.otherUserNames;
             document.getElementById('modal-id').innerText = d.id;
-            document.getElementById('modal-link').href = d.sourceUrl;
+            sourceLink.href = d.sourceUrl;
             openModal(infoModal);
         });
         document.getElementById('closeInfoModal').addEventListener('click', () => closeModal(infoModal));
@@ -780,7 +827,7 @@
             });
 
             let pressTimer;
-            const holdDuration = 500; // milliseconds for a long press
+            const holdDuration = 600; // milliseconds for a long press
 
             imgElement.addEventListener('touchstart', (event) => {
                 event.preventDefault();
@@ -798,7 +845,7 @@
             const yDiff = touchEndY - touchStartY;
 
             // Threshold to consider it a swipe (prevent accidental taps)
-            const threshold = 50;
+            const threshold = 55;
 
             if (Math.abs(xDiff) > Math.abs(yDiff)) {
                 // Horizontal Swipe (Left or Right)
@@ -823,44 +870,29 @@
 
         // --- ACTIONS ---
 
-        // 1. Swipe Up: Floating Heart
-        function actionUp() {
-            btnUp.click();
-        }
+        // 1. Swipe Up
+        const actionUp = () => loadNewImage();
+        // 2. Swipe Down
+        const actionDown = () =>  goBack();
 
-        // 2. Swipe Down: Broken Heart
-        function actionDown() {
+        // 3. Swipe Left: Dislike
+        const actionLeft = () => {
             btnDown.click();
-        }
-
-        // 3. Swipe Left: Change Background Color
-        function actionLeft() {
-            loadNewImage();
-        }
-
-        // 4. Swipe Right: Display Toast Message
-        function actionRight() {
-            goBack();
-        }
-
-        // Helper to spawn emojis
-        function createEmoji(char, animationClass) {
-            const el = document.createElement('div');
-            el.innerText = char;
-            el.classList.add('emoji-anim');
-            el.classList.add(animationClass);
-            document.getElementById('emo-container').appendChild(el);
-
-            // Clean up DOM after animation finishes
             setTimeout(() => {
-                el.remove();
-            }, 1000);
-
-            setTimeout(() => {
-              alert(animationClass);
-            }, 1500);
+                if (btnDown.classList.contains('active')) {
+                    loadNewImage();
+                }
+            }, 950);
         }
-
+        // 4. Swipe Right: Like
+        const actionRight = () => {
+            btnUp.click();
+            setTimeout(() => {
+                if (btnUp.classList.contains('active')) {
+                    loadNewImage();
+                }
+            }, 850);
+        }
     </script>
 </body>
 </html>
