@@ -1,17 +1,21 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using Microsoft.AspNetCore.StaticFiles;
 using PicArchiver.Core.Metadata;
 using PicArchiver.Extensions;
+using StackExchange.Redis;
 
 namespace PicArchiver.Web.Services.RedisServices;
 
 public class RedisPictureService : IPictureService
 {   
+    private static readonly TimeSpan MaxUpdateCountTimespan = TimeSpan.FromMinutes(10);
+    
     private readonly ConcurrentDictionary<string, int> toprated = new();
     private readonly ConcurrentDictionary<string, int> lowrated = new();
 
     private readonly IMetadataProvider metadataProvider;
-    private readonly IRandomProvider randomProvider;
+    private readonly IPictureProvider _pictureProvider;
     private readonly LazyRedis redis;
     private readonly IContentTypeProvider contentTypeProvider;
     private readonly ILogger<RedisPictureService> logger;
@@ -21,15 +25,17 @@ public class RedisPictureService : IPictureService
     private readonly string favsHashKey;
     private readonly string viewsHashKey;
 
+    private DateTimeOffset? _lastUpdateVoteCountTime;
+
     public RedisPictureService(
         IMetadataProvider metadataProvider,
-        IRandomProvider randomProvider,
+        IPictureProvider pictureProvider,
         LazyRedis redis, 
         IContentTypeProvider contentTypeProvider,
         ILogger<RedisPictureService> logger)
     {
         this.metadataProvider = metadataProvider;
-        this.randomProvider = randomProvider;
+        this._pictureProvider = pictureProvider;
         this.redis = redis;
         this.contentTypeProvider = contentTypeProvider;
         this.logger = logger;
@@ -47,7 +53,7 @@ public class RedisPictureService : IPictureService
         var maxRetries = 10;
         while (maxRetries-- > 0)
         {
-            var pictureContextData = await this.randomProvider.GetNextRandomValueAsync();
+            var pictureContextData = await this._pictureProvider.GetNextRandomValueAsync();
             var fullPicturePath = pictureContextData.Key;
             var pictureId = fullPicturePath.ComputeHash();
             var result = await GetPictureData(pictureId, requestUserId, true);
@@ -78,54 +84,149 @@ public class RedisPictureService : IPictureService
         var path = await pictureDb.HashGetAsync("attributes", "path");
         return path;
     }
-    private async Task UpdateVoteCont()
+    
+    private int _isVoteCountUpdating;
+    
+    private async Task UpdateVoteCont(bool force)
     {
-        var db = await this.redis.GetDatabaseAsync();
-        var server = await this.redis.GetServerAsync();
-        var votes = new Dictionary<string, int>();
-        await foreach(var key in server.KeysAsync(pattern: LazyRedis.UserKeyPrefix + $"*:{this.votesHashKey}"))
+        if (Interlocked.CompareExchange(ref _isVoteCountUpdating, 1, 0) == 0)
         {
-            var allvotes = await db.HashGetAllAsync(key);
-            foreach (var vote in allvotes)
+            try
             {
-                if (vote.Value.StartsWith("up|"))
+                if (_lastUpdateVoteCountTime.HasValue && DateTimeOffset.UtcNow - _lastUpdateVoteCountTime.Value <
+                    MaxUpdateCountTimespan)
                 {
-                    var id = vote.Name.ToString();
-                    votes[id] = votes.GetValueOrDefault(id) + 1;
+                    return;
                 }
-                else if (vote.Value.StartsWith("down|"))
+                
+                if ((!toprated.IsEmpty || !lowrated.IsEmpty) && !force)
                 {
-                    var id = vote.Name.ToString();
-                    votes[id] = votes.GetValueOrDefault(id) - 1;
+                    return;
                 }
+
+                var startTimestamp = DateTimeOffset.UtcNow;
+                logger.LogInformation("Starting to update vote count");
+                
+                var db = await this.redis.GetDatabaseAsync();
+                var server = await this.redis.GetServerAsync();
+                var votes = new Dictionary<string, int>();
+                await foreach (var key in server.KeysAsync(pattern: LazyRedis.UserKeyPrefix + $"*:{this.votesHashKey}"))
+                {
+                    var allvotes = await db.HashGetAllAsync(key);
+                    foreach (var vote in allvotes)
+                    {
+                        var id = vote.Name.ToString();
+                        var pictureDb = await this.redis.GetPictureDatabaseAsync(ulong.Parse(id));
+                        var path = await pictureDb.HashGetAsync("attributes", "path");
+                        if (!path.HasValue || !File.Exists(path))
+                        {
+                            _ = db.HashDeleteAsync(key, vote.Name);
+                            continue;
+                        }
+
+                        if (vote.Value.StartsWith("up|"))
+                        {
+                            votes[id] = votes.GetValueOrDefault(id) + 1;
+                        }
+                        else if (vote.Value.StartsWith("down|"))
+                        {
+                            votes[id] = votes.GetValueOrDefault(id) - 1;
+                        }
+                    }
+                }
+
+                toprated.Clear();
+                foreach (var vote in votes.Where(kv => kv.Value > 0).OrderByDescending(kv => kv.Value).Take(100))
+                {
+                    toprated.TryAdd(vote.Key, vote.Value);
+                }
+
+                lowrated.Clear();
+                foreach (var vote in votes.Where(kv => kv.Value < 0).OrderBy(kv => kv.Value).Take(100))
+                {
+                    lowrated.TryAdd(vote.Key, vote.Value);
+                }
+
+                _lastUpdateVoteCountTime = DateTimeOffset.UtcNow;
+                logger.LogInformation("Finished to updating vote count. Total time: {time}", _lastUpdateVoteCountTime - startTimestamp);
             }
-        }
-
-        toprated.Clear();
-        foreach (var vote in votes.Where(kv => kv.Value > 0).OrderByDescending(kv => kv.Value).Take(100))
-        {
-            toprated.TryAdd(vote.Key, vote.Value);
-        }
-
-        lowrated.Clear();
-        foreach (var vote in votes.Where(kv => kv.Value < 0).OrderBy(kv => kv.Value).Take(100))
-        {
-            lowrated.TryAdd(vote.Key, vote.Value);
+            finally
+            {
+                Interlocked.Exchange(ref _isVoteCountUpdating, 0);
+            }
         }
     }
     
     public async Task<ICollection<string>> GetTopRatedPicturesIds()
     {
-        await UpdateVoteCont();
+        await UpdateVoteCont(false);
         return toprated.OrderByDescending(kv => kv.Value).Select(kv => kv.Key).ToList();
     }
     
     public async Task<ICollection<string>> GetLowRatedPicturesIds()
     {
-        await UpdateVoteCont();
+        await UpdateVoteCont(false);
         return lowrated.OrderBy(kv => kv.Value).Select(kv => kv.Key).ToList();
     }
-    
+
+    public async Task<ICollection<string>> GetImageSet(ulong setId)
+    {
+        var result = new List<string>(32);
+        await foreach (var path in _pictureProvider.GetPictureSetPaths(setId).OrderByDescending(p => p))
+        {
+            var pictureId = path.ComputeHash();
+            await SavePicToDbAsync(pictureId, path);
+            result.Add($"{pictureId}");
+        }
+
+        return result;
+    }
+
+    public async Task<bool> DeletePicture(ulong pictureId)
+    {
+        var pictureDb = await this.redis.GetPictureDatabaseAsync(pictureId);
+        var path = await pictureDb.HashGetAsync("attributes", "path");
+        if (path.HasValue)
+        {
+            try
+            {
+                File.Delete(path.ToString());
+                if (File.Exists(path))
+                {
+                    logger.LogWarning("Failed to delete picture {PictureId}: '{path}'", pictureId, path);
+                    return false;
+                }
+                
+                var servers = await this.redis.GetServersAsync();
+                var keysToDelete = new List<RedisKey>();
+                foreach (var server in servers)
+                {
+                    await foreach (var key in server.KeysAsync(pattern: $"{LazyRedis.BasePrefix}:*:{pictureId}:*"))
+                    {
+                        keysToDelete.Add(key);
+                    }
+                }
+                
+                if (keysToDelete.Count > 0)
+                {
+                    var db = await this.redis.GetDatabaseAsync();
+                    await db.KeyDeleteAsync(keysToDelete.ToArray());
+                }
+                
+                _lastUpdateVoteCountTime = DateTimeOffset.MinValue;
+                _ = UpdateVoteCont(true);
+                
+                return true;
+            }
+            catch (Exception e)
+            {
+                logger.LogWarning(e, "Failed to delete picture {PictureId}: '{path}'", pictureId, path);
+            }
+        }
+        
+        return false;
+    }
+
     public async Task<PictureStats?> GetPictureData(ulong pictureId, Guid? requestUserId, bool onlyIfNotViewed = false)
     {
         var pictureDb = await this.redis.GetPictureDatabaseAsync(pictureId);
@@ -147,7 +248,7 @@ public class RedisPictureService : IPictureService
                 if (!views.HasValue)
                 {
                     // My First view
-                    return result;
+                    return this.SetMetadatada(result);
                 }
                 
                 var isFavTask = userDb.HashExistsAsync(this.favsHashKey, pictureKey);
@@ -212,25 +313,30 @@ public class RedisPictureService : IPictureService
             var vote = isUp ? "up" : "down";
             await userDb.HashSetAsync(this.votesHashKey, pictureKey, $"{vote}|{DateTime.UtcNow:s}");
         }
+        
+        _ = UpdateVoteCont(true);
 
         return 1;
     }
 
     private PictureStats SavePicturePath(ulong pictureId, string picturePath, object? contextData = null)
     {
-        _ = SaveToDbAsync(pictureId, picturePath);
+        _ = SavePicToDbAsync(pictureId, picturePath);
         return this.SetMetadatada(new PictureStats(picturePath) { ContextData  = contextData});
-        
-        async Task SaveToDbAsync(ulong picId, string path)
+    }
+    
+    private async Task SavePicToDbAsync(ulong picId, string path, IDatabase? database = null)
+    {
+        var pictureDb = database ?? await this.redis.GetPictureDatabaseAsync(picId);
+        var existingPath = await pictureDb.HashGetAsync("attributes", "path");
+        if (existingPath.HasValue && existingPath.ToString() != path)
         {
-            var pictureDb = await this.redis.GetPictureDatabaseAsync(picId);
-            var existingPath = await pictureDb.HashGetAsync("attributes", "path");
-            if (existingPath.HasValue && existingPath.ToString() != path)
-            {
-                logger.LogWarning("Id collision detected for {id}: '{existingPath}' and {path}", picId, existingPath, path);
-            }
-            
-            await pictureDb.HashSetAsync("attributes", "path", picturePath);
+            logger.LogWarning("Id collision detected for {id}: '{existingPath}' and {path}", picId, existingPath, path);
+        }
+        
+        if (!existingPath.HasValue)
+        {
+            await pictureDb.HashSetAsync("attributes", "path", path);
         }
     }
     
@@ -258,7 +364,7 @@ public class RedisPictureService : IPictureService
 
     private PictureStats SetMetadatada(PictureStats pictureStats)
     {
-        pictureStats.MimeType = this.GetContentType(pictureStats.Ext);
-        return this.metadataProvider.SetMetadata(pictureStats);
+        pictureStats.MimeType ??= this.GetContentType(pictureStats.Ext);
+        return pictureStats.Metadata.Count == 0 ? this.metadataProvider.SetMetadata(pictureStats) : pictureStats;
     }
 }

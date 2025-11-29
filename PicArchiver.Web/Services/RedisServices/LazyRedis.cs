@@ -1,5 +1,6 @@
 using System.Security.Authentication;
 using Microsoft.Extensions.Options;
+using PicArchiver.Web.Endpoints.Filters;
 using StackExchange.Redis;
 using StackExchange.Redis.KeyspaceIsolation;
 
@@ -62,7 +63,7 @@ public class LazyRedis : Lazy<Task<ConnectionMultiplexer>>
     public IDatabase? GetCurrentUserDatabase()
     {
         var httpContext = _httpContextAccessor.HttpContext;
-        if (httpContext?.Items.TryGetValue("UserDb", out var db) == true && db is IDatabase userDb)
+        if (httpContext.GetCurrentUserDb() is { } userDb)
         {
             return userDb;
         }
@@ -100,6 +101,12 @@ public class LazyRedis : Lazy<Task<ConnectionMultiplexer>>
         var redis = this.Value.IsCompletedSuccessfully ? this.Value.Result : await this.Value.ConfigureAwait(false);
         var servers =  redis.GetServers();
         return servers.First();
+    }
+    
+    public async ValueTask<IEnumerable<IServer>> GetServersAsync()
+    {
+        var redis = this.Value.IsCompletedSuccessfully ? this.Value.Result : await this.Value.ConfigureAwait(false);
+        return redis.GetServers();
     }
 }
 

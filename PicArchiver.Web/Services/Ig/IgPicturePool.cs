@@ -4,10 +4,10 @@ using PicArchiver.Commands.IGArchiver;
 
 namespace PicArchiver.Web.Services.Ig;
 
-public class IgRandomPool : IRandomProvider, IDisposable
+public class IgPicturePool : IPictureProvider, IDisposable
 {
     private readonly PictureProvidersConfig _config;
-    private readonly ILogger<IgRandomPool> _logger;
+    private readonly ILogger<IgPicturePool> _logger;
     private readonly Channel<KeyValuePair<string, object?>> _pool;
     private readonly int _minThreshold;
     private readonly int _maxCapacity;
@@ -23,7 +23,7 @@ public class IgRandomPool : IRandomProvider, IDisposable
     private readonly CancellationTokenSource _cts = new CancellationTokenSource();
     private bool _disposed;
     
-    public IgRandomPool(IOptions<PictureProvidersConfig> config, ILogger<IgRandomPool> logger)
+    public IgPicturePool(IOptions<PictureProvidersConfig> config, ILogger<IgPicturePool> logger)
     {
         _config = config.Value;
         _logger = logger;
@@ -52,7 +52,7 @@ public class IgRandomPool : IRandomProvider, IDisposable
         // Signal immediately to perform the initial fill
         _refillSignal.Set();
         
-        logger.LogInformation("IG RamdomProvider started. Pic Path: '{PicturesBasePath}'", _config.PicturesBasePath);
+        logger.LogInformation("IG Provider started. Pic Path: '{PicturesBasePath}'", _config.PicturesBasePath);
     }
 
     /// <summary>
@@ -75,6 +75,21 @@ public class IgRandomPool : IRandomProvider, IDisposable
         }
 
         return value;
+    }
+
+    public async IAsyncEnumerable<string> GetPictureSetPaths(ulong setId)
+    {
+        var setPath = Path.Combine(_config.PicturesBasePath, $"{setId}");
+        if (Directory.Exists(setPath))
+        {
+            foreach (var file in Directory.EnumerateFiles(setPath, "*.*", SearchOption.TopDirectoryOnly))
+            {
+                if (IsValidFilePath(file))
+                {
+                    yield return file;
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -138,9 +153,10 @@ public class IgRandomPool : IRandomProvider, IDisposable
         }
     }
 
-    private bool IsValidFilePath(string val)
+    private bool IsValidFilePath(string fileName)
     {
-        return !val.EndsWith(".mp4", StringComparison.InvariantCultureIgnoreCase);
+        return !fileName.EndsWith(".mp4", StringComparison.InvariantCultureIgnoreCase) &&
+               !File.GetAttributes(fileName).HasFlag(FileAttributes.Hidden);
     }
 
     public void Dispose()

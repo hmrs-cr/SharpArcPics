@@ -2,21 +2,21 @@ using Microsoft.Extensions.Options;
 
 namespace PicArchiver.Web.Services.Picsum;
 
-public class PicsumRamdomProvider : IRandomProvider
+public class PicsumProvider : IPictureProvider
 {
     private readonly string url = "https://picsum.photos/1440/1440";
     
     private readonly IHttpClientFactory _httpClientFactory;
     private string _picFolder;
 
-    public PicsumRamdomProvider(IHttpClientFactory httpClientFactory, IOptions<PictureProvidersConfig> config,
-        ILogger<PicsumRamdomProvider> logger)
+    public PicsumProvider(IHttpClientFactory httpClientFactory, IOptions<PictureProvidersConfig> config,
+        ILogger<PicsumProvider> logger)
     {
         _httpClientFactory = httpClientFactory;
         _picFolder = config.Value.PicturesBasePath;
         Directory.CreateDirectory(_picFolder);
         
-        logger.LogInformation("Picsum RamdomProvider started. Pic Path: '{PicturesBasePath}'", config.Value.PicturesBasePath);
+        logger.LogInformation("Picsum Provider started. Pic Path: '{PicturesBasePath}'", config.Value.PicturesBasePath);
     }
     
     public async ValueTask<KeyValuePair<string, object?>> GetNextRandomValueAsync(CancellationToken ct = default)
@@ -36,5 +36,10 @@ public class PicsumRamdomProvider : IRandomProvider
         await fileStream.FlushAsync(ct);
         
         return KeyValuePair.Create(fullFilePath, (object?)null);
+    }
+
+    public IAsyncEnumerable<string> GetPictureSetPaths(ulong setId)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using PicArchiver.Web.Endpoints.Filters;
 using StackExchange.Redis;
 
 namespace PicArchiver.Web.Services.RedisServices;
@@ -21,8 +22,6 @@ public class RedisUserService : IUserService
         this.config = config.Value;
         this.favsHashKey = $"favs:{metadataProvider.Name}";
     }
-
-    public Task<UserData?> CurrentUserData => GetCurrentUserData();
     
     public async Task<UserData> AddUser(Guid userId)
     {
@@ -62,7 +61,7 @@ public class RedisUserService : IUserService
     public async Task<UserData?> GetCurrentUserData()
     {
         var httpContext = this.httpContextAccessor.HttpContext;
-        if (httpContext?.Items.TryGetValue(nameof(CurrentUserData), out var ud) == true && ud is UserData userData)
+        if (httpContext.GetCurrentUser() is { } userData)
         {
             return userData;
         }
@@ -70,11 +69,13 @@ public class RedisUserService : IUserService
         if (httpContext?.Request.Headers.TryGetValue("uid", out var userId) == true &&
             Guid.TryParse(userId, out var userGuid))
         {
-            httpContext.Items["UserDb"] =  await this.redis.GetUserDatabaseAsync(userGuid);
-            
+            httpContext.SetCurrentUserDb(await this.redis.GetUserDatabaseAsync(userGuid));
             var currentUserData = await GetUserData(Guid.Empty);
-            currentUserData?.Id = userGuid;
-            httpContext.Items[nameof(CurrentUserData)] = currentUserData;
+            if (currentUserData != null)
+            {
+                currentUserData.Id = userGuid;
+                httpContext.SetCurrentUserData(currentUserData);
+            }
             
             return currentUserData;
         }

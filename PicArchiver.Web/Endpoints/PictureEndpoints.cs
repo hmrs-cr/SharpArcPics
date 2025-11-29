@@ -13,9 +13,11 @@ internal static class PictureEndpoints
         
         pictureApi.MapGet("/next", GetRandomPicture).WithName("GetNextPicture");
         pictureApi.MapGet("/{pictureId}", GetPictureById).WithName("GetPicture");
+        pictureApi.MapDelete("/{pictureId}", DeletePictureById).WithName("DeletePictureById").AddEndpointFilter(ValidRoleFilter.IsAdminUserFilter);
         pictureApi.MapGet("/{pictureId}/thumb", GetPictureThumbnail).WithName("GetPictureThumbnail");
         pictureApi.MapGet("/toprated", GetTopRatedPictures).WithName("GetTopRatedPictures");
         pictureApi.MapGet("/lowrated", GetLowRatedPictures).WithName("GetLowRatedPictures");
+        pictureApi.Map("/set/{setId}", GetImageSet).WithName("GetImageSet");
 
         pictureApi.MapPut("/{pictureId}/up", UpvotePicture).WithName("UpvotePicture");
         pictureApi.MapDelete("/{pictureId}/up", UpvotePictureRemove).WithName("UpvotePictureRemove");
@@ -27,6 +29,12 @@ internal static class PictureEndpoints
         pictureApi.MapDelete("/{pictureId}/fav", FavPictuReremove).WithName("FavPictuReremove");
 
         return routeBuilder;
+    }
+    
+    private static async Task<IResult> GetImageSet(IPictureService pictureService, ulong setId)
+    {
+        var result = await pictureService.GetImageSet(setId);
+        return Results.Ok(result);
     }
     
     private static async Task<IResult> GetTopRatedPictures(IPictureService pictureService)
@@ -87,6 +95,9 @@ internal static class PictureEndpoints
 
     private static Task<IResult> GetPictureById(IPictureService pictureService, long token,
         ulong pictureId, HttpContext context) => GetPicture(pictureService, token, pictureId, context);
+
+    private static async Task<IResult> DeletePictureById(IPictureService pictureService, long token,
+        ulong pictureId) =>  await pictureService.DeletePicture(pictureId) ? Results.Ok() : Results.BadRequest();
 
     private static Task<IResult> GetRandomPicture(IPictureService pictureService, long token,
         HttpContext context) => GetPicture(pictureService, token, null, context);

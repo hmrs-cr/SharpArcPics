@@ -35,6 +35,13 @@ public class UserData
             TopRatedLabel = config.TopRatedLabel
         }
     };
+
+    public bool HasRoles(IEnumerable<string> roles)
+    {
+        // No roles implement for now.
+        // TODO: Implement roles.
+        return true;
+    }
 }
 
 public class AppInfo

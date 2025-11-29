@@ -1,6 +1,7 @@
 namespace PicArchiver.Web.Services;
 
-public interface IRandomProvider
+public interface IPictureProvider
 {
     ValueTask<KeyValuePair<string, object?>> GetNextRandomValueAsync(CancellationToken ct = default);
+    IAsyncEnumerable<string> GetPictureSetPaths(ulong setId);
 }
