@@ -455,8 +455,8 @@
 
         if (render) {
             imgElement.src = pictureData.blobUrl;
-            authorText.innerText = pictureData.author;
-            let toplabelText = pictureData.author;
+            authorText.innerText = pictureData.author ?? "";
+            let toplabelText = pictureData.author ?? "";
             if (currentSet.length > 0 && currentSetIndex > -1) {
                 toplabelText = `${toplabelText} [${currentDisplaySetIndex}/${currentSet.length}]`
             }
