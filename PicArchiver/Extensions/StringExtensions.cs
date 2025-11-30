@@ -7,17 +7,6 @@ public static partial class StringExtensions
 {
     private static readonly IList<string>  ByteSizes = [ "B", "KB", "MB", "GB", "TB" ];
     
-    // FNV-1a 128-bit Offset Basis
-    // Decimal: 144066263297769815596495629667062367629
-    // Hex: 6C62272E07BB0142 62B821756295C58D
-    private static readonly UInt128 OffsetBasis = new UInt128(0x6C62272E07BB0142, 0x62B821756295C58D);
-
-    // FNV-1a 128-bit Prime
-    // Decimal: 309485009821345068724781371
-    // Hex: 0000000001000000 000000000000013B
-    private static readonly UInt128 Prime = new UInt128(0x01000000, 0x000000000000013B);
-
-    
     public static string ResolveTokens(this string template, FileMetadata? replacements)
     {
         if (replacements != null && template.Contains('{') && template.Contains('}'))
@@ -29,16 +18,18 @@ public static partial class StringExtensions
         return template;
     }
     
-    public static ulong ComputeHash(this string input) => 
-        input.Aggregate(14695981039346656037ul, (hash, c) => (hash ^ c) * 1099511628211ul);
-    
-    public static UInt128 ComputeHash128(this string input)
+    public static ulong ComputeHash(this ReadOnlySpan<char> input)
     {
-        // Standard FNV-1a usually processes Bytes (UTF8), not Chars.
-        // Converting to UTF8 bytes is "safer" for cross-platform compatibility.
-        var bytes = System.Text.Encoding.UTF8.GetBytes(input);
+        const ulong prime = 1099511628211ul;
 
-        return bytes.Aggregate(OffsetBasis, (hash, b) => (hash ^ b) * Prime);
+        var hash = 14695981039346656037ul;
+        foreach (var c in input)
+        {
+            hash ^= c;
+            hash *= prime;
+        }
+
+        return hash;
     }
     
     public static string ToHumanReadableString(this TimeSpan t, bool shortDesc = false)
