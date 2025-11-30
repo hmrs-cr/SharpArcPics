@@ -1,25 +1,63 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
 
 namespace PicArchiver.Web.Services.Picsum;
 
 public class PicsumProvider : IPictureProvider
 {
+    private const int MaxCachedImages = 128;
+    
     private readonly string url = "https://picsum.photos/1440/1440";
     
+    private readonly ConcurrentQueue<string> _localPathList = [];
+    
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<PicsumProvider> _logger;
     private string _picFolder;
 
     public PicsumProvider(IHttpClientFactory httpClientFactory, IOptions<PictureProvidersConfig> config,
         ILogger<PicsumProvider> logger)
     {
         _httpClientFactory = httpClientFactory;
+        _logger = logger;
         _picFolder = config.Value.PicturesBasePath;
         Directory.CreateDirectory(_picFolder);
         
-        logger.LogInformation("Picsum Provider started. Pic Path: '{PicturesBasePath}'", config.Value.PicturesBasePath);
+        _ = FillLocalPathList();
+        
+        _logger.LogInformation("Picsum Provider started. Pic Path: '{PicturesBasePath}'", config.Value.PicturesBasePath);
     }
     
     public async ValueTask<KeyValuePair<string, object?>> GetNextRandomValueAsync(CancellationToken ct = default)
+    {
+        _ = FillLocalPathList();
+        
+        if (!_localPathList.IsEmpty && _localPathList.TryDequeue(out var localPath))
+        {
+            return KeyValuePair.Create(localPath, (object?)null);
+        }
+        
+        localPath = await GetNextRandomValueInternalAsync(ct);
+        return KeyValuePair.Create(localPath, (object?)null);
+    }
+
+    private async Task FillLocalPathList()
+    {
+        while (MaxCachedImages - _localPathList.Count > 0)
+        {
+            try
+            {
+                var localPath = await GetNextRandomValueInternalAsync();
+                _localPathList.Enqueue(localPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error filling local path list.");
+            }
+        }
+    }
+    
+    private async ValueTask<string> GetNextRandomValueInternalAsync(CancellationToken ct = default)
     {
         var client = _httpClientFactory.CreateClient();
         var response = await client.GetAsync(url, ct);
@@ -34,8 +72,8 @@ public class PicsumProvider : IPictureProvider
 
         await downloadStream.CopyToAsync(fileStream, ct);
         await fileStream.FlushAsync(ct);
-        
-        return KeyValuePair.Create(fullFilePath, (object?)null);
+
+        return fullFilePath;
     }
 
     public IAsyncEnumerable<string> GetPictureSetPaths(ulong setId)
