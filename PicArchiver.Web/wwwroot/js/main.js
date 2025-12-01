@@ -113,15 +113,18 @@ class App {
         document.getElementById('closeSidebar').onclick = () => this.ui.toggleSidebar(false);
         this.ui.els.sidebarOverlay.onclick = () => this.ui.toggleSidebar(false);
 
-        document.getElementById('menuAbout').addEventListener('click', () => openModal(aboutModal));
-        document.getElementById('closeAboutModal').addEventListener('click', () => closeModal(aboutModal));
+        document.getElementById('menuAbout').addEventListener('click', () => this.ui.openModal('about'));
+        document.getElementById('closeAboutModal').addEventListener('click', () => this.ui.closeAllModals());
         document.getElementById('menuRandom').addEventListener('click', () => window.location.href = '/');
         document.getElementById('menuThemeToggle').addEventListener('click', this.ui.toggleTheme);
 
         // Modals
+        window.addEventListener('click', () => this.ui.closeAllModals());
         document.getElementById('closeInfoModal').onclick = () => this.ui.closeAllModals();
-        document.getElementById('infoBtn').onclick = () => {
+        document.getElementById('infoBtn').onclick = (e) => {
+            e.stopPropagation();
             this.ui.openModal('info', (modal) => {
+                console.log('info modal');
                 const d = this.state.currentPicture;
                 modal.querySelector('#modal-author').innerText = d.author;
                 modal.querySelector('#modal-id').innerText = d.id;

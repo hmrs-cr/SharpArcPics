@@ -88,6 +88,7 @@ export class UIManager {
 
     closeAllModals() {
         Object.values(this.els.modals).forEach(m => m.style.display = 'none');
+        console.log('closeAllModals');
     }
 
     toggleTheme() {
