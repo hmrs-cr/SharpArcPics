@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
+using PicArchiver.Extensions;
 
 namespace PicArchiver.Web.Services.Picsum;
 
@@ -85,4 +86,7 @@ public class PicsumProvider : IPictureProvider
     {
         throw new NotImplementedException();
     }
+
+    public ulong GetPictureIdFromPath(string fullPicturePath) =>
+        Path.GetFileName(fullPicturePath.AsSpan()).ComputeHash();
 }

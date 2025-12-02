@@ -1,50 +1,36 @@
-using System.Collections.Concurrent;
-using System.Diagnostics;
+using System.Data;
 using Microsoft.AspNetCore.StaticFiles;
+using MySql.Data.MySqlClient;
 using PicArchiver.Core.Metadata;
-using PicArchiver.Extensions;
+using PicArchiver.Web.Services.RedisServices;
 using StackExchange.Redis;
 
-namespace PicArchiver.Web.Services.RedisServices;
+namespace PicArchiver.Web.Services.MySqlServices;
 
-public class RedisPictureService : IPictureService
-{   
-    private static readonly TimeSpan MaxUpdateCountTimespan = TimeSpan.FromMinutes(10);
-    
-    private readonly ConcurrentDictionary<string, int> toprated = new();
-    private readonly ConcurrentDictionary<string, int> lowrated = new();
-
+public class MySqlPictureService : IPictureService
+{
+    private int _isVoteCountUpdating;
     private readonly IMetadataProvider metadataProvider;
     private readonly IPictureProvider _pictureProvider;
-    private readonly LazyRedis redis;
     private readonly IContentTypeProvider contentTypeProvider;
-    private readonly ILogger<RedisPictureService> logger;
+    private readonly ILogger<MySqlPictureService> logger;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    private readonly string picSetName;
-    private readonly string votesHashKey;
-    private readonly string favsHashKey;
-    private readonly string viewsHashKey;
-
-    private DateTimeOffset? _lastUpdateVoteCountTime;
-
-    public RedisPictureService(
+    public MySqlPictureService(
         IMetadataProvider metadataProvider,
         IPictureProvider pictureProvider,
-        LazyRedis redis, 
         IContentTypeProvider contentTypeProvider,
-        ILogger<RedisPictureService> logger)
+        ILogger<MySqlPictureService> logger,
+        IHttpContextAccessor httpContextAccessor)
     {
         this.metadataProvider = metadataProvider;
         this._pictureProvider = pictureProvider;
-        this.redis = redis;
         this.contentTypeProvider = contentTypeProvider;
         this.logger = logger;
-        
-        this.picSetName = metadataProvider.Name;
-        this.votesHashKey = $"votes:{this.picSetName}";
-        this.favsHashKey = $"favs:{this.picSetName}";
-        this.viewsHashKey = $"views:{this.picSetName}";
+        _httpContextAccessor = httpContextAccessor;
     }
+    
+    private IDbConnection DbConnection => _httpContextAccessor.HttpContext?.RequestServices.GetRequiredService<IDbConnection>() ?? throw new InvalidOperationException("Not in an web request");
     
     public async Task<PictureStats?> GetRandomPictureData(Guid requestUserId)
     {
@@ -80,13 +66,10 @@ public class RedisPictureService : IPictureService
 
     public async Task<string?> GetPictureThumbPath(ulong pictureId)
     {
-        var pictureDb = await this.redis.GetPictureDatabaseAsync(pictureId);
         var path = await pictureDb.HashGetAsync("attributes", "path");
         return path;
     }
-    
-    private int _isVoteCountUpdating;
-    
+
     private async Task UpdateVoteCont(bool force)
     {
         if (Interlocked.CompareExchange(ref _isVoteCountUpdating, 1, 0) == 0)

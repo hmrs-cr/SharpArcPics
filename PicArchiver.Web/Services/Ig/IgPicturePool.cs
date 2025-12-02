@@ -1,6 +1,7 @@
 using System.Threading.Channels;
 using Microsoft.Extensions.Options;
 using PicArchiver.Commands.IGArchiver;
+using PicArchiver.Extensions;
 
 namespace PicArchiver.Web.Services.Ig;
 
@@ -108,6 +109,9 @@ public class IgPicturePool : IPictureProvider, IDisposable
             }
         }
     }
+
+    public ulong GetPictureIdFromPath(string fullPicturePath) =>
+        Path.GetFileName(fullPicturePath.AsSpan()).ComputeHash();
 
     /// <summary>
     /// The logic running on the dedicated thread.
