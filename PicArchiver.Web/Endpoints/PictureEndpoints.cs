@@ -37,7 +37,7 @@ internal static class PictureEndpoints
         return Results.Ok(await userService.GetUserFavorites(Guid.Empty));
     }
     
-    private static async Task<IResult> GetImageSet(IPictureService pictureService, ulong setId)
+    private static async Task<IResult> GetImageSet(IPictureService pictureService, string setId)
     {
         var result = await pictureService.GetImageSet(setId);
         return Results.Ok(result);

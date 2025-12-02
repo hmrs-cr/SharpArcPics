@@ -147,7 +147,12 @@ public class RedisPictureService : IPictureService
                     lowrated.TryAdd(vote.Key, vote.Value);
                 }
 
+#if DEBUG
+                _lastUpdateVoteCountTime = DateTimeOffset.MinValue;
+#else                
                 _lastUpdateVoteCountTime = DateTimeOffset.UtcNow;
+#endif                
+                
                 logger.LogInformation("Finished to updating vote count. Total time: {time}", _lastUpdateVoteCountTime - startTimestamp);
             }
             finally
@@ -169,10 +174,11 @@ public class RedisPictureService : IPictureService
         return lowrated.OrderBy(kv => kv.Value).Select(kv => kv.Key).ToList();
     }
 
-    public async Task<ICollection<string>> GetImageSet(ulong setId)
+    public async Task<ICollection<string>> GetImageSet(string setId)
     {
+        var picSet = ulong.TryParse(setId, out var setIdl) ? this._pictureProvider.GetPictureSetPaths(setIdl) : _pictureProvider.GetPictureSetPaths(setId);
         var result = new List<string>(32);
-        await foreach (var path in _pictureProvider.GetPictureSetPaths(setId).OrderByDescending(p => p))
+        await foreach (var path in picSet.OrderByDescending(p => p))
         {
             var pictureId = path.ComputeHash();
             await SavePicToDbAsync(pictureId, path);

@@ -80,4 +80,9 @@ public class PicsumProvider : IPictureProvider
     {
         throw new NotImplementedException();
     }
+
+    public IAsyncEnumerable<string> GetPictureSetPaths(string setId)
+    {
+        throw new NotImplementedException();
+    }
 }

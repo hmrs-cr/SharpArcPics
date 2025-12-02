@@ -14,7 +14,7 @@ public interface IPictureService
     Task<string?> GetPictureThumbPath(ulong pictureId);
     Task<ICollection<string>> GetTopRatedPicturesIds();
     Task<ICollection<string>> GetLowRatedPicturesIds();
-    Task<ICollection<string>> GetImageSet(ulong setId);
+    Task<ICollection<string>> GetImageSet(string setId);
     Task<ICollection<string>> GetDeletedIds();
     Task<ICollection<string>> GetIncomingIds();
     

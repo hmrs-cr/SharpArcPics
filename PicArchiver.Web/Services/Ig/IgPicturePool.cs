@@ -92,6 +92,23 @@ public class IgPicturePool : IPictureProvider, IDisposable
         }
     }
 
+    public async IAsyncEnumerable<string> GetPictureSetPaths(string setId)
+    {
+        foreach (var file in Directory.EnumerateFiles(_config.PicturesBasePath, "*.*", SearchOption.AllDirectories))
+        {
+            if (IsValidFilePath(file) && Path.GetFileName(file.AsSpan()).StartsWith(setId) &&
+                Path.GetDirectoryName(file) is { } directoryName)
+            {
+                foreach (var file2 in Directory.EnumerateFiles(directoryName, "*.*", SearchOption.TopDirectoryOnly))
+                {
+                    yield return file2;
+                }
+                
+                yield break;
+            }
+        }
+    }
+
     /// <summary>
     /// The logic running on the dedicated thread.
     /// </summary>
