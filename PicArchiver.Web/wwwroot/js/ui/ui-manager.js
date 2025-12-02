@@ -111,6 +111,10 @@ export class UIManager {
     goHome() {
         window.location.href = '/';
     }
+
+    goError(code) {
+        window.location.href = '/error.html?code=' + code;
+    }
     
     goToSet(setId, item) {
         let setUrl = `/?picset=${setId}`;

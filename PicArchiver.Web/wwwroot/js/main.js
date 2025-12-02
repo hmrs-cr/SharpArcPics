@@ -36,6 +36,11 @@ class App {
         if (picsetId) {
             const picset = await this.api.getPictureSet(picsetId);
             this.state.currentSet.length = 0;
+            
+            if (picset.length === 0) {
+                this.ui.goError(404);
+                return;
+            }
 
             if (picId) {
                 const index = picset.indexOf(picId);
