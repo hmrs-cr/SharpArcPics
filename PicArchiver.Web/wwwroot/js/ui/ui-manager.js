@@ -46,6 +46,17 @@ export class UIManager {
         this.els.author.href = data.sourceUrl;
         this.els.img.onload = () => this.els.img.classList.add('loaded');
         this.updateButtons(data);
+
+        let topLabelText = '';
+        if (data.imgIndex && data.imgCount) {
+            topLabelText = `[${data.imgIndex}/${data.imgCount}]`
+        }
+        
+        if (this.isTouchScreen()) {
+            topLabelText = `${data.author} ${topLabelText}`;
+        }
+
+        this.updateLabelText('autor-label-top', topLabelText);
     }
 
     updateButtons(data) {
@@ -88,7 +99,6 @@ export class UIManager {
 
     closeAllModals() {
         Object.values(this.els.modals).forEach(m => m.style.display = 'none');
-        console.log('closeAllModals');
     }
 
     toggleTheme() {
@@ -96,6 +106,58 @@ export class UIManager {
         const newTheme = current === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
+    }
+
+    goHome() {
+        window.location.href = '/';
+    }
+    
+    goToSet(setId, item) {
+        let setUrl = `/?picset=${setId}`;
+        if (item) {
+            setUrl = `${setUrl}&picid=${item}`
+        }
+        window.location.href = setUrl;
+    }
+
+    updateLabelText(id, text) {
+        const e = document.getElementById(id);
+        e.textContent = text || e.textContent;
+    }
+    
+    renderGrid(renderItems, title, setId, renderItemCallback) {
+        const grid = document.getElementById('favGrid');
+        const msg = document.getElementById('noFavsMsg');
+        grid.innerHTML = '';
+
+        if (!title) {
+            title = `Total ${renderItems.length}`
+        }
+        else {
+            title = `${title} (${renderItems.length})`
+        }
+        this.updateLabelText("favModalTitle", title);
+
+        if (renderItems.length === 0) {
+            msg.style.display = 'block';
+            return;
+        }
+
+        console.log('setId1', setId);
+        msg.style.display = 'none';
+        renderItems.forEach((item, i) => {
+            console.log('setId2', setId);
+            const div = document.createElement('div');
+            div.className = 'fav-item';
+            renderItemCallback(div, item, i);
+            div.onclick = async () => {
+                console.log('setId3', setId);
+                this.closeAllModals();
+                this.toggleSidebar(false);
+                this.goToSet(setId, item);
+            };
+            grid.appendChild(div);
+        });
     }
     
     init() {

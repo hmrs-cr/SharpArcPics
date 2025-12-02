@@ -1,26 +1,52 @@
 export class StateManager {
     constructor() {
         this.historyStack = [];
-        this.historyIndex = -1;
+        this.historyIndex = 0;
         this.currentSet = [];
         this.currentSetIndex = -1;
         this.favorites = [];
         this.userData = null;
+        this.maxHistorySize = 30;
+        this.fullSetLoaded = false;
     }
 
     get currentPicture() {
-        return this.historyIndex >= 0 ? this.historyStack[this.historyIndex] : null;
+        const pic = this.historyIndex >= 0 ? this.historyStack[this.historyIndex] : null;
+       return this.updatePictureData(pic);
+    }
+    
+    updatePictureData(pic) {
+        if (pic) {
+            if (this.currentSet.length > 0) {
+                pic.imgCount = this.currentSet.length;
+                if (!pic.imgIndex) {
+                    pic.imgIndex = this.currentSet.indexOf(pic.id) + 1;
+                }
+            }
+        }
+        return pic;
     }
 
     pushToHistory(data) {
-        // If we are in the middle of history and load new, truncate forward history
-        if (this.historyIndex < this.historyStack.length - 1) {
-            this.historyStack = this.historyStack.slice(0, this.historyIndex + 1);
-        }
-
         this.historyStack.push(data);
-        this.historyIndex++;
-        this.manageMemory();
+        this.trimHistory();
+    }
+    
+    trimHistory() {
+        if (this.historyStack.length >= this.maxHistorySize) {
+            const i = this.historyStack.length - this.maxHistorySize;
+            if (i > 0) {
+                const removed = this.historyStack.splice(0, i);
+                removed.forEach(i => {
+                    if (i.blobUrl) {
+                        URL.revokeObjectURL(i.blobUrl);
+                        console.debug(`Removed ${i.blobUrl}`);
+                    }
+                });
+                this.historyIndex = this.historyIndex - i;
+                console.log(`History too big, removed ${i} items at the beginning, new index is ${this.historyIndex}, history lenght ${this.historyStack.length}`);
+            }
+        }
     }
 
     moveBack() {
@@ -31,20 +57,16 @@ export class StateManager {
         return null;
     }
 
-    moveForward() {
+    moveForward(circle) {
         if (this.historyIndex < this.historyStack.length - 1) {
             this.historyIndex++;
             return this.currentPicture;
+        } else if (circle) {
+            this.historyIndex = 0;
+            return this.currentPicture;
         }
+        
         return null; // Indicates need to fetch new
-    }
-
-    manageMemory(maxItems = 30) {
-        if (this.historyStack.length > maxItems) {
-            const removed = this.historyStack.shift();
-            if (removed.blobUrl) URL.revokeObjectURL(removed.blobUrl);
-            this.historyIndex--;
-        }
     }
 
     updateCurrentVoteState(up, down, fav) {
