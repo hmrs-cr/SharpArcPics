@@ -38,6 +38,8 @@ public readonly record struct IgFile(string FullPath, string FileName, string Us
 {
     public static readonly char Separator = '_';
     
+    private static readonly string MetadataExtension = ".metadata.json";
+    
     public bool IsValid => !string.IsNullOrEmpty(FileName) && !string.IsNullOrEmpty(UserName)
                                                            && UserId > 100 
                                                            && PictureId > 1000 
@@ -48,6 +50,7 @@ public readonly record struct IgFile(string FullPath, string FileName, string Us
         var fullPath = fileName;
         var fileNameSpan = Path.GetFileName(fileName).AsSpan();
         fileName = fileNameSpan.ToString();
+        fileNameSpan = fileNameSpan.TrimEnd(MetadataExtension);
         
         var dotIndex = fileNameSpan.LastIndexOf("_n."); 
         dotIndex = dotIndex < 10 ? fileNameSpan.LastIndexOf(" (1).") : dotIndex;
