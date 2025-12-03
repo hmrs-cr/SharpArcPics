@@ -1,36 +1,43 @@
-using System.Data;
+using System.Collections.Concurrent;
 using Microsoft.AspNetCore.StaticFiles;
-using MySql.Data.MySqlClient;
 using PicArchiver.Core.Metadata;
+using PicArchiver.Extensions;
 using PicArchiver.Web.Services.RedisServices;
 using StackExchange.Redis;
 
 namespace PicArchiver.Web.Services.MySqlServices;
 
-public class MySqlPictureService : IPictureService
-{
-    private int _isVoteCountUpdating;
-    private readonly IMetadataProvider metadataProvider;
-    private readonly IPictureProvider _pictureProvider;
-    private readonly IContentTypeProvider contentTypeProvider;
-    private readonly ILogger<MySqlPictureService> logger;
-    private readonly IHttpContextAccessor _httpContextAccessor;
+public class SqlPictureService : IPictureService
+{   
+    private static readonly TimeSpan MaxUpdateCountTimespan = TimeSpan.FromMinutes(10);
+    
+    private readonly ConcurrentDictionary<string, int> toprated = new();
+    private readonly ConcurrentDictionary<string, int> lowrated = new();
 
-    public MySqlPictureService(
+    private readonly IMetadataProvider _metadataProvider;
+    private readonly IPictureProvider _pictureProvider;
+    private readonly IContentTypeProvider _contentTypeProvider;
+    private readonly ILogger<RedisPictureService> _logger;
+    private readonly IDbConnectionAccessor _connectionAccessor;
+
+
+    private DateTimeOffset? _lastUpdateVoteCountTime;
+
+    private LazyRedis redis;
+
+    public SqlPictureService(
         IMetadataProvider metadataProvider,
         IPictureProvider pictureProvider,
         IContentTypeProvider contentTypeProvider,
-        ILogger<MySqlPictureService> logger,
-        IHttpContextAccessor httpContextAccessor)
+        ILogger<RedisPictureService> logger,
+        IDbConnectionAccessor connectionAccessor)
     {
-        this.metadataProvider = metadataProvider;
-        this._pictureProvider = pictureProvider;
-        this.contentTypeProvider = contentTypeProvider;
-        this.logger = logger;
-        _httpContextAccessor = httpContextAccessor;
+        _metadataProvider = metadataProvider;
+        _pictureProvider = pictureProvider;
+        _contentTypeProvider = contentTypeProvider;
+        _logger = logger;
+        _connectionAccessor = connectionAccessor;
     }
-    
-    private IDbConnection DbConnection => _httpContextAccessor.HttpContext?.RequestServices.GetRequiredService<IDbConnection>() ?? throw new InvalidOperationException("Not in an web request");
     
     public async Task<PictureStats?> GetRandomPictureData(Guid requestUserId)
     {
@@ -47,8 +54,8 @@ public class MySqlPictureService : IPictureService
             {
                 if (result.Views > 0)
                 {
-                    if (this.logger.IsEnabled(LogLevel.Debug))
-                        this.logger.LogDebug(
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                        _logger.LogDebug(
                             "User {UID} already viewed picture {PID}. Selecting another picture [{c}].", requestUserId,
                             pictureId, maxRetries);
                     continue;
@@ -66,10 +73,13 @@ public class MySqlPictureService : IPictureService
 
     public async Task<string?> GetPictureThumbPath(ulong pictureId)
     {
+        var pictureDb = await this.redis.GetPictureDatabaseAsync(pictureId);
         var path = await pictureDb.HashGetAsync("attributes", "path");
         return path;
     }
-
+    
+    private int _isVoteCountUpdating;
+    
     private async Task UpdateVoteCont(bool force)
     {
         if (Interlocked.CompareExchange(ref _isVoteCountUpdating, 1, 0) == 0)
@@ -88,12 +98,12 @@ public class MySqlPictureService : IPictureService
                 }
 
                 var startTimestamp = DateTimeOffset.UtcNow;
-                logger.LogInformation("Starting to update vote count");
+                _logger.LogInformation("Starting to update vote count");
                 
                 var db = await this.redis.GetDatabaseAsync();
                 var server = await this.redis.GetServerAsync();
                 var votes = new Dictionary<string, int>();
-                await foreach (var key in server.KeysAsync(pattern: LazyRedis.UserKeyPrefix + $"*:{this.votesHashKey}"))
+                await foreach (var key in server.KeysAsync(pattern: LazyRedis.UserKeyPrefix + $"*:{0}"))
                 {
                     var allvotes = await db.HashGetAllAsync(key);
                     foreach (var vote in allvotes)
@@ -136,7 +146,7 @@ public class MySqlPictureService : IPictureService
                 _lastUpdateVoteCountTime = DateTimeOffset.UtcNow;
 #endif                
                 
-                logger.LogInformation("Finished to updating vote count. Total time: {time}", _lastUpdateVoteCountTime - startTimestamp);
+                _logger.LogInformation("Finished to updating vote count. Total time: {time}", _lastUpdateVoteCountTime - startTimestamp);
             }
             finally
             {
@@ -192,7 +202,7 @@ public class MySqlPictureService : IPictureService
                 File.Delete(path.ToString());
                 if (File.Exists(path))
                 {
-                    logger.LogWarning("Failed to delete picture {PictureId}: '{path}'", pictureId, path);
+                    _logger.LogWarning("Failed to delete picture {PictureId}: '{path}'", pictureId, path);
                     return false;
                 }
                 
@@ -219,7 +229,7 @@ public class MySqlPictureService : IPictureService
             }
             catch (Exception e)
             {
-                logger.LogWarning(e, "Failed to delete picture {PictureId}: '{path}'", pictureId, path);
+                _logger.LogWarning(e, "Failed to delete picture {PictureId}: '{path}'", pictureId, path);
             }
         }
         
@@ -237,7 +247,7 @@ public class MySqlPictureService : IPictureService
             {
                 var pictureKey = $"{pictureId}";
                 var userDb = await this.redis.GetUserDatabaseAsync(requestUserId.Value);
-                var views = await userDb.HashGetAsync(this.viewsHashKey, pictureKey);
+                var views = await userDb.HashGetAsync("", pictureKey);
                 if (views.HasValue && onlyIfNotViewed)
                 {
                     result.Views = 1;
@@ -250,8 +260,8 @@ public class MySqlPictureService : IPictureService
                     return this.SetMetadatada(result);
                 }
                 
-                var isFavTask = userDb.HashExistsAsync(this.favsHashKey, pictureKey);
-                var votesTask = userDb.HashGetAsync(this.votesHashKey, pictureKey);
+                var isFavTask = userDb.HashExistsAsync("", pictureKey);
+                var votesTask = userDb.HashGetAsync("", pictureKey);
                 
                 await Task.WhenAll(isFavTask, votesTask);
                 var isFav = isFavTask.Result;
@@ -273,7 +283,7 @@ public class MySqlPictureService : IPictureService
     }
 
     private string? GetContentType(string ext) => 
-        this.contentTypeProvider.TryGetContentType(ext, out var contentType) ? contentType : null;
+        this._contentTypeProvider.TryGetContentType(ext, out var contentType) ? contentType : null;
 
     public Task<int> Upvote(ulong pictureId, Guid requestUserId, bool remove = false)=> 
         this.Vote(pictureId, requestUserId, true, remove);
@@ -288,11 +298,11 @@ public class MySqlPictureService : IPictureService
 
         if (remove)
         {
-            await userDb.HashDeleteAsync(this.favsHashKey, pictureKey);
+            await userDb.HashDeleteAsync("", pictureKey);
         }
         else
         {
-            await userDb.HashSetAsync(this.favsHashKey, pictureKey, $"{DateTime.UtcNow:s}");
+            await userDb.HashSetAsync("", pictureKey, $"{DateTime.UtcNow:s}");
         }
 
         return 1;
@@ -305,12 +315,13 @@ public class MySqlPictureService : IPictureService
 
         if (remove)
         {
-            await userDb.HashDeleteAsync(this.votesHashKey, pictureKey);
+            await userDb.HashDeleteAsync("", pictureKey);
         }
         else
         {
             var vote = isUp ? "up" : "down";
-            await userDb.HashSetAsync(this.votesHashKey, pictureKey, $"{vote}|{DateTime.UtcNow:s}");
+            await userDb.HashSetAsync(
+                "", pictureKey, $"{vote}|{DateTime.UtcNow:s}");
         }
         
         _ = UpdateVoteCont(true);
@@ -330,7 +341,7 @@ public class MySqlPictureService : IPictureService
         var existingPath = await pictureDb.HashGetAsync("attributes", "path");
         if (existingPath.HasValue && existingPath.ToString() != path)
         {
-            logger.LogWarning("Id collision detected for {id}: '{existingPath}' and {path}", picId, existingPath, path);
+            _logger.LogWarning("Id collision detected for {id}: '{existingPath}' and {path}", picId, existingPath, path);
         }
         
         if (!existingPath.HasValue)
@@ -344,7 +355,7 @@ public class MySqlPictureService : IPictureService
         var pictureKey = $"{pictureId}";
         var userDb = await this.redis.GetUserDatabaseAsync(requestUserId);
         
-        var views = await userDb.HashGetAsync(this.viewsHashKey, pictureKey);
+        var views = await userDb.HashGetAsync("", pictureKey);
         var viewCount = 1;
         if (views.HasValue)
         {
@@ -357,13 +368,13 @@ public class MySqlPictureService : IPictureService
             }
         }
         
-        await userDb.HashSetAsync(this.viewsHashKey, pictureKey, $"{DateTime.UtcNow:s}|{viewCount}");
+        await userDb.HashSetAsync("", pictureKey, $"{DateTime.UtcNow:s}|{viewCount}");
         return viewCount;
     }
 
     private PictureStats SetMetadatada(PictureStats pictureStats)
     {
         pictureStats.MimeType ??= this.GetContentType(pictureStats.Ext);
-        return pictureStats.Metadata.Count == 0 ? this.metadataProvider.SetMetadata(pictureStats) : pictureStats;
+        return pictureStats.Metadata.Count == 0 ? this._metadataProvider.SetMetadata(pictureStats) : pictureStats;
     }
 }

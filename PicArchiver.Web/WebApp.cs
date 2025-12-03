@@ -2,6 +2,7 @@ using System.Reflection;
 using Microsoft.AspNetCore.StaticFiles;
 using PicArchiver.Web.Endpoints;
 using PicArchiver.Web.Services;
+using PicArchiver.Web.Services.MySqlServices;
 using PicArchiver.Web.Services.RedisServices;
 
 namespace PicArchiver.Web;
@@ -16,6 +17,7 @@ public sealed class WebApp
         builder.Services.AddOpenApi().AddHttpContextAccessor()
             .AddSingleton<IContentTypeProvider, FileExtensionContentTypeProvider>()
             .AddRedisServices(builder.Configuration)
+            .AddMySql()
             .AddMetadataProvider(builder.Configuration);
         
         WebApplication = builder.Build();

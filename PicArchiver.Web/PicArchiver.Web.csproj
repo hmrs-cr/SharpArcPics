@@ -20,4 +20,8 @@
       <ProjectReference Include="..\PicArchiver\PicArchiver.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Services\Sql\" />
+    </ItemGroup>
+
 </Project>

@@ -28,6 +28,8 @@ class App {
         }
     }
     
+    
+    
     async updatePicset() {
         const urlParams = new URLSearchParams(window.location.search);
         const picsetId = urlParams.get('picset');

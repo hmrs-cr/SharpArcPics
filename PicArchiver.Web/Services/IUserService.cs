@@ -16,17 +16,26 @@ public interface IUserService
 public class UserData
 {
     public Guid Id { get; set; }
-    public ICollection<string>? Favs { get; init; }
+    public ICollection<string>? Favs { get; private set; }
     
-    public required AppInfo AppInfo { get; init; }
+    public AppInfo? AppInfo { get; private set; }
     
     public bool IsAdmin => HasRoles("Admin");
 
-    public static UserData Create(Guid userId, PictureProvidersConfig config, ICollection<string>? favs = null) => new()
+    public static UserData Create(Guid userId, PictureProvidersConfig config, ICollection<string>? favs = null)
     {
-        Id = userId,
-        Favs = favs,
-        AppInfo = new AppInfo
+        var result = new UserData
+        {
+            Id = userId
+        };
+        
+        return  result.SetData(config, favs);;
+    }
+
+    public UserData SetData(PictureProvidersConfig config, ICollection<string>? favs = null)
+    {
+        this.Favs = favs;
+        this.AppInfo = new AppInfo
         {
             AppVersion = WebApp.Version,
             AppName = WebApp.Name,
@@ -35,8 +44,10 @@ public class UserData
             FavsLabel = config.FavsLabel,
             LowRatedLabel = config.LowRatedLabel,
             TopRatedLabel = config.TopRatedLabel
-        }
-    };
+        };
+        
+        return this;
+    }
 
     public bool HasRoles(params IEnumerable<string> roles)
     {
