@@ -1,4 +1,5 @@
 using PicArchiver.Core.Metadata;
+using PicArchiver.Core.Metadata.Loaders;
 
 namespace PicArchiver.Core.Configs;
 
@@ -21,6 +22,7 @@ public static class DefaultFileArchiveConfig
         Recursive = false,
         SubfolderTemplate = "{UserId}",
         MetadataLoaders = "IG,Default",
+        DestExistsResolver = IgMetadataLoader.DestFileExists,
     };
 
     private static ArchiveConfig PicDefaultConfig { get; } = new()

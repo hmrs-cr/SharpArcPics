@@ -187,6 +187,7 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
 
     public int SrcDeletedFilesCount { get; private set; }
     public int DestDeletedFilesCount { get; private set; }
+    public int SkippedFilesCount { get; private set; }
     
     public int UpdatedFilesCount { get; private set; }
 
@@ -269,6 +270,7 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
         UpdatedFilesCount = 0;
         SrcDeletedFilesCount = 0;
         FailedFilesCount = 0;
+        SkippedFilesCount = 0;
         CopiedFileCount = 0;
         DuplicatedFileCount = 0;
         InvalidFileCount = 0;
@@ -304,6 +306,9 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
                 break;
             case FileResult.DestFileDeleted:
                 DestDeletedFilesCount++;
+                break;
+            case FileResult.Skipped:
+                SkippedFilesCount++;
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -361,6 +366,12 @@ public class FolderArchiver : IDisposable, IFolderArchiverResult
             if (destExists && !canOverwrite)
             {
                 yield return context.CreateResult(FileResult.AlreadyExists);
+                yield break;
+            }
+
+            if (context.SkipNewFiles)
+            {
+                yield return context.CreateResult(FileResult.Skipped);
                 yield break;
             }
             
@@ -582,6 +593,8 @@ public class MultiFolderArchiver
         _folders = folders;
         _config = config;
     }
+    
+    public ArchiveConfig Config => _config;
 
     public IEnumerable<MultiFolderFileArchiveResult> ArchiveTo(string destFolder)
     {

@@ -87,6 +87,13 @@ public class ArchiverTest
         1958213731,
         true)]
     
+    [TestCase("_n.nayee__1625605018_2612086677546617565_1958213731.jpg.metadata.json", 
+        "_n.nayee_",
+        1625605018,
+        2612086677546617565,
+        1958213731,
+        true)]
+    
     [TestCase("Maria Jose Zamora Villalobos_1500601798_1588927167839905_1588927167839905.jpg", 
         "Maria Jose Zamora Villalobos",
         1500601798,

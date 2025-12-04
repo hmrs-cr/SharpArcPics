@@ -232,7 +232,15 @@ public class ArchiverCommand : BaseCommand, ICommandHandler
                 if (lastFolder != fileArchiveResult.Folder)
                 {
                     WriteLine();
-                    WriteLine(HeaderColor, $"Archiving files from '{fileArchiveResult.Folder}' to '{destination}'");
+                    if (folderArchiver.Config.SkipNewFiles == true)
+                    {
+                        WriteLine(HeaderColor, $"Deleting files in '{fileArchiveResult.Folder}' that exists in '{destination}'");
+                    }
+                    else
+                    {
+                        WriteLine(HeaderColor, $"Archiving files from '{fileArchiveResult.Folder}' to '{destination}'");
+                    }
+
                     lastFolder = fileArchiveResult.Folder;
                 }
                 
@@ -339,7 +347,7 @@ public class ArchiverCommand : BaseCommand, ICommandHandler
     {
         PrintResultAction(result.Result, progress);
 
-        if (result.Context.DryRun && result.Result != FileResult.Invalid)
+        if (result.Context.DryRun && result.Result is not (FileResult.Invalid or FileResult.Skipped))
         {
             Write(ConsoleColor.Red, "[DRY] ");
         }

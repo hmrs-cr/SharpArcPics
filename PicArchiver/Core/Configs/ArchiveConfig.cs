@@ -8,7 +8,7 @@ public sealed class ArchiveConfig
 {
     private Regex? _sourceFileNameRegEx;
     private List<IMetadataLoader>? _metadataLoaderInstances = null;
-
+    
     public bool? DryRun { get; init; }
     public bool? ReportProgress { get; init; }
 
@@ -17,6 +17,7 @@ public sealed class ArchiveConfig
     public bool? OverrideDestination { get; init; }
     public bool? IgnoreDuplicates { get; init; }
     public bool? DeleteSourceFileIfDestExists { get; init; }
+    public bool? SkipNewFiles { get; set; }
     
     public string? SubfolderTemplate { get; init; }
     public string? FileNameTemplate { get; init; }
@@ -62,6 +63,8 @@ public sealed class ArchiveConfig
     internal Regex? SourceFileNameRegEx => 
         string.IsNullOrEmpty(SourceFileNameRegExPattern) ? null : _sourceFileNameRegEx ??= new Regex(SourceFileNameRegExPattern);
 
+    internal Func<ArchiveConfig, FileArchiveContext, bool>? DestExistsResolver { get; init; }
+    
     internal ArchiveConfig Merge(ArchiveConfig config1, ArchiveConfig? config2 = null, bool onlyFirstLevelConfigValues = false) => new()
     {
         MinDriveSize = config1.MinDriveSize ?? MinDriveSize ?? config2?.MinDriveSize,
@@ -69,6 +72,7 @@ public sealed class ArchiveConfig
         OverrideDestination = config1.OverrideDestination ?? OverrideDestination ?? config2?.OverrideDestination,
         IgnoreDuplicates = config1.IgnoreDuplicates ?? IgnoreDuplicates ?? config2?.IgnoreDuplicates,
         DeleteSourceFileIfDestExists = config1.DeleteSourceFileIfDestExists ?? DeleteSourceFileIfDestExists ?? config2?.DeleteSourceFileIfDestExists,
+        SkipNewFiles = config1.SkipNewFiles ?? SkipNewFiles ?? config2?.SkipNewFiles,
         SubfolderTemplate = config1.SubfolderTemplate ?? SubfolderTemplate ?? config2?.SubfolderTemplate,
         FileNameTemplate = config1.FileNameTemplate ?? FileNameTemplate ?? config2?.FileNameTemplate,
         Rotate = config1.Rotate ?? Rotate ?? config2?.Rotate,

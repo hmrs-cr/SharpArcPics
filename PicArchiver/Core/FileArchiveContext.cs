@@ -33,6 +33,7 @@ public class FileArchiveContext : IDisposable
     public bool MoveSourceFile { get;  set; }
     
     public bool DeleteSourceFileIfDestExists { get; set; }
+    public bool SkipNewFiles { get; set; }
 
     public bool OverrideDestinationFile { get; set; }
     
@@ -75,7 +76,6 @@ public class FileArchiveContext : IDisposable
                 Config = mediaConfig;
             }
             
-            
             DryRun = Config.DryRun ?? config.DryRun ?? DryRun;
             
             DestinationFolderPath = ResolveDestSubFolder(DestinationBasePath);
@@ -84,8 +84,13 @@ public class FileArchiveContext : IDisposable
             OverrideDestinationFile = Config.OverrideDestination ?? config.OverrideDestination ?? false;
             DeleteSourceFileIfDestExists = Config.DeleteSourceFileIfDestExists ?? config.DeleteSourceFileIfDestExists ?? false;
             MoveSourceFile = Config.MoveFiles ?? config.MoveFiles ?? false;
+            SkipNewFiles = Config.SkipNewFiles ?? Config.SkipNewFiles ?? false;
 
             IsValid = MetadataLoaders.Initialize(this);
+            if (IsValid && Config.DestExistsResolver != null)
+            {
+                DestinationFileExists = Config.DestExistsResolver.Invoke(Config, this);
+            }
         }
     }
 
@@ -144,4 +149,7 @@ public enum FileResult
     
     // Already exists in dest.
     AlreadyExists,
+    
+    // File is Skipped due to config
+    Skipped
 }
