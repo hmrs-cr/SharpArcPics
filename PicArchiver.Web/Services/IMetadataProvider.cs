@@ -5,5 +5,5 @@ namespace PicArchiver.Web.Services;
 public interface IMetadataProvider
 {
     string Name { get; }
-    PictureStats SetMetadata(PictureStats pictureData);
+    ValueTask<PictureStats> SetMetadata(PictureStats pictureData);
 }

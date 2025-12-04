@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using Microsoft.AspNetCore.StaticFiles;
 using PicArchiver.Core.Metadata;
 using PicArchiver.Extensions;
@@ -72,7 +71,7 @@ public class RedisPictureService : IPictureService
                 return result;
             }
 
-            return SavePicturePath(pictureId, fullPicturePath, pictureContextData.Value);
+            return await SavePicturePath(pictureId, fullPicturePath, pictureContextData.Value);
         }
 
         return null;
@@ -264,7 +263,7 @@ public class RedisPictureService : IPictureService
                 if (!views.HasValue)
                 {
                     // My First view
-                    return this.SetMetadatada(result);
+                    return await this.SetMetadatada(result);
                 }
                 
                 var isFavTask = userDb.HashExistsAsync(this.favsHashKey, pictureKey);
@@ -283,7 +282,7 @@ public class RedisPictureService : IPictureService
                 result.Views = Convert.ToUInt32(views.HasValue);
             }
             
-            return this.SetMetadatada(result);
+            return await this.SetMetadatada(result);
         }
         
         return null;
@@ -335,10 +334,10 @@ public class RedisPictureService : IPictureService
         return 1;
     }
 
-    private PictureStats SavePicturePath(ulong pictureId, string picturePath, object? contextData = null)
+    private async Task<PictureStats> SavePicturePath(ulong pictureId, string picturePath, object? contextData = null)
     {
         _ = SavePicToDbAsync(pictureId, picturePath);
-        return this.SetMetadatada(new PictureStats(picturePath) { ContextData  = contextData});
+        return await this.SetMetadatada(new PictureStats(picturePath) { ContextData  = contextData});
     }
     
     private async Task SavePicToDbAsync(ulong picId, string path, IDatabase? database = null)
@@ -378,9 +377,9 @@ public class RedisPictureService : IPictureService
         return viewCount;
     }
 
-    private PictureStats SetMetadatada(PictureStats pictureStats)
+    private async ValueTask<PictureStats> SetMetadatada(PictureStats pictureStats)
     {
         pictureStats.MimeType ??= this.GetContentType(pictureStats.Ext);
-        return pictureStats.Metadata.Count == 0 ? this.metadataProvider.SetMetadata(pictureStats) : pictureStats;
+        return pictureStats.Metadata.Count == 0 ? await this.metadataProvider.SetMetadata(pictureStats) : pictureStats;
     }
 }

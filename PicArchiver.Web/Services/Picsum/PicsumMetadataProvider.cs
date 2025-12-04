@@ -6,5 +6,5 @@ public class PicsumMetadataProvider : IMetadataProvider
 {
     public string Name => "picsum";
 
-    public PictureStats SetMetadata(PictureStats pictureData) => pictureData;
+    public ValueTask<PictureStats> SetMetadata(PictureStats pictureData) => ValueTask.FromResult(pictureData);
 }

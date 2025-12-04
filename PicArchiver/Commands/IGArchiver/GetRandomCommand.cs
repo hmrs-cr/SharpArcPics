@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.CommandLine;
+using PicArchiver.Core.Metadata.Loaders;
 
 namespace PicArchiver.Commands.IGArchiver;
 
@@ -62,11 +63,11 @@ public class GetRandomCommand : IGBaseCommand
             return null;
         }
         
-        var files = Directory.GetFiles(pictureFolder);
-        return files.Length switch
+        var files = Directory.EnumerateFiles(pictureFolder).Where(f => !f.EndsWith(IgFile.MetadataExtension)).ToList();
+        return files.Count switch
         {
             1 => files[0],
-            > 1 => files[random.Next(files.Length)],
+            > 1 => files[random.Next(files.Count)],
             _ => null
         };
     }

@@ -51,7 +51,8 @@ export class ApiService {
                 isFav: Number(res.headers.get('IsFav')),
                 upvoted: Number(res.headers.get('Upvoted')),
                 downvoted: Number(res.headers.get('Downvoted')),
-                sourceUrl: res.headers.get('SourceUrl')
+                sourceUrl: res.headers.get('SourceUrl'),
+                description: res.headers.get('Description')
             }
         };
     }

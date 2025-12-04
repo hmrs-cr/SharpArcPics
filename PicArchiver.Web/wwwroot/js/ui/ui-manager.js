@@ -42,6 +42,8 @@ export class UIManager {
 
     renderImage(data) {
         this.els.img.src = data.blobUrl;
+        this.els.img.alt = data.description || 'A picture!';
+        document.title = this.els.img.alt;
         this.els.author.innerText = data.otherNames ? `${data.author} [...]` : data.author;
         this.els.author.href = data.sourceUrl;
         this.els.img.onload = () => this.els.img.classList.add('loaded');
