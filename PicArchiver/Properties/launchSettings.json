@@ -4,7 +4,7 @@
     "Archive": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "commandLineArgs": "archive --config RawPic --source CAMERAS --destination /Users/hectormauriciorodriguez/Pictures/ifarchiverTEst",
+      "commandLineArgs": "archive --config IG --source /Users/hectormauriciorodriguez/Downloads --destination /Users/hectormauriciorodriguez/Pictures/IGArchive",
       "environmentVariables": {
       }
     },

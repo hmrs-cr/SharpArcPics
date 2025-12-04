@@ -8,7 +8,7 @@ public sealed class ArchiveConfig
 {
     private Regex? _sourceFileNameRegEx;
     private List<IMetadataLoader>? _metadataLoaderInstances = null;
-
+    
     public bool? DryRun { get; init; }
     public bool? ReportProgress { get; init; }
 
@@ -63,6 +63,8 @@ public sealed class ArchiveConfig
     internal Regex? SourceFileNameRegEx => 
         string.IsNullOrEmpty(SourceFileNameRegExPattern) ? null : _sourceFileNameRegEx ??= new Regex(SourceFileNameRegExPattern);
 
+    internal Func<ArchiveConfig, FileArchiveContext, bool>? DestExistsResolver { get; init; }
+    
     internal ArchiveConfig Merge(ArchiveConfig config1, ArchiveConfig? config2 = null, bool onlyFirstLevelConfigValues = false) => new()
     {
         MinDriveSize = config1.MinDriveSize ?? MinDriveSize ?? config2?.MinDriveSize,

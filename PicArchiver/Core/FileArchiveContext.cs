@@ -76,7 +76,6 @@ public class FileArchiveContext : IDisposable
                 Config = mediaConfig;
             }
             
-            
             DryRun = Config.DryRun ?? config.DryRun ?? DryRun;
             
             DestinationFolderPath = ResolveDestSubFolder(DestinationBasePath);
@@ -88,6 +87,10 @@ public class FileArchiveContext : IDisposable
             SkipNewFiles = Config.SkipNewFiles ?? Config.SkipNewFiles ?? false;
 
             IsValid = MetadataLoaders.Initialize(this);
+            if (IsValid && Config.DestExistsResolver != null)
+            {
+                DestinationFileExists = Config.DestExistsResolver.Invoke(Config, this);
+            }
         }
     }
 

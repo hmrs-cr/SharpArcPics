@@ -1,3 +1,5 @@
+using PicArchiver.Core.Configs;
+
 namespace PicArchiver.Core.Metadata.Loaders;
 
 public sealed class IgMetadataLoader : MetadataLoader
@@ -32,13 +34,35 @@ public sealed class IgMetadataLoader : MetadataLoader
         
         return true;
     }
+
+    internal static bool DestFileExists(ArchiveConfig config, FileArchiveContext context)
+    {
+        if (context.DestinationFileExists || 
+            context.Metadata[PictureIdKey] is not long pictureId || 
+            context.Metadata[UserIdKey] is not long userId)
+        {
+            return context.DestinationFileExists;
+        }
+        
+        var existingDestFile = Directory.EnumerateFiles(context.DestinationFolderPath,
+            $"*_{pictureId}_{userId}.*", SearchOption.TopDirectoryOnly).FirstOrDefault();
+
+        var exists = existingDestFile != null;
+        if (exists)
+        {
+            context.DeleteSourceFileIfDestExists = config.DeleteSourceFileIfDestExists == true;
+        }
+        
+        return exists;
+
+    }
 }
 
 public readonly record struct IgFile(string FullPath, string FileName, string UserName, long UserId, long PictureId, long PostId)
 {
     public static readonly char Separator = '_';
     
-    private static readonly string MetadataExtension = ".metadata.json";
+    public static readonly string MetadataExtension = ".metadata.json";
     
     public bool IsValid => !string.IsNullOrEmpty(FileName) && !string.IsNullOrEmpty(UserName)
                                                            && UserId > 100 
