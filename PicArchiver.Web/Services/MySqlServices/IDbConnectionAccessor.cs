@@ -42,5 +42,6 @@ public static class RegistrationExtensions
     public static IServiceCollection AddMySql(this IServiceCollection services) =>
         services.AddSingleton<IDbConnectionAccessor, HttpContextMySqlConnectionAccessor>()
                 .AddSingleton<IUserService, SqlUserService>()
+                .AddSingleton<IPictureService, SqlPictureService>()
                 .AddScoped<IDbConnection, MySqlConnection>();
 }

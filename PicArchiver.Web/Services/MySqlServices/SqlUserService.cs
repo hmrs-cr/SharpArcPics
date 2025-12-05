@@ -25,13 +25,7 @@ public class SqlUserService : IUserService
     
     public async Task<UserData> AddUser(Guid userId)
     {
-        const string sql = """
-                           INSERT INTO `User` (UserId, UserName, Email) 
-                           VALUES (@UserId, @UserName, @Email)
-                           """;
-        await _connectionAccessor.DbConnection.ExecuteAsync(sql, 
-            new { UserId = userId, UserName = string.Empty, Email = string.Empty });
-        
+        await _connectionAccessor.DbConnection.AddUser(userId);
         _logger.LogInformation("New User with Id {userId} created.", userId);
         return UserData.Create(userId, this._config);
     }
@@ -44,18 +38,13 @@ public class SqlUserService : IUserService
 
     public async Task<bool> IsValidUser(Guid userId)
     {
-        const string sql = "SELECT 1 FROM `User` WHERE `UserId` = @UserId";
-        var exists = await _connectionAccessor.DbConnection.ExecuteScalarAsync<int>(sql, 
-            new { UserId = userId });
+        var exists = await _connectionAccessor.DbConnection.IsValidUser(userId);
         return exists == 1;
     }
 
     public async Task<UserData?> GetUserData(Guid userId)
     {
-        const string sql = "SELECT UserId Id FROM `User` WHERE `UserId` = @UserId";
-        var userData = await _connectionAccessor.DbConnection.QueryFirstOrDefaultAsync<UserData>(sql, 
-            new { UserId = userId });
-        
+        var userData = await _connectionAccessor.DbConnection.GetUserData(userId);
         if (userData == null)
         {
             return null;
@@ -90,9 +79,7 @@ public class SqlUserService : IUserService
 
     public async Task<ICollection<string>> GetUserFavorites(Guid userId)
     {
-        const string favsSql = "SELECT PictureId FROM UserFavorites WHERE UserId = @UserId AND IsActive = 1";
-        var favs = await _connectionAccessor.DbConnection.QueryAsync<ulong>(favsSql, 
-            new { UserId = userId });
+        var favs = await _connectionAccessor.DbConnection.GetUserFavorites(userId);
         return favs.OrderByDescending(f => f).Select(f => $"{f}").ToList();
     }
 }

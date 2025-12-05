@@ -132,7 +132,7 @@ internal static class PictureEndpoints
         context.Response.Headers.Append("Downvoted", pictureData.DownVotes.ToString());
         context.Response.Headers.Append("SourceUrl", pictureData.SourceUrl);
 
-        _ = pictureService.IncrementPictureView(pictureData.PictureId, Guid.Empty);
+        await pictureService.IncrementPictureView(pictureData.PictureId, Guid.Empty);
 
         return Results.File(pictureData.FullFilePath, contentType: pictureData.MimeType,
             fileDownloadName: pictureData.DownloadName, enableRangeProcessing: true);

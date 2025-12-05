@@ -6,7 +6,7 @@ public static class RegistrationExtensions
 {
     public static IServiceCollection AddRedisServices(this IServiceCollection services, IConfiguration configuration) =>
         services.AddSingleton<IPictureService, RedisPictureService>()
-                //.AddSingleton<IUserService, RedisUserService>()
+                .AddSingleton<IUserService, RedisUserService>()
                 .AddSingleton<LazyRedis>()
                 .Configure<RedisConfig>(configuration);
 }

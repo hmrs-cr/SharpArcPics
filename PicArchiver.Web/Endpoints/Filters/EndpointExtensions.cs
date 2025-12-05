@@ -7,6 +7,17 @@ public static class EndpointExtensions
 {
     extension(HttpContext? contex)
     {
+        public Guid EnsureValidUserSession(Guid requestUserId)
+        {
+            if (requestUserId != Guid.Empty)
+            {
+                return requestUserId;
+            }
+            
+            var user = contex.GetCurrentUser();
+            return user?.Id ?? throw new InvalidOperationException($"No valid user session");
+        }
+        
         public UserData? GetCurrentUser() =>
             contex?.Items.TryGetValue("CurrentUserData", out var ud) == true && ud is UserData userData ? userData : null;
 

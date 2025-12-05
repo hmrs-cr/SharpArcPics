@@ -16,7 +16,6 @@ public sealed class WebApp
         
         builder.Services.AddOpenApi().AddHttpContextAccessor()
             .AddSingleton<IContentTypeProvider, FileExtensionContentTypeProvider>()
-            .AddRedisServices(builder.Configuration)
             .AddMySql()
             .AddMetadataProvider(builder.Configuration);
         

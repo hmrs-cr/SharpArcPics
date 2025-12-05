@@ -7,15 +7,15 @@ public record PictureStats(string FullFilePath)
     public ulong PictureId
     {
         get => field == 0 ? field = FullFilePath.ComputeHash() : field;
-        private set => field = value;
+        init;
     }
 
     public string Ext { get; } = Path.GetExtension(FullFilePath);
 
-    public uint UpVotes { get; set; }
-    public uint DownVotes { get; set; }
-    public uint Favs { get; set; }
-    public uint Views { get; set; }
+    public long UpVotes { get; set; }
+    public long DownVotes { get; set; }
+    public long Favs { get; set; }
+    public long Views { get; set; }
 
     public string? DownloadName { get; set; }
     public string? MimeType { get; set; }
