@@ -1,20 +1,20 @@
 using Dapper;
 using Microsoft.Extensions.Options;
 using PicArchiver.Web.Endpoints.Filters;
-using PicArchiver.Web.Services.RedisServices;
 
 namespace PicArchiver.Web.Services.MySqlServices;
 
 public class SqlUserService : IUserService
 {
     private readonly IDbConnectionAccessor _connectionAccessor;
-    private readonly ILogger<RedisUserService> _logger;
+    private readonly ILogger<SqlUserService> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly PictureProvidersConfig _config;
 
     public SqlUserService(
         IDbConnectionAccessor connectionAccessor,
-        IOptions<PictureProvidersConfig> config, ILogger<RedisUserService> logger, 
+        IOptions<PictureProvidersConfig> config, 
+        ILogger<SqlUserService> logger, 
         IHttpContextAccessor httpContextAccessor)
     {
         _connectionAccessor = connectionAccessor;
@@ -79,6 +79,7 @@ public class SqlUserService : IUserService
 
     public async Task<ICollection<string>> GetUserFavorites(Guid userId)
     {
+        userId = _httpContextAccessor.HttpContext.EnsureValidUserSession(userId);
         var favs = await _connectionAccessor.DbConnection.GetUserFavorites(userId);
         return favs.OrderByDescending(f => f).Select(f => $"{f}").ToList();
     }

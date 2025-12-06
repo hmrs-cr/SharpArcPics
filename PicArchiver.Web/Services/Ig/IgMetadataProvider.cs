@@ -19,6 +19,13 @@ public class IgMetadataProvider : IMetadataProvider
     }
 
     public string Name => "ig";
+    
+    public static bool IsValidFilePath(string fileName)
+    {
+        return !fileName.EndsWith(".mp4", StringComparison.InvariantCultureIgnoreCase) &&
+               !fileName.EndsWith(IgFile.MetadataExtension) &&
+               !File.GetAttributes(fileName).HasFlag(FileAttributes.Hidden);
+    }
 
     public async ValueTask<PictureStats> SetMetadata(PictureStats pictureData)
     {

@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.StaticFiles;
 using PicArchiver.Core.Metadata;
-using PicArchiver.Extensions;
 using PicArchiver.Web.Endpoints.Filters;
-using PicArchiver.Web.Services.RedisServices;
 
 namespace PicArchiver.Web.Services.MySqlServices;
 
@@ -11,7 +9,7 @@ public class SqlPictureService : IPictureService
     private readonly IMetadataProvider _metadataProvider;
     private readonly IPictureProvider _pictureProvider;
     private readonly IContentTypeProvider _contentTypeProvider;
-    private readonly ILogger<RedisPictureService> _logger;
+    private readonly ILogger<SqlPictureService> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IDbConnectionAccessor _connectionAccessor;
 
@@ -19,7 +17,7 @@ public class SqlPictureService : IPictureService
         IMetadataProvider metadataProvider,
         IPictureProvider pictureProvider,
         IContentTypeProvider contentTypeProvider,
-        ILogger<RedisPictureService> logger,
+        ILogger<SqlPictureService> logger,
         IHttpContextAccessor httpContextAccessor,
         IDbConnectionAccessor connectionAccessor)
     {
@@ -68,14 +66,16 @@ public class SqlPictureService : IPictureService
         return picPath;
     }
     
-    public Task<ICollection<string>> GetTopRatedPicturesIds()
+    public async Task<ICollection<string>> GetTopRatedPicturesIds()
     {
-        return Task.FromResult<ICollection<string>>([]);
+        var result = await _connectionAccessor.DbConnection.GetMostVotedPictures("up");
+        return result.Select(f => $"{f}").ToList();
     }
     
-    public Task<ICollection<string>> GetLowRatedPicturesIds()
+    public async Task<ICollection<string>> GetLowRatedPicturesIds()
     {
-        return Task.FromResult<ICollection<string>>([]);
+        var result = await _connectionAccessor.DbConnection.GetMostVotedPictures("down");
+        return result.Select(f => $"{f}").ToList();
     }
 
     public async Task<ICollection<string>> GetImageSet(string setId)
@@ -84,7 +84,7 @@ public class SqlPictureService : IPictureService
         var result = new List<string>(32);
         await foreach (var path in picSet.OrderByDescending(p => p))
         {
-            var pictureId = path.ComputeHash();
+            var pictureId = _pictureProvider.GetPictureIdFromPath(path);
             await SavePicToDbAsync(pictureId, path);
             result.Add($"{pictureId}");
         }
@@ -113,14 +113,14 @@ public class SqlPictureService : IPictureService
         var path = await _connectionAccessor.DbConnection.GetPicturePath(pictureId);
         if (File.Exists(path))
         {
-            var result = new PictureStats(path);
+            var result = new PictureStats(path, pictureId);
             if (requestUserId.HasValue)
             {
                 requestUserId = _httpContextAccessor.HttpContext.EnsureValidUserSession(requestUserId.Value);
-                var views = await _connectionAccessor.DbConnection.GetPictureViewCount(userId: requestUserId);
-                if (views > 0)
-                {
-                    result.Views = 0;
+                var views = await _connectionAccessor.DbConnection.GetPictureViewCount(userId: requestUserId, pictureId: pictureId);
+                if (views > 0 && onlyIfNotViewed)
+                {      
+                    result.Views = 1;
                     return result;
                 }
 
@@ -157,6 +157,7 @@ public class SqlPictureService : IPictureService
 
     public async Task<int> Favorite(ulong pictureId, Guid requestUserId, bool remove = false)
     {
+        requestUserId =  _httpContextAccessor.HttpContext.EnsureValidUserSession(requestUserId);
         var result = await _connectionAccessor.DbConnection.MarkPicturesAsFavorite(
             userId: requestUserId, pictureId: pictureId, remove);
         return result;
@@ -165,6 +166,7 @@ public class SqlPictureService : IPictureService
     private async Task<int> Vote(ulong pictureId, Guid requestUserId, bool isUp, bool remove)
     {
         var vote = isUp ? "up" : "down";
+        requestUserId = _httpContextAccessor.HttpContext.EnsureValidUserSession(requestUserId);
         var result = await _connectionAccessor.DbConnection.VoteForPicture(requestUserId, pictureId, vote, remove);
         return result;
     }
@@ -172,7 +174,7 @@ public class SqlPictureService : IPictureService
     private async Task<PictureStats> SavePicturePath(ulong pictureId, string picturePath, object? contextData = null)
     {
         await SavePicToDbAsync(pictureId, picturePath);
-        return await this.SetMetadatada(new PictureStats(picturePath) { PictureId = pictureId,  ContextData  = contextData});
+        return await this.SetMetadatada(new PictureStats(picturePath, pictureId) { ContextData  = contextData});
     }
 
     private async Task SavePicToDbAsync(ulong picId, string path)
@@ -182,6 +184,7 @@ public class SqlPictureService : IPictureService
 
     public async Task<int> IncrementPictureView(ulong pictureId, Guid requestUserId)
     {
+        requestUserId = _httpContextAccessor.HttpContext.EnsureValidUserSession(requestUserId);
         var result = await _connectionAccessor.DbConnection.AddPictureView(requestUserId, pictureId);
         return result;
     }

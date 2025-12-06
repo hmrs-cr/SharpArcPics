@@ -9,7 +9,7 @@ public static class DbConnectionPictureExtensions
     {
         public async Task<string?> GetPicturePath(ulong pictureId)
         {
-            const string sql = "SELECT FileName FROM Pictures WHERE PictureID = @PictureId AND IsDeleted != 0";
+            const string sql = "SELECT FileName FROM Pictures WHERE PictureID = @PictureId AND IsDeleted = 0";
 
             return await connection.QueryFirstOrDefaultAsync<string>(sql,
                 new { PictureId = pictureId });
@@ -18,7 +18,7 @@ public static class DbConnectionPictureExtensions
         public async Task<int> AddPicturePath(ulong pictureId, string path)
         {
             const string sql = """
-                               INSERT INTO Pictures  (PictureId, FileName, IsDeleted, IsIncoming) 
+                               INSERT IGNORE INTO Pictures  (PictureId, FileName, IsDeleted, IsIncoming) 
                                VALUES (@PictureId, @FileName, 0, 0)
                                """;
 
@@ -129,6 +129,20 @@ public static class DbConnectionPictureExtensions
             
             return await connection.ExecuteAsync(sql, new 
                 { PictureId = pictureId, UserId = userId, VoteDirection = direction, IsActive = remove ? 0 : 1 });
+        }
+
+        public async Task<IEnumerable<ulong>> GetMostVotedPictures(string direction)
+        {
+            const string sqlBase = """
+                               SELECT PictureId, SUM(IF(VoteDirection = 'down', -1, 1)) AS Votes FROM PictureVotes
+                               GROUP BY PictureId
+                               ORDER BY Votes
+                               """;
+
+            const string sqlDown = sqlBase + " LIMIT 100";
+            const string sqlUp = sqlBase + " DESC LIMIT 100";
+
+            return await connection.QueryAsync<ulong>(direction == "up" ? sqlUp : sqlDown);
         }
     }
 }

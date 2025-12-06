@@ -2,14 +2,8 @@ using PicArchiver.Extensions;
 
 namespace PicArchiver.Core.Metadata;
 
-public record PictureStats(string FullFilePath)
+public record PictureStats(string FullFilePath, ulong PictureId)
 {
-    public ulong PictureId
-    {
-        get => field == 0 ? field = FullFilePath.ComputeHash() : field;
-        init;
-    }
-
     public string Ext { get; } = Path.GetExtension(FullFilePath);
 
     public long UpVotes { get; set; }

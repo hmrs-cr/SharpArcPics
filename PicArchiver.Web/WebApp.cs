@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.StaticFiles;
 using PicArchiver.Web.Endpoints;
 using PicArchiver.Web.Services;
 using PicArchiver.Web.Services.MySqlServices;
-using PicArchiver.Web.Services.RedisServices;
 
 namespace PicArchiver.Web;
 

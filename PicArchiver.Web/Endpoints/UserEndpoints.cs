@@ -10,8 +10,8 @@ internal static class UserEndpoints
     {
         var userApi = routeBuilder.MapGroup("/user");
         userApi.MapPost(string.Empty, AddUser).WithName("AddUser");
-        userApi.MapGet(string.Empty, GetUser).WithName("GetUser").AddEndpointFilter<ValidUserFilter>();
-        userApi.MapGet("favs", GetMyFavorites).WithName("GetMyFavorites").AddEndpointFilter<ValidUserFilter>();
+        userApi.MapGet(string.Empty, GetUser).WithName("GetUser").UserRequired();
+        userApi.MapGet("favs", GetMyFavorites).WithName("GetMyFavorites").UserRequired();
 
         return routeBuilder;
     }
@@ -20,7 +20,6 @@ internal static class UserEndpoints
     {
         return Results.Ok(await userService.GetUserFavorites(Guid.Empty));
     }
-    
     
     private static async Task<IResult> GetUser(IUserService userService)
     {

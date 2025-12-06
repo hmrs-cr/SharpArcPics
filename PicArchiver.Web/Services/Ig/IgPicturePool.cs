@@ -85,7 +85,7 @@ public class IgPicturePool : IPictureProvider, IDisposable
         {
             foreach (var file in Directory.EnumerateFiles(setPath, "*.*", SearchOption.TopDirectoryOnly))
             {
-                if (IsValidFilePath(file))
+                if (IgMetadataProvider.IsValidFilePath(file))
                 {
                     yield return file;
                 }
@@ -97,7 +97,7 @@ public class IgPicturePool : IPictureProvider, IDisposable
     {
         foreach (var file in Directory.EnumerateFiles(_config.PicturesBasePath, "*.*", SearchOption.AllDirectories))
         {
-            if (IsValidFilePath(file) && Path.GetFileName(file.AsSpan()).StartsWith(setId) &&
+            if (IgMetadataProvider.IsValidFilePath(file) && Path.GetFileName(file.AsSpan()).StartsWith(setId) &&
                 Path.GetDirectoryName(file) is { } directoryName)
             {
                 foreach (var file2 in Directory.EnumerateFiles(directoryName, "*.*", SearchOption.TopDirectoryOnly))
@@ -149,7 +149,7 @@ public class IgPicturePool : IPictureProvider, IDisposable
                     var val = GetRandomCommand.GetRandom(_config.PicturesBasePath);
                     // Write to channel (TryWrite is efficient for Bounded channels)
                     // If false (full), we just stop trying.
-                    if (val != null && IsValidFilePath(val))
+                    if (val != null && IgMetadataProvider.IsValidFilePath(val))
                     {
                         IEnumerable<string>? allUserNames = null;
                         if (ScanCommand.ScanUserNames(Path.GetDirectoryName(val)) is { Count: > 1} userNames)
@@ -172,12 +172,6 @@ public class IgPicturePool : IPictureProvider, IDisposable
                 _logger.LogError(ex, "Failed to refill.");
             }
         }
-    }
-
-    private bool IsValidFilePath(string fileName)
-    {
-        return !fileName.EndsWith(".mp4", StringComparison.InvariantCultureIgnoreCase) &&
-               !File.GetAttributes(fileName).HasFlag(FileAttributes.Hidden);
     }
 
     public void Dispose()

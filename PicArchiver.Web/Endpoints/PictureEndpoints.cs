@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using PicArchiver.Web.Endpoints.Filters;
 using PicArchiver.Web.Services;
@@ -9,15 +8,15 @@ internal static class PictureEndpoints
 {
     public static IEndpointRouteBuilder AddPictureEndpoints(this IEndpointRouteBuilder routeBuilder)
     {
-        var pictureApi = routeBuilder.MapGroup("/picture").AddEndpointFilter<ValidUserFilter>();
+        var pictureApi = routeBuilder.MapGroup("/picture").UserRequired();
         
         pictureApi.MapGet("/next", GetRandomPicture).WithName("GetNextPicture");
         pictureApi.MapGet("/{pictureId}", GetPictureById).WithName("GetPicture");
-        pictureApi.MapDelete("/{pictureId}", DeletePictureById).WithName("DeletePictureById").AddEndpointFilter(ValidRoleFilter.IsAdminUserFilter);
+        pictureApi.MapDelete("/{pictureId}", DeletePictureById).WithName("DeletePictureById").AdminUserRequired();
         pictureApi.MapGet("/{pictureId}/thumb", GetPictureThumbnail).WithName("GetPictureThumbnail");
         pictureApi.MapGet("/set/toprated", GetTopRatedPictures).WithName("GetTopRatedPictures");
         pictureApi.MapGet("/set/lowrated", GetLowRatedPictures).WithName("GetLowRatedPictures");
-        pictureApi.MapGet("/set/my-favs", GetMyFavorites).WithName("GetMyFavoritesSet").AddEndpointFilter<ValidUserFilter>();
+        pictureApi.MapGet("/set/my-favs", GetMyFavorites).WithName("GetMyFavoritesSet");
         pictureApi.MapGet("/set/{setId}", GetImageSet).WithName("GetImageSet");
 
         pictureApi.MapPut("/{pictureId}/up", UpvotePicture).WithName("UpvotePicture");
