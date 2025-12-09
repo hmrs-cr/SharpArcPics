@@ -6,7 +6,7 @@ public sealed class IgMetadataLoader : MetadataLoader
 {
     public static readonly string UserIdKey = "UserId";
     public static readonly string PictureIdKey = "PictureId";
-    public static readonly string PostIdKey = "PostId";
+    public static readonly string PostTimestampKey = "PostTimestamp";
     public static readonly string UserNameKey = "UserName";
     public static readonly string FileNameKey = "FileName";
     
@@ -27,7 +27,7 @@ public sealed class IgMetadataLoader : MetadataLoader
         }
 
         metadata[UserIdKey] = igFile.UserId;
-        metadata[PostIdKey] = igFile.PostId;
+        metadata[PostTimestampKey] = igFile.Timestamp;
         metadata[PictureIdKey] = igFile.PictureId;
         metadata[UserNameKey] = igFile.UserName;
         metadata[FileNameKey] = igFile.FileName;
@@ -58,7 +58,7 @@ public sealed class IgMetadataLoader : MetadataLoader
     }
 }
 
-public readonly record struct IgFile(string FullPath, string FileName, string UserName, long UserId, long PictureId, long PostId)
+public readonly record struct IgFile(string FullPath, string FileName, string UserName, long UserId, long PictureId, long Timestamp)
 {
     public static readonly char Separator = '_';
     
@@ -67,7 +67,9 @@ public readonly record struct IgFile(string FullPath, string FileName, string Us
     public bool IsValid => !string.IsNullOrEmpty(FileName) && !string.IsNullOrEmpty(UserName)
                                                            && UserId > 100 
                                                            && PictureId > 1000 
-                                                           && PostId > 1000;
+                                                           && Timestamp > 1000;
+    
+    public DateTimeOffset Datetime => DateTimeOffset.FromUnixTimeSeconds(Timestamp);
     
     public static IgFile Parse(string fileName)
     {
@@ -93,10 +95,10 @@ public readonly record struct IgFile(string FullPath, string FileName, string Us
         var pictureIdSpan = fileNameSpan.Slice(pictureIdStartIndex + 1);
         fileNameSpan = fileNameSpan.Slice(0, pictureIdStartIndex);
         
-        var postIdStartIndex = fileNameSpan.LastIndexOf(Separator);
-        if (postIdStartIndex == -1) return default;
-        var postIdSpan = fileNameSpan.Slice(postIdStartIndex + 1);
-        fileNameSpan = fileNameSpan.Slice(0, postIdStartIndex);
+        var timestampStartIndex = fileNameSpan.LastIndexOf(Separator);
+        if (timestampStartIndex == -1) return default;
+        var timestampSpan = fileNameSpan.Slice(timestampStartIndex + 1);
+        fileNameSpan = fileNameSpan.Slice(0, timestampStartIndex);
 
         return new IgFile
         {
@@ -105,7 +107,7 @@ public readonly record struct IgFile(string FullPath, string FileName, string Us
             UserName = fileNameSpan.ToString(),
             UserId = long.TryParse(userIdSpan, out var userId) ? userId : 0,
             PictureId = long.TryParse(pictureIdSpan, out var pictureId) ? pictureId : 0,
-            PostId = long.TryParse(postIdSpan, out var postId) ? postId : 0
+            Timestamp = long.TryParse(timestampSpan, out var postId) ? postId : 0
         };
     }
 }

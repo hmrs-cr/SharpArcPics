@@ -125,7 +125,7 @@ public class ArchiverTest
         {
             Assert.That(result.IsValid, Is.EqualTo(isValid));
             Assert.That(result.UserName, Is.EqualTo(expectedUserName));
-            Assert.That(result.PostId, Is.EqualTo(expectedPostId));
+            Assert.That(result.Timestamp, Is.EqualTo(expectedPostId));
             Assert.That(result.PictureId, Is.EqualTo(expectedPicId));
             Assert.That(result.UserId, Is.EqualTo(expectedUserId));
         });

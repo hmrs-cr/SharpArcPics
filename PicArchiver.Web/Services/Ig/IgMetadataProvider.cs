@@ -54,7 +54,7 @@ public class IgMetadataProvider : IMetadataProvider
         pictureData.Metadata["IG_UserName"] = igFile.UserName;
         pictureData.Metadata["IG_UserId"] = igFile.UserId.ToString();
         pictureData.Metadata["IG_PictureId"] = igFile.PictureId.ToString();
-        pictureData.Metadata["IG_PostId"] = igFile.PostId.ToString();
+        pictureData.Metadata["IG_PostTimestamp"] = igFile.Timestamp.ToString();
         pictureData.DownloadName = $"{igFile.UserName}{pictureData.Ext}";
         pictureData.SourceUrl = $"https://www.instagram.com/{igFile.UserName}/";
         
