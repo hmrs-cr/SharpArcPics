@@ -1,3 +1,5 @@
+using PicArchiver.Core.DataAccess;
+
 namespace PicArchiver.Web.Services;
 
 public interface IUserService
@@ -13,29 +15,12 @@ public interface IUserService
     Task<ICollection<string>> GetUserFavorites(Guid userId);
 }
 
-public class UserData
+public static class UserServiceExtensions
 {
-    public Guid Id { get; set; }
-    public ICollection<string>? Favs { get; private set; }
-    
-    public AppInfo? AppInfo { get; private set; }
-    
-    public bool IsAdmin => HasRoles("Admin");
-
-    public static UserData Create(Guid userId, PictureProvidersConfig config, ICollection<string>? favs = null)
+    public static UserData SetData(this UserData userData, PictureProvidersConfig config, ICollection<string>? favs = null)
     {
-        var result = new UserData
-        {
-            Id = userId
-        };
-        
-        return  result.SetData(config, favs);;
-    }
-
-    public UserData SetData(PictureProvidersConfig config, ICollection<string>? favs = null)
-    {
-        this.Favs = favs;
-        this.AppInfo = new AppInfo
+        userData.Favs = favs;
+        userData.AppInfo = new AppInfo
         {
             AppVersion = WebApp.Version,
             AppName = WebApp.Name,
@@ -46,25 +31,6 @@ public class UserData
             TopRatedLabel = config.TopRatedLabel
         };
         
-        return this;
+        return userData;
     }
-
-    public bool HasRoles(params IEnumerable<string> roles)
-    {
-        // No roles implement for now.
-        // TODO: Implement roles.
-        return true;
-    }
-}
-
-public class AppInfo
-{
-    public required string AppName { get; init; }
-    public required string AppVersion { get; init; }
-    public required string AppDescription { get; init; }
-    public required string Developer { get; init; }
-    
-    public string? FavsLabel { get; init; }
-    public string? TopRatedLabel { get; init; }
-    public string? LowRatedLabel { get; init; }
 }

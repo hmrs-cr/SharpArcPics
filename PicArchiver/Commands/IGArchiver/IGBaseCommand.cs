@@ -8,7 +8,8 @@ public class IGBaseCommand : Command
     [
         new ScanCommand(),
         new RemoveDuplicatesCommand(),
-        new GetRandomCommand()
+        new GetRandomCommand(),
+        new UpdateMetadataCommand()
     ];
     
     protected IGBaseCommand(string name, string description) : base($"{name}", description)

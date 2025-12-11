@@ -1,7 +1,7 @@
 using System.Data;
 using Dapper;
 
-namespace PicArchiver.Web.Services.MySqlServices;
+namespace PicArchiver.Core.DataAccess;
 
 public static class DbConnectionExtensions
 {

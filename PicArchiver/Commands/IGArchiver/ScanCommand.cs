@@ -96,7 +96,7 @@ public class ScanCommand : IGBaseCommand
         var userNamesByUserId = new Dictionary<long, HashSet<string>>();
         var picturesByPictureId = new Dictionary<long, ICollection<string>>();
         
-        var allFiles = Directory.GetFiles(directory, "*.*", SearchOption.AllDirectories).Select(IgFile.Parse).ToImmutableList();
+        var allFiles = Directory.EnumerateFiles(directory, "*.*", SearchOption.AllDirectories).Select(IgFile.Parse).ToImmutableList();
         var allValidIgFiles = allFiles.Where(igf => igf.IsValid);
 
         foreach (var file in allValidIgFiles)

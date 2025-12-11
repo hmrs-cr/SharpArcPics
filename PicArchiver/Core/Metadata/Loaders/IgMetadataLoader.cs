@@ -44,10 +44,7 @@ public sealed class IgMetadataLoader : MetadataLoader
             return context.DestinationFileExists;
         }
         
-        var existingDestFile = Directory.EnumerateFiles(context.DestinationFolderPath,
-            $"*_{pictureId}_{userId}.*", SearchOption.TopDirectoryOnly).FirstOrDefault();
-
-        var exists = existingDestFile != null;
+        var exists = DestinationPathIfExists(context.DestinationFolderPath, pictureId, userId) != null;
         if (exists)
         {
             context.DeleteSourceFileIfDestExists = config.DeleteSourceFileIfDestExists == true;
@@ -56,12 +53,38 @@ public sealed class IgMetadataLoader : MetadataLoader
         return exists;
 
     }
+
+    public static string? DestinationPathIfExists(string destinationFolderPath, long pictureId, long userId)
+    {
+        var userIdStr = $"{userId}".AsSpan();
+        if (!destinationFolderPath.EndsWith(userIdStr))
+        {
+            var destinationFolderWithUserIdPath = Path.Join(destinationFolderPath, userIdStr);
+            if (Directory.Exists(destinationFolderWithUserIdPath))
+            {
+                destinationFolderPath = destinationFolderWithUserIdPath;
+            }
+        }
+
+        var existingDestFile = Directory.EnumerateFiles(destinationFolderPath, $"*_{pictureId}_{userId}.*",
+            SearchOption.TopDirectoryOnly).FirstOrDefault();
+
+        return existingDestFile;
+    }
 }
 
-public readonly record struct IgFile(string FullPath, string FileName, string UserName, long UserId, long PictureId, long Timestamp)
+public record IgFile(
+    string FullPath,
+    string FileName,
+    string UserName,
+    long UserId,
+    long PictureId,
+    long Timestamp,
+    bool IsMetadata)
 {
-    public static readonly char Separator = '_';
+    private static readonly IgFile InvalidIgFile = new IgFile("", "", "", 0, 0, 0, false);
     
+    public static readonly char Separator = '_';
     public static readonly string MetadataExtension = ".metadata.json";
     
     public bool IsValid => !string.IsNullOrEmpty(FileName) && !string.IsNullOrEmpty(UserName)
@@ -69,14 +92,24 @@ public readonly record struct IgFile(string FullPath, string FileName, string Us
                                                            && PictureId > 1000 
                                                            && Timestamp > 1000;
     
-    public DateTimeOffset Datetime => DateTimeOffset.FromUnixTimeSeconds(Timestamp);
+    public DateTimeOffset DateTime => DateTimeOffset.FromUnixTimeSeconds(Timestamp);
+    
+    public string? DestinationPathIfExists(string destinationFolderPath) => 
+        IgMetadataLoader.DestinationPathIfExists(destinationFolderPath, PictureId, UserId);
+    
+    public bool ExistsAtDestination(string destinationFolderPath) => DestinationPathIfExists(destinationFolderPath) != null;
     
     public static IgFile Parse(string fileName)
     {
         var fullPath = fileName;
         var fileNameSpan = Path.GetFileName(fileName).AsSpan();
         fileName = fileNameSpan.ToString();
-        fileNameSpan = fileNameSpan.TrimEnd(MetadataExtension);
+
+        var isMetadata = fileNameSpan.EndsWith(MetadataExtension);
+        if (isMetadata)
+        {
+            fileNameSpan = fileNameSpan.TrimEnd(MetadataExtension);
+        }
         
         var dotIndex = fileNameSpan.LastIndexOf("_n."); 
         dotIndex = dotIndex < 10 ? fileNameSpan.LastIndexOf(" (1).") : dotIndex;
@@ -86,28 +119,27 @@ public readonly record struct IgFile(string FullPath, string FileName, string Us
         fileNameSpan = fileNameSpan.Slice(0, dotIndex);
         
         var userIdStartIndex = fileNameSpan.LastIndexOf(Separator);
-        if (userIdStartIndex == -1) return default;
+        if (userIdStartIndex == -1) return InvalidIgFile;
         var userIdSpan = fileNameSpan.Slice(userIdStartIndex + 1);
         fileNameSpan = fileNameSpan.Slice(0, userIdStartIndex);
         
         var pictureIdStartIndex = fileNameSpan.LastIndexOf(Separator);
-        if (pictureIdStartIndex == -1) return default;
+        if (pictureIdStartIndex == -1) return InvalidIgFile;
         var pictureIdSpan = fileNameSpan.Slice(pictureIdStartIndex + 1);
         fileNameSpan = fileNameSpan.Slice(0, pictureIdStartIndex);
         
         var timestampStartIndex = fileNameSpan.LastIndexOf(Separator);
-        if (timestampStartIndex == -1) return default;
+        if (timestampStartIndex == -1) return InvalidIgFile;
         var timestampSpan = fileNameSpan.Slice(timestampStartIndex + 1);
         fileNameSpan = fileNameSpan.Slice(0, timestampStartIndex);
 
-        return new IgFile
-        {
-            FullPath = fullPath,
-            FileName = fileName,
-            UserName = fileNameSpan.ToString(),
-            UserId = long.TryParse(userIdSpan, out var userId) ? userId : 0,
-            PictureId = long.TryParse(pictureIdSpan, out var pictureId) ? pictureId : 0,
-            Timestamp = long.TryParse(timestampSpan, out var postId) ? postId : 0
-        };
+        return new IgFile(
+            fullPath, 
+            fileName, 
+            fileNameSpan.ToString(),
+            long.TryParse(userIdSpan, out var userId) ? userId : 0,
+            long.TryParse(pictureIdSpan, out var pictureId) ? pictureId : 0,
+            long.TryParse(timestampSpan, out var postId) ? postId : 0,
+            isMetadata);
     }
 }

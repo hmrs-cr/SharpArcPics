@@ -1,5 +1,6 @@
 using Dapper;
 using Microsoft.Extensions.Options;
+using PicArchiver.Core.DataAccess;
 using PicArchiver.Web.Endpoints.Filters;
 
 namespace PicArchiver.Web.Services.MySqlServices;
@@ -27,7 +28,7 @@ public class SqlUserService : IUserService
     {
         await _connectionAccessor.DbConnection.AddUser(userId);
         _logger.LogInformation("New User with Id {userId} created.", userId);
-        return UserData.Create(userId, this._config);
+        return new UserData { Id = userId }.SetData(_config);
     }
 
     public Task<UserData> AddUser()
@@ -51,7 +52,7 @@ public class SqlUserService : IUserService
         }
         
         var userFavorites = await this.GetUserFavorites(userId);
-        return UserData.Create(userId, this._config, userFavorites);
+        return new UserData { Id = userId }.SetData(this._config, userFavorites);
     }
 
     public async Task<UserData?> GetCurrentUserData()

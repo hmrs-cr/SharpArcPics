@@ -1,7 +1,10 @@
 using System.Data;
+using System.Diagnostics;
 using Dapper;
+using PicArchiver.Core.Metadata.Loaders;
+using PicArchiver.Extensions;
 
-namespace PicArchiver.Web.Services.MySqlServices;
+namespace PicArchiver.Core.DataAccess;
 
 public static class DbConnectionPictureExtensions
 {
@@ -23,6 +26,127 @@ public static class DbConnectionPictureExtensions
                                """;
 
             return await connection.ExecuteAsync(sql, new { PictureId = pictureId, FileName = path });
+        }
+
+        public async Task<int> AddOrUpdatePictureIgGraphMetadata(ulong pictureId, IgFile igFile, IgGraphNode metadata)
+        {
+            const string insertSql = """
+                               INSERT IGNORE INTO Pictures
+                                    (PictureId,
+                                     FileName,
+                                     IsIncoming,
+                                     IsDeleted)
+                               VALUES (@PictureId,
+                                       @FileName,
+                                       1,
+                                       0);
+                               INSERT INTO IgMetadata
+                                    (IgUserId,
+                                     IgPictureId,
+                                     PictureId,
+                                     TakenAt,
+                                     Caption,
+                                     ShortCode)
+                               VALUES 
+                                   (@IgUserId,
+                                    @IgPictureId,
+                                    @PictureId,
+                                    @TakenAt,
+                                    @Caption,
+                                    @ShortCode)
+                               ON DUPLICATE KEY UPDATE
+                                    PictureId =  @PictureId,
+                                    TakenAt = @TakenAt,
+                                    Caption = @Caption,
+                                    ShortCode = @ShortCode;
+                               INSERT INTO IgUserNames
+                                    (IgUserId, 
+                                     IgUserName, 
+                                     IgFullName)
+                               VALUES
+                                   (@IgUserId,
+                                    @IgUserName,
+                                    @IgFullName)
+                               ON DUPLICATE KEY UPDATE
+                                    IgFullName = @IgFullName;
+                               """;
+
+            Debug.Assert(igFile.UserId ==  metadata.IgOwner.Id, "Ig UserId does not match");
+            
+            return await connection.ExecuteAsync(insertSql, new
+            {
+                IgUserId = igFile.UserId,
+                IgPictureId = igFile.PictureId,
+                IgUserName = igFile.UserName,
+                IgFullName = metadata.IgOwner.FullName,
+                PictureId = pictureId,
+                TakenAt = igFile.Timestamp,
+                Caption = metadata.Caption,
+                ShortCode = metadata.Shortcode,
+                FileName = igFile.FileName,
+            });
+        }
+        
+        public async Task<int> AddOrUpdatePictureMetadata(ulong pictureId, string path, 
+            IgMetadataRoot.MetadataData metadata, string? igUserName, long? igUserId, DateTime? dateAdded)
+        {
+            const string sql = """
+                               INSERT INTO Pictures  
+                                   (PictureId,
+                                    FileName,
+                                    Description,
+                                    Clothing,
+                                    Emotions,
+                                    Objects,
+                                    People,
+                                    Race,
+                                    Gender,
+                                    DateAdded,
+                                    IsDeleted,
+                                    IsIncoming) 
+                               VALUES (@PictureId, 
+                                       @FileName,
+                                       @Description,
+                                       @Clothing,
+                                       @Emotions,
+                                       @Objects,
+                                       @People,
+                                       @Race,
+                                       @Gender,
+                                       @DateAdded,
+                                       0, 
+                                       0) 
+                               ON DUPLICATE KEY UPDATE
+                                       FileName = @FileName,
+                                       Description  = @Description,
+                                       Clothing  = @Clothing,
+                                       Emotions  = @Emotions,
+                                       Objects   = @Objects,
+                                       People    = @People,
+                                       Race      = @Race,
+                                       Gender    = @Gender,
+                                       DateAdded = @DateAdded;
+                                INSERT IGNORE INTO IgUserNames 
+                                    (IgUserId, IgUserName) 
+                                VALUES 
+                                    (@UserId, @UserName);
+                               """;
+
+            return await connection.ExecuteAsync(sql, new
+            {
+                PictureId = pictureId, 
+                FileName = path,
+                Description = metadata.Paras?.FirstOrDefault(),
+                Clothing = metadata.Table?.Clothing,
+                Emotions = metadata.Table?.Emotions,
+                Objects = metadata.Table?.Objects,
+                People = metadata.Table?.People,   
+                Race = metadata.Table?.Race,
+                Gender = metadata.Paras?.InferGender(),
+                DateAdded = dateAdded,
+                UserId = igUserId,
+                UserName = igUserName
+            });
         }
         
         public async Task<int> AddPictureView(Guid userId, ulong pictureId)

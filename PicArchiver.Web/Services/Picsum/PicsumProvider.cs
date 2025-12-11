@@ -87,6 +87,5 @@ public class PicsumProvider : IPictureProvider
         throw new NotImplementedException();
     }
 
-    public ulong GetPictureIdFromPath(string fullPicturePath) =>
-        Path.GetFileName(fullPicturePath.AsSpan()).ComputeHash();
+    public ulong GetPictureIdFromPath(string fullPicturePath) => fullPicturePath.ComputeFileNameHash();
 }

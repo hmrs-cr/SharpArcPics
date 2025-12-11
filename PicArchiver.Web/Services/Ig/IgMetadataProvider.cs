@@ -6,11 +6,6 @@ namespace PicArchiver.Web.Services.Ig;
 
 public class IgMetadataProvider : IMetadataProvider
 {
-    private static readonly JsonSerializerOptions jssOptions = new JsonSerializerOptions()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-    
     private readonly ILogger<IgMetadataProvider> _logger;
 
     public IgMetadataProvider(ILogger<IgMetadataProvider> logger)
@@ -36,7 +31,7 @@ public class IgMetadataProvider : IMetadataProvider
         if (File.Exists(metadataFile))
         {
             await using var stream = File.Open(metadataFile, FileMode.Open, FileAccess.Read, FileShare.Read);
-            var igmd = await JsonSerializer.DeserializeAsync<IgMetadataRoot>(stream, jssOptions);
+            var igmd = await JsonSerializer.DeserializeAsync<IgMetadataRoot>(stream, IgMetadataRoot.JssOptions);
             igMetadata = igmd.ToString();
         }
 
@@ -59,30 +54,5 @@ public class IgMetadataProvider : IMetadataProvider
         pictureData.SourceUrl = $"https://www.instagram.com/{igFile.UserName}/";
         
         return pictureData;
-    }
-    
-    internal readonly struct IgMetadataRoot
-    {
-        public bool Success { get; init; }
-        public MetadataData Data { get; init; }
-
-        public override string ToString() => !Success ? string.Empty : Data.ToString();
-        
-        internal readonly struct MetadataData
-        {
-            public MetadataTable Table { get; init; }
-            
-            public override string ToString() => Table.ToString();
-            
-            internal readonly struct MetadataTable
-            {
-                public string Clothing  { get; init; }
-                public string People { get; init; }
-                public string Emotions { get; init; }
-                public string Race { get; init; }
-
-                public override string ToString() => $"{People} ({Race}) in {Clothing}. {Emotions}";
-            }
-        }
     }
 }

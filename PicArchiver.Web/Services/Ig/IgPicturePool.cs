@@ -110,8 +110,7 @@ public class IgPicturePool : IPictureProvider, IDisposable
         }
     }
 
-    public ulong GetPictureIdFromPath(string fullPicturePath) =>
-        Path.GetFileName(fullPicturePath.AsSpan()).ComputeHash();
+    public ulong GetPictureIdFromPath(string fullPicturePath) => fullPicturePath.ComputeFileNameHash();
 
     /// <summary>
     /// The logic running on the dedicated thread.

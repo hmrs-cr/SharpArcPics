@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.StaticFiles;
+using PicArchiver.Core.DataAccess;
 using PicArchiver.Core.Metadata;
 using PicArchiver.Web.Endpoints.Filters;
 
