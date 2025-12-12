@@ -1,4 +1,5 @@
 using PicArchiver.Core.Configs;
+using PicArchiver.Extensions;
 
 namespace PicArchiver.Core.Metadata.Loaders;
 
@@ -93,6 +94,7 @@ public record IgFile(
                                                            && Timestamp > 1000;
     
     public DateTimeOffset DateTime => DateTimeOffset.FromUnixTimeSeconds(Timestamp);
+    public ulong PictureDbId => field == 0 ? field = FileName.ComputeFileNameHash() : field;
     
     public string? DestinationPathIfExists(string destinationFolderPath) => 
         IgMetadataLoader.DestinationPathIfExists(destinationFolderPath, PictureId, UserId);

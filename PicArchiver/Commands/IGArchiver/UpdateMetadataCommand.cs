@@ -19,6 +19,10 @@ public class UpdateMetadataCommand: IGBaseCommand
             name: "--incoming-folder",
             description: "Move existing files found along graph metadata to this folder.");
         
+        var curatedArchiveFolderOption =  new Option<string?>(
+            name: "--curated-folder",
+            description: "Folder with existing curated pictures. Used to detect duplicates.");
+        
         var metadataArchiveFolderOption =  new Option<string?>(
             name: "--metadata-archive-folder",
             description: "Move loaded metadata files to this folder.");
@@ -31,25 +35,30 @@ public class UpdateMetadataCommand: IGBaseCommand
         this.AddOption(connectionStringOption);
         this.AddOption(destinationFolderOption);
         this.AddOption(metadataArchiveFolderOption);
+        this.AddOption(curatedArchiveFolderOption);
         
         this.SetHandler(
             ScanInternalAsync, 
             sourceFolderOption, 
             connectionStringOption, 
             destinationFolderOption,
-            metadataArchiveFolderOption);
+            metadataArchiveFolderOption,
+            curatedArchiveFolderOption);
     }
 
-    private async Task ScanInternalAsync(string directory, string connectionString, string? destinationFolder, string? metadataArchiveFolder)
+    private async Task ScanInternalAsync(string directory, string connectionString, string? destinationFolder, 
+        string? metadataArchiveFolder, string? curatedFolder)
     {
         var options = new UpdateMetadataOptions
         {
             SourceFolder =  directory,
             ConnectionString =  connectionString,
             IncomingFolder = destinationFolder,
+            CuratedArchiveFolder = curatedFolder,
             MetadataArchiveFolder = metadataArchiveFolder
         };
         
+        Console.WriteLine($"Scanning {options.SourceFolder}...");
         await ScanInternalAsync(options);
     }
     
@@ -90,7 +99,7 @@ public class UpdateMetadataCommand: IGBaseCommand
                     foreach (var (originalFileName, newIgFile) in graphData.ArchiveFileNames)
                     {
                         node.CurrentCarrouselIndex = index++;
-                        loaded = await LoadMetadata(options.DbConnection, originalFileName, newIgFile, node);
+                        loaded = await LoadMetadata(options.DbConnection, originalFileName, newIgFile, node, options.CuratedArchiveFolder);
                         if (loaded && Directory.Exists(incomingFolder) && File.Exists(originalFileName))
                         {
                             if (!incomingFolder.EndsWith(igFile.UserName))
@@ -130,18 +139,21 @@ public class UpdateMetadataCommand: IGBaseCommand
         IDbConnection dbConnection, 
         string originalFileName, 
         IgFile newIgFile, 
-        IgGraphNode node)
+        IgGraphNode node,
+        string? curatedFolder)
     {
         try
         {
-            var pictureId = newIgFile.FileName.ComputeFileNameHash();
-            if (await dbConnection.GetPicturePath(pictureId) is { } picturePath)
+            var existingPath = Directory.Exists(curatedFolder) && newIgFile.DestinationPathIfExists(curatedFolder)  is { } 
+                path ? path : await dbConnection.GetPicturePath(newIgFile.PictureDbId) ;
+            
+            if (existingPath != null)
             {
-                Console.WriteLine($"EXISTS: {originalFileName} already exists as {picturePath}");
+                Console.WriteLine($"EXISTS: {originalFileName} already exists as {existingPath}");
                 File.Delete(originalFileName);
             }
             
-            await dbConnection.AddOrUpdatePictureIgGraphMetadata(pictureId, newIgFile, node);
+            await dbConnection.AddOrUpdatePictureIgGraphMetadata(newIgFile.PictureDbId, newIgFile, node);
             return true;
         }
         catch (Exception e)
@@ -200,5 +212,6 @@ public class UpdateMetadataCommand: IGBaseCommand
         public string? IncomingFolder { get; init; }
         public string? MetadataArchiveFolder { get; init; }
         public IDbConnection? DbConnection { get; set; }
+        public string? CuratedArchiveFolder { get; init; }
     }
 }

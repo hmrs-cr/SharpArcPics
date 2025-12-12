@@ -14,21 +14,22 @@ public class PicsumProvider : IPictureProvider
     
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<PicsumProvider> _logger;
-    private string _picFolder;
 
     public PicsumProvider(IHttpClientFactory httpClientFactory, IOptions<PictureProvidersConfig> config,
         ILogger<PicsumProvider> logger)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
-        _picFolder = config.Value.PicturesBasePath;
-        Directory.CreateDirectory(_picFolder);
+        PicturesBasePath = config.Value.PicturesBasePath;
+        Directory.CreateDirectory(PicturesBasePath);
         
         _ = FillLocalPathList();
         
         _logger.LogInformation("Picsum Provider started. Pic Path: '{PicturesBasePath}'", config.Value.PicturesBasePath);
     }
     
+    public string PicturesBasePath { get; }
+
     public async ValueTask<KeyValuePair<string, object?>> GetNextRandomValueAsync(CancellationToken ct = default)
     {
         _ = FillLocalPathList();
@@ -66,7 +67,7 @@ public class PicsumProvider : IPictureProvider
         response.EnsureSuccessStatusCode();
         
         var fileName = response.Content.Headers.ContentDisposition?.FileName?.Trim('"') ?? DateTime.Now.Ticks + ".jpg";
-        var fullFilePath = Path.Combine(_picFolder, fileName);
+        var fullFilePath = Path.Combine(PicturesBasePath, fileName);
         
         await using var downloadStream = await response.Content.ReadAsStreamAsync(ct);
         await using var fileStream = new FileStream(fullFilePath, FileMode.Create, FileAccess.Write);

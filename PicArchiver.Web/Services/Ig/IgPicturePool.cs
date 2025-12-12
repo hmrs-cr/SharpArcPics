@@ -55,6 +55,8 @@ public class IgPicturePool : IPictureProvider, IDisposable
         
         logger.LogInformation("IG Provider started. Pic Path: '{PicturesBasePath}'", _config.PicturesBasePath);
     }
+    
+    public string PicturesBasePath => _config.PicturesBasePath;
 
     /// <summary>
     /// Asynchronously gets a value. Thread-safe.

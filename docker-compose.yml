@@ -32,5 +32,9 @@ services:
       - ${MYSQL_INIT_SCRIPTS_FOLDER}:/docker-entrypoint-initdb.d
       - mysql_data:/var/lib/mysql
 
+networks:
+  picvoternet:
+    driver: bridge
+
 volumes:
   mysql_data:
