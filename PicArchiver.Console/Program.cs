@@ -1,4 +1,3 @@
-﻿using PicArchiver;
-using PicArchiver.Console;
+﻿using PicArchiver.Console;
 
 return CmdLineApp.Run(args);

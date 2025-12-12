@@ -4,27 +4,18 @@ services:
     container_name: ${DOCKER_CONTAINER_NAME}
     restart: unless-stopped
     ports:
-      - "9988:8080"
+      - "${HOST_PORT}:8080"
     depends_on:
-      - redis-picvoter
+      - mysql_db
     volumes:
       - ${PICTURES_BASE_PATH}:/media/pictures-data
     environment:
+      - ConnectionStrings__PicVoterMySql=Server=mysql_db;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - PictureProviders__Default=ig
-      - RedistHost=redis-picvoter,password=${REDIS_PASS}
       - HOSTNAME=${HOSTNAME}
-
-  # The Redis database service.
-  redis-picvoter:
-    image: redis
-    container_name: ${DOCKER_REDIS_CONTAINER_NAME}
-    restart: unless-stopped
-    ports:
-      - "${REDIS_HOST_PORT}:6379"
-    volumes:
-      - redis-picvoter-data:/data
-    command: redis-server --save 10 1 --loglevel warning --requirepass ${REDIS_PASS}
+    command:
+      - web-service
     
   mysql_db:
     image: mysql:latest
@@ -38,8 +29,8 @@ services:
     ports:
       - "3306:3306"
     volumes:
+      - ${MYSQL_INIT_SCRIPTS_FOLDER}:/docker-entrypoint-initdb.d
       - mysql_data:/var/lib/mysql
 
 volumes:
-  redis-picvoter-data:
   mysql_data:

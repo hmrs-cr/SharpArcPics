@@ -32,7 +32,8 @@ public static partial class StringExtensions
         return hash;
     }
     
-    public static ulong ComputeFileNameHash(this ReadOnlySpan<char> filePath) => Path.GetFileName(filePath).ComputeHash();
+    public static ulong ComputeFileNameHash(this ReadOnlySpan<char> filePath) => 
+        Path.GetFileNameWithoutExtension(Path.GetFileName(filePath)).ComputeHash();
     
     public static string ToHumanReadableString(this TimeSpan t, bool shortDesc = false)
     {

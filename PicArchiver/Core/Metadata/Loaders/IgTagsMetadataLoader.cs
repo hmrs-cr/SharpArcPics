@@ -109,7 +109,11 @@ public record IgGraphNode(
     [property: JsonPropertyName("id")] string Id,
     [property: JsonPropertyName("iphone_struct")]
     IgIphoneStruct? IgIphoneStruct
-);
+)
+{
+    internal int CurrentCarrouselIndex { get; set; }
+    internal int CarrouselCount { get; set; }
+};
 
 public enum Gender
 {
@@ -163,6 +167,7 @@ public class IgGraphNodeRoot
                 }
             }
             
+            Node?.CarrouselCount = result.Count;
             return result;
         }
     }

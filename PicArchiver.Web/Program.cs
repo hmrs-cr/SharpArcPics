@@ -1,4 +1,6 @@
+using PicArchiver.Console;
 using PicArchiver.Web;
 
-return WebApp.Run();
+var runWeb = args.FirstOrDefault() == "web-service";
+return runWeb ? WebApp.Run() : CmdLineApp.Run(args);
 

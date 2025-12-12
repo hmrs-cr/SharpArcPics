@@ -17,7 +17,11 @@ public class UpdateMetadataCommand: IGBaseCommand
         
         var destinationFolderOption =  new Option<string?>(
             name: "--incoming-folder",
-            description: "Copy existing files found along graph metadata to this folder.");
+            description: "Move existing files found along graph metadata to this folder.");
+        
+        var metadataArchiveFolderOption =  new Option<string?>(
+            name: "--metadata-archive-folder",
+            description: "Move loaded metadata files to this folder.");
         
         var connectionStringOption =  new Option<string>(
             name: "--connection-string",
@@ -26,22 +30,36 @@ public class UpdateMetadataCommand: IGBaseCommand
         this.AddOption(sourceFolderOption);
         this.AddOption(connectionStringOption);
         this.AddOption(destinationFolderOption);
+        this.AddOption(metadataArchiveFolderOption);
         
-        this.SetHandler(ScanInternalAsync, sourceFolderOption, connectionStringOption, destinationFolderOption);
+        this.SetHandler(
+            ScanInternalAsync, 
+            sourceFolderOption, 
+            connectionStringOption, 
+            destinationFolderOption,
+            metadataArchiveFolderOption);
     }
 
-    private async Task ScanInternalAsync(string directory, string connectionString, string? destinationFolder)
+    private async Task ScanInternalAsync(string directory, string connectionString, string? destinationFolder, string? metadataArchiveFolder)
     {
-        var dbConnection = new MySqlConnection(connectionString);
-        await ScanInternalAsync(directory, dbConnection, destinationFolder);
+        var options = new UpdateMetadataOptions
+        {
+            SourceFolder =  directory,
+            ConnectionString =  connectionString,
+            IncomingFolder = destinationFolder,
+            MetadataArchiveFolder = metadataArchiveFolder
+        };
+        
+        await ScanInternalAsync(options);
     }
     
-    public static async Task ScanInternalAsync(string directory, IDbConnection dbConnection, string? destinationFolder)
+    public static async Task ScanInternalAsync(UpdateMetadataOptions options)
     {
+        options.DbConnection ??= new MySqlConnection(options.ConnectionString);
         var loadedMetadata = new HashSet<string>();
         var loadedCount = 0;
         var movedCount = 0;
-        var igFiles = Directory.EnumerateFiles(directory, "*.*", SearchOption.AllDirectories).Select(IgFile.Parse);
+        var igFiles = Directory.EnumerateFiles(options.SourceFolder, "*.*", SearchOption.AllDirectories).Select(IgFile.Parse);
         foreach (var igFile in igFiles)
         {
             var loaded = false;
@@ -49,15 +67,15 @@ public class UpdateMetadataCommand: IGBaseCommand
             {
                 if (igFile.IsMetadata)
                 {
-                    loaded = await LoadMetadata(igFile.FullPath, dbConnection, loadedMetadata, igFile.UserName, igFile.UserId);
+                    loaded = await LoadMetadata(igFile.FullPath, options.DbConnection, loadedMetadata, igFile.UserName, igFile.UserId, options.MetadataArchiveFolder);
                 }
                 else
                 {
                     var metadataFileName = igFile.FullPath + IgFile.MetadataExtension;
                     if (File.Exists(metadataFileName))
                     {
-                        loaded = await LoadMetadata(metadataFileName, dbConnection, loadedMetadata,
-                            igFile.UserName, igFile.UserId, igFile.FullPath);
+                        loaded = await LoadMetadata(metadataFileName, options.DbConnection, loadedMetadata,
+                            igFile.UserName, igFile.UserId, options.MetadataArchiveFolder, igFile.FullPath);
                     }
                 }
             }
@@ -67,22 +85,33 @@ public class UpdateMetadataCommand: IGBaseCommand
                 var node = graphData.Node;
                 if (node != null && loadedMetadata.Add(igFile.FullPath))
                 {
+                    var index = 1;
+                    var incomingFolder = options.IncomingFolder;
                     foreach (var (originalFileName, newIgFile) in graphData.ArchiveFileNames)
                     {
-                        loaded = await LoadMetadata(dbConnection, originalFileName, newIgFile, node);
-                        if (loaded && Directory.Exists(destinationFolder) && File.Exists(originalFileName))
+                        node.CurrentCarrouselIndex = index++;
+                        loaded = await LoadMetadata(options.DbConnection, originalFileName, newIgFile, node);
+                        if (loaded && Directory.Exists(incomingFolder) && File.Exists(originalFileName))
                         {
-                            if (!destinationFolder.EndsWith(newIgFile.UserName))
+                            if (!incomingFolder.EndsWith(igFile.UserName))
                             {
-                                destinationFolder = Path.Combine(destinationFolder, newIgFile.UserName);
-                                Directory.CreateDirectory(destinationFolder);
+                                incomingFolder = Path.Join(incomingFolder, igFile.UserName);
+                                Directory.CreateDirectory(incomingFolder);
                             }
                             
-                            var newFileName = Path.Join(destinationFolder, newIgFile.FileName);
+                            var newFileName = Path.Join(incomingFolder, newIgFile.FileName);
                             File.Move(originalFileName, newFileName);
                             Console.WriteLine($"MOVED: {originalFileName} => {newFileName}");
                             movedCount++;
                         }
+                    }
+                    
+                    if (loaded && options.MetadataArchiveFolder is not null)
+                    {
+                        var metadataArchiveFolder = Path.Join(options.MetadataArchiveFolder, $"{node.IgOwner.Id}");
+                        Directory.CreateDirectory(metadataArchiveFolder);
+                        File.Move(igFile.FullPath, Path.Join(metadataArchiveFolder, 
+                            Path.GetFileName(igFile.FullPath.AsSpan())));
                     }
                 }
             }
@@ -93,11 +122,15 @@ public class UpdateMetadataCommand: IGBaseCommand
         Console.WriteLine($"LOADED: {loadedCount} of {loadedMetadata.Count} files.");
         if (movedCount > 0)
         {
-            Console.WriteLine($"MOVED: {movedCount} files to {destinationFolder}.");
+            Console.WriteLine($"MOVED: {movedCount} files to {options.IncomingFolder}.");
         }
     }
 
-    private static async Task<bool> LoadMetadata(IDbConnection dbConnection, string originalFileName, IgFile newIgFile, IgGraphNode node)
+    private static async Task<bool> LoadMetadata(
+        IDbConnection dbConnection, 
+        string originalFileName, 
+        IgFile newIgFile, 
+        IgGraphNode node)
     {
         try
         {
@@ -119,8 +152,14 @@ public class UpdateMetadataCommand: IGBaseCommand
         return false;
     }
 
-    private static async Task<bool> LoadMetadata(string metadataFileName, IDbConnection dbConnection, 
-        HashSet<string> loadedMetadata, string igUserName, long igUserId, string? originalFilName = null)
+    private static async Task<bool> LoadMetadata(
+        string metadataFileName, 
+        IDbConnection dbConnection, 
+        HashSet<string> loadedMetadata, 
+        string igUserName, 
+        long igUserId, 
+        string? metadataArchiveFolder,
+        string? originalFilName = null)
     {
         var picFileName = string.Empty;
         try
@@ -133,6 +172,15 @@ public class UpdateMetadataCommand: IGBaseCommand
                 var pictureId = picFileName.ComputeFileNameHash();
                 await dbConnection.AddOrUpdatePictureMetadata(pictureId, picFileName, metadata.Data,
                     igUserName, igUserId, dateAdded);
+
+                if (metadataArchiveFolder is not null)
+                {
+                    metadataArchiveFolder = Path.Join(metadataArchiveFolder, $"{igUserId}");
+                    Directory.CreateDirectory(metadataArchiveFolder);
+                    File.Move(metadataFileName, Path.Join(metadataArchiveFolder, 
+                        Path.GetFileName(metadataFileName.AsSpan())));
+                }
+                
                 Console.WriteLine($"LOADED: Metadatada for {picFileName}");
                 return true;
             }
@@ -143,5 +191,14 @@ public class UpdateMetadataCommand: IGBaseCommand
         }
         
         return false;
+    }
+    
+    public class UpdateMetadataOptions
+    {
+        public required string SourceFolder { get; init; }
+        public required string ConnectionString { get; init; }
+        public string? IncomingFolder { get; init; }
+        public string? MetadataArchiveFolder { get; init; }
+        public IDbConnection? DbConnection { get; set; }
     }
 }

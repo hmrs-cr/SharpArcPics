@@ -43,6 +43,7 @@ public static class DbConnectionPictureExtensions
                                INSERT INTO IgMetadata
                                     (IgUserId,
                                      IgPictureId,
+                                     IgPostId,
                                      PictureId,
                                      TakenAt,
                                      Caption,
@@ -50,12 +51,14 @@ public static class DbConnectionPictureExtensions
                                VALUES 
                                    (@IgUserId,
                                     @IgPictureId,
+                                    @IgPostId,
                                     @PictureId,
                                     @TakenAt,
                                     @Caption,
                                     @ShortCode)
                                ON DUPLICATE KEY UPDATE
                                     PictureId =  @PictureId,
+                                    IgPostId = @IgPostId,
                                     TakenAt = @TakenAt,
                                     Caption = @Caption,
                                     ShortCode = @ShortCode;
@@ -72,17 +75,20 @@ public static class DbConnectionPictureExtensions
                                """;
 
             Debug.Assert(igFile.UserId ==  metadata.IgOwner.Id, "Ig UserId does not match");
-            
+
+            var isCarrouselPost = metadata.CarrouselCount > 1;
+            var saveDetails = !isCarrouselPost || metadata.CurrentCarrouselIndex == 1;
             return await connection.ExecuteAsync(insertSql, new
             {
                 IgUserId = igFile.UserId,
                 IgPictureId = igFile.PictureId,
                 IgUserName = igFile.UserName,
                 IgFullName = metadata.IgOwner.FullName,
+                IgPostId = isCarrouselPost ? metadata.Id : null,
                 PictureId = pictureId,
                 TakenAt = igFile.Timestamp,
-                Caption = metadata.Caption,
-                ShortCode = metadata.Shortcode,
+                Caption = saveDetails ? metadata.Caption : null,
+                ShortCode = saveDetails ? metadata.Shortcode : null,
                 FileName = igFile.FileName,
             });
         }
