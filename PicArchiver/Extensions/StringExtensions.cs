@@ -18,23 +18,26 @@ public static partial class StringExtensions
         return template;
     }
     
-    public static ulong ComputeHash(this ReadOnlySpan<char> input)
+    extension(ReadOnlySpan<char> input)
     {
-        const ulong prime = 1099511628211ul;
-
-        var hash = 14695981039346656037ul;
-        foreach (var c in input)
+        public ulong ComputeHash()
         {
-            hash ^= c;
-            hash *= prime;
+            const ulong prime = 1099511628211ul;
+
+            var hash = 14695981039346656037ul;
+            foreach (var c in input)
+            {
+                hash ^= c;
+                hash *= prime;
+            }
+
+            return hash;
         }
 
-        return hash;
+        public ulong ComputeFileNameHash() => 
+            Path.GetFileNameWithoutExtension(Path.GetFileName(input)).ComputeHash();
     }
-    
-    public static ulong ComputeFileNameHash(this ReadOnlySpan<char> filePath) => 
-        Path.GetFileNameWithoutExtension(Path.GetFileName(filePath)).ComputeHash();
-    
+
     public static string ToHumanReadableString(this TimeSpan t, bool shortDesc = false)
     {
         var secondsStr = shortDesc ? "s" : " seconds";

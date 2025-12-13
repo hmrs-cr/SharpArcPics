@@ -10,7 +10,7 @@ create table Pictures
 (
     PictureId   bigint unsigned auto_increment
         primary key,
-    FileName    varchar(255)         not null,
+    FileName    varchar(256)         not null,
     Caption     varchar(256)         null,
     Description varchar(1024)        null,
     IsDeleted   tinyint(1) default 0 not null,
@@ -23,6 +23,8 @@ create table Pictures
     Gender      varchar(512)         null,
     DateAdded   datetime             null
 );
+
+ALTER TABLE Pictures ADD UNIQUE (FileName);
 
 ALTER TABLE Pictures
     ADD FULLTEXT INDEX ft_picture_search (
@@ -47,16 +49,6 @@ create table IgMetadata
     ShortCode   varchar(64)     null,
     primary key (IgUserId, IgPictureId),
     constraint FK_IgMetadata_Pictures
-        foreign key (PictureId) references Pictures (PictureId)
-            on delete cascade
-);
-
-create table KeyWordPicture
-(
-    KeyWordId bigint          not null,
-    PictureId bigint unsigned not null,
-    primary key (KeyWordId, PictureId),    
-    constraint FK_KeyWordPicture_Pictures
         foreign key (PictureId) references Pictures (PictureId)
             on delete cascade
 );

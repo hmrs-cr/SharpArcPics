@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
+using PicArchiver.Core.Metadata;
 using PicArchiver.Extensions;
 
 namespace PicArchiver.Web.Services.Picsum;
@@ -30,17 +31,17 @@ public class PicsumProvider : IPictureProvider
     
     public string PicturesBasePath { get; }
 
-    public async ValueTask<KeyValuePair<string, object?>> GetNextRandomValueAsync(CancellationToken ct = default)
+    public async ValueTask<string> GetNextRandomValueAsync(CancellationToken ct = default)
     {
         _ = FillLocalPathList();
         
         if (!_localPathList.IsEmpty && _localPathList.TryDequeue(out var localPath))
         {
-            return KeyValuePair.Create(localPath, (object?)null);
+            return localPath;
         }
         
         localPath = await GetNextRandomValueInternalAsync(ct);
-        return KeyValuePair.Create(localPath, (object?)null);
+        return localPath;
     }
 
     private async Task FillLocalPathList()
@@ -89,4 +90,6 @@ public class PicsumProvider : IPictureProvider
     }
 
     public ulong GetPictureIdFromPath(string fullPicturePath) => fullPicturePath.ComputeFileNameHash();
+    
+    public PictureStats? CreatePictureStats(string? path, ulong pictureId) => path is null ? null : new PictureStats(path, pictureId);
 }

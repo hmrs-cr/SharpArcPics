@@ -1,6 +1,8 @@
 using System.Threading.Channels;
 using Microsoft.Extensions.Options;
 using PicArchiver.Commands.IGArchiver;
+using PicArchiver.Core.Metadata;
+using PicArchiver.Core.Metadata.Loaders;
 using PicArchiver.Extensions;
 
 namespace PicArchiver.Web.Services.Ig;
@@ -9,21 +11,21 @@ public class IgPicturePool : IPictureProvider, IDisposable
 {
     private readonly PictureProvidersConfig _config;
     private readonly ILogger<IgPicturePool> _logger;
-    private readonly Channel<KeyValuePair<string, object?>> _pool;
+    private readonly Channel<string> _pool;
     private readonly int _minThreshold;
     private readonly int _maxCapacity;
 
     // The signal to wake up the background thread.
     // false = initial state (not signaled)
     private readonly AutoResetEvent _refillSignal = new AutoResetEvent(false);
-    
+
     // The single dedicated thread
     private readonly Thread _workerThread;
-    
+
     // Token to handle graceful shutdown
     private readonly CancellationTokenSource _cts = new CancellationTokenSource();
     private bool _disposed;
-    
+
     public IgPicturePool(IOptions<PictureProvidersConfig> config, ILogger<IgPicturePool> logger)
     {
         _config = config.Value;
@@ -39,7 +41,7 @@ public class IgPicturePool : IPictureProvider, IDisposable
             SingleReader = false, // Multiple threads can read
             FullMode = BoundedChannelFullMode.Wait // If full, writer waits (though our logic prevents this)
         };
-        _pool = Channel.CreateBounded<KeyValuePair<string, object?>>(options);
+        _pool = Channel.CreateBounded<string>(options);
 
         // Initialize and start the dedicated background thread
         _workerThread = new Thread(RefillLoop)
@@ -52,16 +54,16 @@ public class IgPicturePool : IPictureProvider, IDisposable
 
         // Signal immediately to perform the initial fill
         _refillSignal.Set();
-        
+
         logger.LogInformation("IG Provider started. Pic Path: '{PicturesBasePath}'", _config.PicturesBasePath);
     }
-    
+
     public string PicturesBasePath => _config.PicturesBasePath;
 
     /// <summary>
     /// Asynchronously gets a value. Thread-safe.
     /// </summary>
-    public async ValueTask<KeyValuePair<string, object?>> GetNextRandomValueAsync(CancellationToken ct = default)
+    public async ValueTask<string> GetNextRandomValueAsync(CancellationToken ct = default)
     {
         // 1. Try to read asynchronously
         var value = await _pool.Reader.ReadAsync(ct);
@@ -106,13 +108,39 @@ public class IgPicturePool : IPictureProvider, IDisposable
                 {
                     yield return file2;
                 }
-                
+
                 yield break;
             }
         }
     }
 
     public ulong GetPictureIdFromPath(string fullPicturePath) => fullPicturePath.ComputeFileNameHash();
+
+    public PictureStats? CreatePictureStats(string? path, ulong pictureId)
+    {
+        if (path is null)
+            return null;
+
+        var igFile = IgFile.Parse(path);
+        if (!igFile.IsValid)
+            return null;
+
+        var userIdStr = $"{igFile.UserId}";
+        var fullFilePath = Path.Combine(_config.PicturesBasePath, userIdStr, igFile.FileName);
+        if (!File.Exists(fullFilePath))
+        {
+            fullFilePath = Path.Combine(_config.PicturesIncomingBasePath, userIdStr, igFile.FileName);
+        }
+
+        if (!File.Exists(fullFilePath))
+            return null;
+        
+        return new PictureStats(fullFilePath, pictureId)
+        {
+            ContextData = igFile
+        };
+    }
+
 
     /// <summary>
     /// The logic running on the dedicated thread.
@@ -147,18 +175,12 @@ public class IgPicturePool : IPictureProvider, IDisposable
                     if (_cts.IsCancellationRequested) 
                         break;
 
-                    var val = GetRandomCommand.GetRandom(_config.PicturesBasePath);
+                    var picturePath = GetRandomCommand.GetRandom(_config.PicturesBasePath);
                     // Write to channel (TryWrite is efficient for Bounded channels)
                     // If false (full), we just stop trying.
-                    if (val != null && IgMetadataProvider.IsValidFilePath(val))
-                    {
-                        IEnumerable<string>? allUserNames = null;
-                        if (ScanCommand.ScanUserNames(Path.GetDirectoryName(val)) is { Count: > 1} userNames)
-                        {
-                            allUserNames = userNames;
-                        }
-                        
-                        if (!_pool.Writer.TryWrite(KeyValuePair.Create(val, (object?)allUserNames)))
+                    if (picturePath != null && IgMetadataProvider.IsValidFilePath(picturePath))
+                    {   
+                        if (!_pool.Writer.TryWrite(picturePath))
                         {
                             break;
                         }

@@ -36,8 +36,7 @@ public class SqlPictureService : IPictureService
         var maxRetries = 10;
         while (maxRetries-- > 0)
         {
-            var pictureContextData = await this._pictureProvider.GetNextRandomValueAsync();
-            var fullPicturePath = pictureContextData.Key;
+            var fullPicturePath = await this._pictureProvider.GetNextRandomValueAsync();
             var pictureId = _pictureProvider.GetPictureIdFromPath(fullPicturePath);;
             var result = await GetPictureData(pictureId, requestUserId, true);
             if (result != null)
@@ -50,12 +49,11 @@ public class SqlPictureService : IPictureService
                             pictureId, maxRetries);
                     continue;
                 }
-
-                result.ContextData = pictureContextData.Value;
+                
                 return result;
             }
 
-            return await SavePicturePath(pictureId, fullPicturePath, pictureContextData.Value);
+            return await SavePicturePath(pictureId, fullPicturePath);
         }
 
         return null;
@@ -64,7 +62,7 @@ public class SqlPictureService : IPictureService
     public async Task<string?> GetPictureThumbPath(ulong pictureId)
     {
         var picPath = await _connectionAccessor.DbConnection.GetPicturePath(pictureId);
-        return picPath;
+        return _pictureProvider.CreatePictureStats(picPath, pictureId)?.FullFilePath;
     }
     
     public async Task<ICollection<string>> GetTopRatedPicturesIds()
@@ -112,9 +110,9 @@ public class SqlPictureService : IPictureService
     public async Task<PictureStats?> GetPictureData(ulong pictureId, Guid? requestUserId, bool onlyIfNotViewed = false)
     {
         var path = await _connectionAccessor.DbConnection.GetPicturePath(pictureId);
-        if (File.Exists(path))
+        var result = _pictureProvider.CreatePictureStats(path, pictureId);
+        if (result != null)
         {
-            var result = new PictureStats(path, pictureId);
             if (requestUserId.HasValue)
             {
                 requestUserId = _httpContextAccessor.HttpContext.EnsureValidUserSession(requestUserId.Value);
@@ -172,10 +170,10 @@ public class SqlPictureService : IPictureService
         return result;
     }
 
-    private async Task<PictureStats> SavePicturePath(ulong pictureId, string picturePath, object? contextData = null)
+    private async Task<PictureStats> SavePicturePath(ulong pictureId, string picturePath)
     {
         await SavePicToDbAsync(pictureId, picturePath);
-        return await this.SetMetadatada(new PictureStats(picturePath, pictureId) { ContextData  = contextData});
+        return await this.SetMetadatada(_pictureProvider.CreatePictureStats(picturePath, pictureId)!);
     }
 
     private async Task SavePicToDbAsync(ulong picId, string path)

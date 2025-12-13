@@ -2,7 +2,6 @@ using System.Data;
 using System.Diagnostics;
 using Dapper;
 using PicArchiver.Core.Metadata.Loaders;
-using PicArchiver.Extensions;
 
 namespace PicArchiver.Core.DataAccess;
 
@@ -25,7 +24,7 @@ public static class DbConnectionPictureExtensions
                                VALUES (@PictureId, @FileName, 0, 0)
                                """;
 
-            return await connection.ExecuteAsync(sql, new { PictureId = pictureId, FileName = path });
+            return await connection.ExecuteAsync(sql, new { PictureId = pictureId, FileName = Path.GetFileName(path) });
         }
 
         public async Task<int> AddOrUpdatePictureIgGraphMetadata(ulong pictureId, IgFile igFile, IgGraphNode metadata, bool setIncomingFlag)
@@ -89,7 +88,7 @@ public static class DbConnectionPictureExtensions
                 TakenAt = igFile.Timestamp,
                 Caption = saveDetails ? metadata.Caption : null,
                 ShortCode = saveDetails ? metadata.Shortcode : null,
-                FileName = igFile.FileName,
+                FileName = Path.GetFileName(igFile.FileName),
                 IsIncoming = setIncomingFlag,
             });
         }
@@ -142,7 +141,7 @@ public static class DbConnectionPictureExtensions
             return await connection.ExecuteAsync(sql, new
             {
                 PictureId = pictureId, 
-                FileName = path,
+                FileName = Path.GetFileName(path),
                 Description = metadata.Paras?.FirstOrDefault(),
                 Clothing = metadata.Table?.Clothing,
                 Emotions = metadata.Table?.Emotions,

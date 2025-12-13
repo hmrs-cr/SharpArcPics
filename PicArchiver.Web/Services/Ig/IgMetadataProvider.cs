@@ -24,7 +24,7 @@ public class IgMetadataProvider : IMetadataProvider
 
     public async ValueTask<PictureStats> SetMetadata(PictureStats pictureData)
     {
-        var igFile = IgFile.Parse(pictureData.FullFilePath);
+        var igFile = pictureData.ContextData as IgFile ?? IgFile.Parse(pictureData.FullFilePath);
         var metadataFile = igFile.FullPath + IgFile.MetadataExtension;
 
         var igMetadata = string.Empty;
@@ -35,11 +35,11 @@ public class IgMetadataProvider : IMetadataProvider
             igMetadata = igmd.ToString();
         }
 
-        if (pictureData.ContextData is IEnumerable<string> allUserName)
+        /*if (pictureData.ContextData is IEnumerable<string> allUserName)
         {
             pictureData.Metadata["IG_OtherUserNames"] = string.Join(',',
                 allUserName.Except(Enumerable.Empty<string>().Append(igFile.UserName)));
-        }
+        }*/
 
         if (!string.IsNullOrEmpty(igMetadata))
         {
