@@ -111,9 +111,10 @@ public class UpdateMetadataCommand: IGBaseCommand
                             options.CuratedArchiveFolder, options.SetIncomingFlag);
                         if (loaded && Directory.Exists(incomingFolder) && File.Exists(originalFileName))
                         {
-                            if (!incomingFolder.EndsWith(igFile.UserName))
+                            var userIdStr = $"{igFile.UserId}";
+                            if (!incomingFolder.EndsWith(userIdStr))
                             {
-                                incomingFolder = Path.Join(incomingFolder, igFile.UserName);
+                                incomingFolder = Path.Join(incomingFolder, userIdStr);
                                 Directory.CreateDirectory(incomingFolder);
                             }
                             
