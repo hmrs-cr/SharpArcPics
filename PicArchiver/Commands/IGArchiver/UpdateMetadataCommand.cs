@@ -19,6 +19,10 @@ public class UpdateMetadataCommand: IGBaseCommand
             name: "--incoming-folder",
             description: "Move existing files found along graph metadata to this folder.");
         
+        var setIncomingFlagOption =  new Option<bool>(
+            name: "--set-incoming-flag",
+            description: "Sets the incoming flag in the DB.");
+        
         var curatedArchiveFolderOption =  new Option<string?>(
             name: "--curated-folder",
             description: "Folder with existing curated pictures. Used to detect duplicates.");
@@ -36,6 +40,7 @@ public class UpdateMetadataCommand: IGBaseCommand
         this.AddOption(destinationFolderOption);
         this.AddOption(metadataArchiveFolderOption);
         this.AddOption(curatedArchiveFolderOption);
+        this.AddOption(setIncomingFlagOption);
         
         this.SetHandler(
             ScanInternalAsync, 
@@ -43,11 +48,12 @@ public class UpdateMetadataCommand: IGBaseCommand
             connectionStringOption, 
             destinationFolderOption,
             metadataArchiveFolderOption,
-            curatedArchiveFolderOption);
+            curatedArchiveFolderOption,
+            setIncomingFlagOption);
     }
 
     private async Task ScanInternalAsync(string directory, string connectionString, string? destinationFolder, 
-        string? metadataArchiveFolder, string? curatedFolder)
+        string? metadataArchiveFolder, string? curatedFolder, bool setIncomingFlag)
     {
         var options = new UpdateMetadataOptions
         {
@@ -55,7 +61,8 @@ public class UpdateMetadataCommand: IGBaseCommand
             ConnectionString =  connectionString,
             IncomingFolder = destinationFolder,
             CuratedArchiveFolder = curatedFolder,
-            MetadataArchiveFolder = metadataArchiveFolder
+            MetadataArchiveFolder = metadataArchiveFolder,
+            SetIncomingFlag = setIncomingFlag
         };
         
         Console.WriteLine($"Scanning {options.SourceFolder}...");
@@ -76,7 +83,8 @@ public class UpdateMetadataCommand: IGBaseCommand
             {
                 if (igFile.IsMetadata)
                 {
-                    loaded = await LoadMetadata(igFile.FullPath, options.DbConnection, loadedMetadata, igFile.UserName, igFile.UserId, options.MetadataArchiveFolder);
+                    loaded = await LoadMetadata(igFile.FullPath, options.DbConnection, loadedMetadata, 
+                        igFile.UserName, igFile.UserId, options.MetadataArchiveFolder, options.SetIncomingFlag);
                 }
                 else
                 {
@@ -84,7 +92,7 @@ public class UpdateMetadataCommand: IGBaseCommand
                     if (File.Exists(metadataFileName))
                     {
                         loaded = await LoadMetadata(metadataFileName, options.DbConnection, loadedMetadata,
-                            igFile.UserName, igFile.UserId, options.MetadataArchiveFolder, igFile.FullPath);
+                            igFile.UserName, igFile.UserId, options.MetadataArchiveFolder, options.SetIncomingFlag, igFile.FullPath);
                     }
                 }
             }
@@ -99,7 +107,8 @@ public class UpdateMetadataCommand: IGBaseCommand
                     foreach (var (originalFileName, newIgFile) in graphData.ArchiveFileNames)
                     {
                         node.CurrentCarrouselIndex = index++;
-                        loaded = await LoadMetadata(options.DbConnection, originalFileName, newIgFile, node, options.CuratedArchiveFolder);
+                        loaded = await LoadMetadata(options.DbConnection, originalFileName, newIgFile, node, 
+                            options.CuratedArchiveFolder, options.SetIncomingFlag);
                         if (loaded && Directory.Exists(incomingFolder) && File.Exists(originalFileName))
                         {
                             if (!incomingFolder.EndsWith(igFile.UserName))
@@ -140,7 +149,8 @@ public class UpdateMetadataCommand: IGBaseCommand
         string originalFileName, 
         IgFile newIgFile, 
         IgGraphNode node,
-        string? curatedFolder)
+        string? curatedFolder,
+        bool setIncomingFlag)
     {
         try
         {
@@ -153,7 +163,7 @@ public class UpdateMetadataCommand: IGBaseCommand
                 File.Delete(originalFileName);
             }
             
-            await dbConnection.AddOrUpdatePictureIgGraphMetadata(newIgFile.PictureDbId, newIgFile, node);
+            await dbConnection.AddOrUpdatePictureIgGraphMetadata(newIgFile.PictureDbId, newIgFile, node, setIncomingFlag);
             return true;
         }
         catch (Exception e)
@@ -171,6 +181,7 @@ public class UpdateMetadataCommand: IGBaseCommand
         string igUserName, 
         long igUserId, 
         string? metadataArchiveFolder,
+        bool setIncomingFlag,
         string? originalFilName = null)
     {
         var picFileName = string.Empty;
@@ -181,9 +192,14 @@ public class UpdateMetadataCommand: IGBaseCommand
                 picFileName = originalFilName ?? metadataFileName.Replace(IgFile.MetadataExtension, string.Empty);
                 var metadata = await IgMetadataRoot.LoadAsync(metadataFileName);
                 DateTime? dateAdded = File.Exists(picFileName) ? File.GetCreationTimeUtc(picFileName) : null;
+                if (!dateAdded.HasValue || setIncomingFlag)
+                {
+                    dateAdded = DateTime.Now;
+                }
+                
                 var pictureId = picFileName.ComputeFileNameHash();
                 await dbConnection.AddOrUpdatePictureMetadata(pictureId, picFileName, metadata.Data,
-                    igUserName, igUserId, dateAdded);
+                    igUserName, igUserId, dateAdded, setIncomingFlag);
 
                 if (metadataArchiveFolder is not null)
                 {
@@ -213,5 +229,6 @@ public class UpdateMetadataCommand: IGBaseCommand
         public string? MetadataArchiveFolder { get; init; }
         public IDbConnection? DbConnection { get; set; }
         public string? CuratedArchiveFolder { get; init; }
+        public bool SetIncomingFlag { get; init; }
     }
 }

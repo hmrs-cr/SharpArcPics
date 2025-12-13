@@ -28,7 +28,7 @@ public static class DbConnectionPictureExtensions
             return await connection.ExecuteAsync(sql, new { PictureId = pictureId, FileName = path });
         }
 
-        public async Task<int> AddOrUpdatePictureIgGraphMetadata(ulong pictureId, IgFile igFile, IgGraphNode metadata)
+        public async Task<int> AddOrUpdatePictureIgGraphMetadata(ulong pictureId, IgFile igFile, IgGraphNode metadata, bool setIncomingFlag)
         {
             const string insertSql = """
                                INSERT IGNORE INTO Pictures
@@ -38,7 +38,7 @@ public static class DbConnectionPictureExtensions
                                      IsDeleted)
                                VALUES (@PictureId,
                                        @FileName,
-                                       1,
+                                       @IsIncoming,
                                        0);
                                INSERT INTO IgMetadata
                                     (IgUserId,
@@ -90,11 +90,12 @@ public static class DbConnectionPictureExtensions
                 Caption = saveDetails ? metadata.Caption : null,
                 ShortCode = saveDetails ? metadata.Shortcode : null,
                 FileName = igFile.FileName,
+                IsIncoming = setIncomingFlag,
             });
         }
         
         public async Task<int> AddOrUpdatePictureMetadata(ulong pictureId, string path, 
-            IgMetadataRoot.MetadataData metadata, string? igUserName, long? igUserId, DateTime? dateAdded)
+            IgMetadataRoot.MetadataData metadata, string? igUserName, long? igUserId, DateTime? dateAdded, bool setIncomingFlag)
         {
             const string sql = """
                                INSERT INTO Pictures  
@@ -108,8 +109,8 @@ public static class DbConnectionPictureExtensions
                                     Race,
                                     Gender,
                                     DateAdded,
-                                    IsDeleted,
-                                    IsIncoming) 
+                                    IsIncoming,
+                                    IsDeleted) 
                                VALUES (@PictureId, 
                                        @FileName,
                                        @Description,
@@ -120,7 +121,7 @@ public static class DbConnectionPictureExtensions
                                        @Race,
                                        @Gender,
                                        @DateAdded,
-                                       0, 
+                                       @IsIncoming, 
                                        0) 
                                ON DUPLICATE KEY UPDATE
                                        FileName = @FileName,
@@ -151,7 +152,8 @@ public static class DbConnectionPictureExtensions
                 Gender = metadata.Paras?.InferGender(),
                 DateAdded = dateAdded,
                 UserId = igUserId,
-                UserName = igUserName
+                UserName = igUserName,
+                IsIncoming = setIncomingFlag,
             });
         }
         
