@@ -130,7 +130,7 @@ public class UpdateMetadataCommand: IGBaseCommand
                         var metadataArchiveFolder = Path.Join(options.MetadataArchiveFolder, $"{node.IgOwner.Id}");
                         Directory.CreateDirectory(metadataArchiveFolder);
                         File.Move(igFile.FullPath, Path.Join(metadataArchiveFolder, 
-                            Path.GetFileName(igFile.FullPath.AsSpan())));
+                            Path.GetFileName(igFile.FullPath.AsSpan())), overwrite: true);
                     }
                 }
             }
