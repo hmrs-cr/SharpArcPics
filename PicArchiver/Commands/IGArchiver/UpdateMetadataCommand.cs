@@ -119,7 +119,7 @@ public class UpdateMetadataCommand: IGBaseCommand
                             }
                             
                             var newFileName = Path.Join(incomingFolder, newIgFile.FileName);
-                            File.Move(originalFileName, newFileName);
+                            File.Move(originalFileName, newFileName, overwrite: true);
                             Console.WriteLine($"MOVED: {originalFileName} => {newFileName}");
                             movedCount++;
                         }
