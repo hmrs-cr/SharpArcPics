@@ -25,24 +25,24 @@ public class ArchiverTest
         true)]
     
     [TestCase("caca", 
-        null,
+        "",
         0,
         0,
         0,
         false)]
     
     [TestCase("caca_9", 
-        null,
+        "",
         0,
         0,
         0,
         false)]
     
     [TestCase("caca_9_8", 
-        null,
+        "caca",
         0,
-        0,
-        0,
+        9,
+        8,
         false)]
     
     [TestCase("caca_9_8_7.kk", 
@@ -101,13 +101,33 @@ public class ArchiverTest
         1588927167839905,
         true)]
     
+    [TestCase("suley.js_1671460570_2996750914544069372.jpg", 
+        "suley.js",
+        1671460570,
+        2996750914544069372,
+        0,
+        false)]
     [TestCase("kia._lazz_1737906933_999999_54826691821.mp4", 
         "kia._lazz",
         1737906933,
         999999,
         54826691821,
         true)]
-    // 
+    [TestCase("valeramirezx_3260805535618671948_667180832.jpg", 
+        "valeramirezx",
+        0,
+        3260805535618671948,
+        667180832,
+        true)]
+    
+    [TestCase("valeramirezx_2952692595852864541_667180832.json.xz", 
+        "valeramirezx",
+        0,
+        2952692595852864541,
+        667180832,
+        false)]
+// 
+    // suley.js_1671460570_2996750914544069372.jpg
     //mylawlesscr_undefined_3382428032302596675_58381419710_card.jpg
     // nay_tkd10_1695608472_highlight18300633772051052
     //luci_lagrimitas_1729401244_3482792528954560822_6172894518_3201461876828312_5234939421322264034_n
@@ -115,7 +135,7 @@ public class ArchiverTest
     public void IGFile_Parse_Parses_Correctly(
         string fileName, 
         string? expectedUserName, 
-        long expectedPostId, 
+        long expectedTimespan, 
         long expectedPicId, 
         long expectedUserId,
         bool isValid)
@@ -125,7 +145,7 @@ public class ArchiverTest
         {
             Assert.That(result.IsValid, Is.EqualTo(isValid));
             Assert.That(result.UserName, Is.EqualTo(expectedUserName));
-            Assert.That(result.Timestamp, Is.EqualTo(expectedPostId));
+            Assert.That(result.Timestamp, Is.EqualTo(expectedTimespan));
             Assert.That(result.PictureId, Is.EqualTo(expectedPicId));
             Assert.That(result.UserId, Is.EqualTo(expectedUserId));
         });

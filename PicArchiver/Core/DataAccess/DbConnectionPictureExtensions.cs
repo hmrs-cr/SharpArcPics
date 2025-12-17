@@ -85,7 +85,7 @@ public static class DbConnectionPictureExtensions
                 IgFullName = metadata.IgOwner.FullName,
                 IgPostId = isCarrouselPost ? metadata.Id : null,
                 PictureId = pictureId,
-                TakenAt = igFile.Timestamp,
+                TakenAt = igFile.Timestamp > 0 ? igFile.Timestamp : (long?)null,
                 Caption = saveDetails ? metadata.Caption : null,
                 ShortCode = saveDetails ? metadata.Shortcode : null,
                 FileName = Path.GetFileName(igFile.FileName),

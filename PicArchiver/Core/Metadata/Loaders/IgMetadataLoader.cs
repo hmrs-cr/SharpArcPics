@@ -84,16 +84,21 @@ public record IgFile(
     bool IsMetadata)
 {
     private static readonly IgFile InvalidIgFile = new IgFile("", "", "", 0, 0, 0, false);
-    
-    public static readonly char Separator = '_';
-    public static readonly string MetadataExtension = ".metadata.json";
-    
+
+    public const char Separator = '_';
+    public const string MetadataExtension = ".metadata.json";
+    public const string CompressedExtenson = ".xz";
+    public const string JsonExtenson = ".json";
+
+
     public bool IsValid => !string.IsNullOrEmpty(FileName) && !string.IsNullOrEmpty(UserName)
                                                            && UserId > 100 
-                                                           && PictureId > 1000 
-                                                           && Timestamp > 1000;
+                                                           && PictureId > 1000
+                                                           && (IsMetadata || !FileName.EndsWith(JsonExtenson))
+                                                           && !FileName.EndsWith(CompressedExtenson);
     
-    public DateTimeOffset DateTime => DateTimeOffset.FromUnixTimeSeconds(Timestamp);
+    public DateTimeOffset DateTime => Timestamp > 0 ? DateTimeOffset.FromUnixTimeSeconds(Timestamp) : File.GetCreationTime(FullPath);
+    
     public ulong PictureDbId => field == 0 ? field = FileName.ComputeFileNameHash() : field;
     
     public string? DestinationPathIfExists(string destinationFolderPath) => 
@@ -122,7 +127,7 @@ public record IgFile(
         
         var userIdStartIndex = fileNameSpan.LastIndexOf(Separator);
         if (userIdStartIndex == -1) return InvalidIgFile;
-        var userIdSpan = fileNameSpan.Slice(userIdStartIndex + 1);
+        var userIdSpan = fileNameSpan.Slice(userIdStartIndex + 1).TrimEnd(JsonExtenson + CompressedExtenson);
         fileNameSpan = fileNameSpan.Slice(0, userIdStartIndex);
         
         var pictureIdStartIndex = fileNameSpan.LastIndexOf(Separator);
@@ -131,17 +136,32 @@ public record IgFile(
         fileNameSpan = fileNameSpan.Slice(0, pictureIdStartIndex);
         
         var timestampStartIndex = fileNameSpan.LastIndexOf(Separator);
-        if (timestampStartIndex == -1) return InvalidIgFile;
-        var timestampSpan = fileNameSpan.Slice(timestampStartIndex + 1);
-        fileNameSpan = fileNameSpan.Slice(0, timestampStartIndex);
+        var timestampSpan = ReadOnlySpan<char>.Empty;
+        if (timestampStartIndex > -1)
+        {
+            timestampSpan = fileNameSpan.Slice(timestampStartIndex + 1);
+            fileNameSpan = fileNameSpan.Slice(0, timestampStartIndex);
+        }
 
+        var uid = long.TryParse(userIdSpan, out var userId) ? userId : 0;
+        var pid = long.TryParse(pictureIdSpan, out var pictureId) ? pictureId : 0;
+        var time = long.TryParse(timestampSpan, out var postId) ? postId : 0;
+
+        if (time == 0 && pid > 1268219471 && pid <= DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+        {
+            // If picture id looks like a date then probably is a date
+            time = pid;
+            pid = uid;
+            uid = 0;
+        }
+        
         return new IgFile(
             fullPath, 
             fileName, 
             fileNameSpan.ToString(),
-            long.TryParse(userIdSpan, out var userId) ? userId : 0,
-            long.TryParse(pictureIdSpan, out var pictureId) ? pictureId : 0,
-            long.TryParse(timestampSpan, out var postId) ? postId : 0,
+            uid,
+            pid,
+            time,
             isMetadata);
     }
 }

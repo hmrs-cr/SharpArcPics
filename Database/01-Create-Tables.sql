@@ -44,7 +44,7 @@ create table IgMetadata
     IgPictureId bigint          not null,
     IgPostId    bigint          null,
     PictureId   bigint unsigned null,
-    TakenAt     bigint          not null,
+    TakenAt     bigint          null,
     Caption     varchar(2500)   null,
     ShortCode   varchar(64)     null,
     primary key (IgUserId, IgPictureId),
