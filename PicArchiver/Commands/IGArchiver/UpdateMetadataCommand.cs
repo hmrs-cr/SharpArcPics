@@ -84,7 +84,7 @@ public class UpdateMetadataCommand: IGBaseCommand
                 if (igFile.IsMetadata)
                 {
                     loaded = await LoadMetadata(igFile.FullPath, options.DbConnection, loadedMetadata, 
-                        igFile.UserName, igFile.UserId, options.MetadataArchiveFolder, options.SetIncomingFlag);
+                        igFile.UserName, igFile.UserId, igFile.PictureId, options.MetadataArchiveFolder, options.SetIncomingFlag);
                 }
                 else
                 {
@@ -92,7 +92,12 @@ public class UpdateMetadataCommand: IGBaseCommand
                     if (File.Exists(metadataFileName))
                     {
                         loaded = await LoadMetadata(metadataFileName, options.DbConnection, loadedMetadata,
-                            igFile.UserName, igFile.UserId, options.MetadataArchiveFolder, options.SetIncomingFlag, igFile.FullPath);
+                            igFile.UserName, igFile.UserId, igFile.PictureId, options.MetadataArchiveFolder, options.SetIncomingFlag, igFile.FullPath);
+                    }
+                    else
+                    {
+                        loaded = await LoadMetadata(string.Empty, options.DbConnection, loadedMetadata,
+                            igFile.UserName, igFile.UserId, igFile.PictureId, options.MetadataArchiveFolder, options.SetIncomingFlag, igFile.FullPath);
                     }
                 }
             }
@@ -181,6 +186,7 @@ public class UpdateMetadataCommand: IGBaseCommand
         HashSet<string> loadedMetadata, 
         string igUserName, 
         long igUserId, 
+        long igPictureId, 
         string? metadataArchiveFolder,
         bool setIncomingFlag,
         string? originalFilName = null)
@@ -188,10 +194,11 @@ public class UpdateMetadataCommand: IGBaseCommand
         var picFileName = string.Empty;
         try
         {
-            if (loadedMetadata.Add(metadataFileName))
+            var hasNoMetadata = !string.IsNullOrEmpty(originalFilName) && string.IsNullOrEmpty(metadataFileName);
+            if (loadedMetadata.Add(metadataFileName) || hasNoMetadata)
             {
                 picFileName = originalFilName ?? metadataFileName.Replace(IgFile.MetadataExtension, string.Empty);
-                var metadata = await IgMetadataRoot.LoadAsync(metadataFileName);
+                var metadata = hasNoMetadata ? default : await IgMetadataRoot.LoadAsync(metadataFileName);
                 DateTime? dateAdded = File.Exists(picFileName) ? File.GetCreationTimeUtc(picFileName) : null;
                 if (!dateAdded.HasValue || setIncomingFlag)
                 {
@@ -200,9 +207,9 @@ public class UpdateMetadataCommand: IGBaseCommand
                 
                 var pictureId = picFileName.ComputeFileNameHash();
                 await dbConnection.AddOrUpdatePictureMetadata(pictureId, picFileName, metadata.Data,
-                    igUserName, igUserId, dateAdded, setIncomingFlag);
+                    igUserName, igUserId, igPictureId, dateAdded, setIncomingFlag);
 
-                if (metadataArchiveFolder is not null)
+                if (metadataArchiveFolder is not null && !hasNoMetadata)
                 {
                     metadataArchiveFolder = Path.Join(metadataArchiveFolder, $"{igUserId}");
                     Directory.CreateDirectory(metadataArchiveFolder);

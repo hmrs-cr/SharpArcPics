@@ -3,13 +3,16 @@ create table IgUserNames
     IgUserId   bigint       not null,
     IgUserName varchar(128) not null,
     IgFullName varchar(256) null,
-    primary key (IgUserId, IgUserName)
+    primary key (IgUserId, IgUserName) ,
+    DateAdded datetime default current_timestamp
 );
 
 create table Pictures
 (
     PictureId   bigint unsigned auto_increment
         primary key,
+    IgUserId    bigint          not null,
+    IgPictureId bigint          not null,
     FileName    varchar(256)         not null,
     Caption     varchar(256)         null,
     Description varchar(1024)        null,
