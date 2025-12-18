@@ -94,11 +94,14 @@ public static class DbConnectionPictureExtensions
         }
         
         public async Task<int> AddOrUpdatePictureMetadata(ulong pictureId, string path, 
-            IgMetadataRoot.MetadataData metadata, string? igUserName, long? igUserId, DateTime? dateAdded, bool setIncomingFlag)
+            IgMetadataRoot.MetadataData metadata, string? igUserName, long? igUserId, long? igPicId,
+            DateTime? dateAdded, bool setIncomingFlag)
         {
             const string sql = """
                                INSERT INTO Pictures  
                                    (PictureId,
+                                    IgUserId,
+                                    IgPictureId,
                                     FileName,
                                     Description,
                                     Clothing,
@@ -111,6 +114,8 @@ public static class DbConnectionPictureExtensions
                                     IsIncoming,
                                     IsDeleted) 
                                VALUES (@PictureId, 
+                                       @IgUserId,
+                                       @IgPictureId,
                                        @FileName,
                                        @Description,
                                        @Clothing,
@@ -131,11 +136,12 @@ public static class DbConnectionPictureExtensions
                                        People    = @People,
                                        Race      = @Race,
                                        Gender    = @Gender,
+                                       IsIncoming = @IsIncoming,
                                        DateAdded = @DateAdded;
                                 INSERT IGNORE INTO IgUserNames 
                                     (IgUserId, IgUserName) 
                                 VALUES 
-                                    (@UserId, @UserName);
+                                    (@IgUserId, @IgUserName);
                                """;
 
             return await connection.ExecuteAsync(sql, new
@@ -150,8 +156,9 @@ public static class DbConnectionPictureExtensions
                 Race = metadata.Table?.Race,
                 Gender = metadata.Paras?.InferGender(),
                 DateAdded = dateAdded,
-                UserId = igUserId,
-                UserName = igUserName,
+                IgPictureId = igPicId,
+                IgUserId = igUserId,
+                IgUserName = igUserName,
                 IsIncoming = setIncomingFlag,
             });
         }
