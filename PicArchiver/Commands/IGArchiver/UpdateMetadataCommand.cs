@@ -89,16 +89,9 @@ public class UpdateMetadataCommand: IGBaseCommand
                 else
                 {
                     var metadataFileName = igFile.FullPath + IgFile.MetadataExtension;
-                    if (File.Exists(metadataFileName))
-                    {
-                        loaded = await LoadMetadata(metadataFileName, options.DbConnection, loadedMetadata,
-                            igFile.UserName, igFile.UserId, igFile.PictureId, options.MetadataArchiveFolder, options.SetIncomingFlag, igFile.FullPath);
-                    }
-                    else
-                    {
-                        loaded = await LoadMetadata(string.Empty, options.DbConnection, loadedMetadata,
-                            igFile.UserName, igFile.UserId, igFile.PictureId, options.MetadataArchiveFolder, options.SetIncomingFlag, igFile.FullPath);
-                    }
+                    loaded = await LoadMetadata(metadataFileName, options.DbConnection, loadedMetadata,
+                        igFile.UserName, igFile.UserId, igFile.PictureId, options.MetadataArchiveFolder,
+                        options.SetIncomingFlag, igFile.FullPath);
                 }
             }
             else if (igFile.FileName.EndsWith(IgGraphNodeRoot.Extension))
@@ -194,7 +187,7 @@ public class UpdateMetadataCommand: IGBaseCommand
         var picFileName = string.Empty;
         try
         {
-            var hasNoMetadata = !string.IsNullOrEmpty(originalFilName) && string.IsNullOrEmpty(metadataFileName);
+            var hasNoMetadata = !string.IsNullOrEmpty(originalFilName) && !File.Exists(metadataFileName);
             if (loadedMetadata.Add(metadataFileName) || hasNoMetadata)
             {
                 picFileName = originalFilName ?? metadataFileName.Replace(IgFile.MetadataExtension, string.Empty);
@@ -205,16 +198,27 @@ public class UpdateMetadataCommand: IGBaseCommand
                     dateAdded = DateTime.Now;
                 }
                 
+                if (metadataArchiveFolder is not null)
+                {
+                    metadataArchiveFolder = Path.Join(metadataArchiveFolder, $"{igUserId}");
+                    Directory.CreateDirectory(metadataArchiveFolder);
+                }
+                
+                var archivedMetadataFileName = metadataArchiveFolder != null ? Path.Join(metadataArchiveFolder, 
+                    Path.GetFileName(metadataFileName.AsSpan())) : null;
+                if (archivedMetadataFileName != null && File.Exists(archivedMetadataFileName))
+                {
+                    Console.WriteLine($"SKIPPED: Metadata archive exists, assuming is already loaded for {picFileName}");
+                    return false;
+                }
+
                 var pictureId = picFileName.ComputeFileNameHash();
                 await dbConnection.AddOrUpdatePictureMetadata(pictureId, picFileName, metadata.Data,
                     igUserName, igUserId, igPictureId, dateAdded, setIncomingFlag);
 
-                if (metadataArchiveFolder is not null && !hasNoMetadata)
+                if (archivedMetadataFileName != null && !hasNoMetadata)
                 {
-                    metadataArchiveFolder = Path.Join(metadataArchiveFolder, $"{igUserId}");
-                    Directory.CreateDirectory(metadataArchiveFolder);
-                    File.Move(metadataFileName, Path.Join(metadataArchiveFolder, 
-                        Path.GetFileName(metadataFileName.AsSpan())));
+                    File.Move(metadataFileName, archivedMetadataFileName);
                 }
                 
                 Console.WriteLine($"LOADED: Metadatada for {picFileName}");
