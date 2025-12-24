@@ -27,6 +27,9 @@ create table Pictures
     DateAdded   datetime             null
 );
 
+
+ALTER TABLE Pictures ADD  INDEX idx_IgPictureId (IgPictureId),ADD  INDEX idx_IgUserId (IgUserId);
+
 ALTER TABLE Pictures ADD UNIQUE (FileName);
 
 ALTER TABLE Pictures

@@ -75,7 +75,10 @@ public class UpdateMetadataCommand: IGBaseCommand
         var loadedMetadata = new HashSet<string>();
         var loadedCount = 0;
         var movedCount = 0;
-        var igFiles = Directory.EnumerateFiles(options.SourceFolder, "*.*", SearchOption.AllDirectories).Select(IgFile.Parse);
+        var igFiles = Directory.EnumerateFiles(options.SourceFolder, "*.*", SearchOption.AllDirectories).
+            Where(fn => !fn.Contains('@') && !Path.GetFileName(fn.AsSpan()).StartsWith(".")).
+            Select(IgFile.Parse);
+        
         foreach (var igFile in igFiles)
         {
             var loaded = false;
