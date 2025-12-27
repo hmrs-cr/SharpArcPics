@@ -36,6 +36,8 @@ public class SyncIgIdsCommand: IGBaseCommand
         var invalidCount = 0;
         var totalCount = 0;
         var updateCount = 0;
+        
+        Console.WriteLine($"Scanning... Folder: {directory}");
 
         await foreach (var picData in dbConnection.ScanAllPictures())
         {
@@ -71,11 +73,10 @@ public class SyncIgIdsCommand: IGBaseCommand
                 Console.WriteLine(
                     $"Invalid IG file: '{picData.FileName}': PID: {picData.IgPictureId?.ToString() ?? "NULL"}/{picData.IgUserId?.ToString() ?? "NULL"}, UID: {picData.IgUserId?.ToString() ?? "NULL"}/{picData.IgUserId?.ToString() ?? "NULL"}");
             }
-            
-            
-            Console.WriteLine($"TOTAL:   {totalCount}");
-            Console.WriteLine($"UPDATED: {updateCount}");
-            Console.WriteLine($"INVALID: {invalidCount}");
         }
+        
+        Console.WriteLine($"TOTAL:   {totalCount}");
+        Console.WriteLine($"UPDATED: {updateCount}");
+        Console.WriteLine($"INVALID: {invalidCount}");
     }
 }
