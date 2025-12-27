@@ -38,7 +38,10 @@ public class SyncIgIdsCommand: IGBaseCommand
         var totalCount = 0;
         var updateCount = 0;
         
-        Console.WriteLine($"Scanning... Folder: {directory}");
+        
+        Console.WriteLine($"Scanning... Folder: '{directory}'");
+        var total = await dbReadConnection.CountAllPictures();
+        Console.WriteLine($"Found {totalCount} records in DB");
 
         await foreach (var picData in dbReadConnection.ScanAllPictures())
         {
@@ -80,7 +83,7 @@ public class SyncIgIdsCommand: IGBaseCommand
                         ? $"{picData.IgUserId?.ToString() ?? "NULL"} => {newIgUserId}"
                         : "[NC]";
                 
-                    Console.WriteLine($"UPDATED: '{picData.FileName}' => PID: {pidDiff}, UID: {uidDiff}, Exists: {localFileExists}");
+                    Console.WriteLine($"UPDATED [{totalCount}/{total}]: '{picData.FileName}' \t \t => PID: {pidDiff}, UID: {uidDiff}, Exists: {localFileExists}");
                     
                     updateCount++;
                 }

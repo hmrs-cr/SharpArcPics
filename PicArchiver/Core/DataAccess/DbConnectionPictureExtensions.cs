@@ -283,6 +283,12 @@ public static class DbConnectionPictureExtensions
 
             return await connection.QueryAsync<ulong>(direction == "up" ? sqlUp : sqlDown);
         }
+        
+        public async Task<int> CountAllPictures()
+        {
+            const string sql = "SELECT Count(1) FROM Pictures";
+            return await connection.ExecuteScalarAsync<int>(sql);
+        }
 
         public IAsyncEnumerable<PictureData> ScanAllPictures()
         {
