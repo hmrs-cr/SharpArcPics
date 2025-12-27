@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 using System.Diagnostics;
 using Dapper;
 using PicArchiver.Core.Metadata.Loaders;
@@ -281,6 +282,27 @@ public static class DbConnectionPictureExtensions
             const string sqlUp = sqlBase + " DESC LIMIT 100";
 
             return await connection.QueryAsync<ulong>(direction == "up" ? sqlUp : sqlDown);
+        }
+
+        public IAsyncEnumerable<PictureData> ScanAllPictures()
+        {
+            const string sql = "SELECT PictureId, FileName, IgPictureId, IgUserId FROM Pictures";
+            return ((DbConnection)connection).QueryUnbufferedAsync<PictureData>(sql);
+        }
+
+        public Task<int> UpdateIgIds(ulong pictureId, long? igUserId, long? igPictureId, bool deleted)
+        {
+            const string sqlUpdate = """
+                                     UPDATE 
+                                         Pictures 
+                                     SET IgPictureId = COALESCE(@igPictureId, IgPictureId),
+                                         IgUserId = COALESCE(@igUserId, IgUserId),
+                                         IsDeleted = @deleted
+                                     WHERE 
+                                         PictureId = @pictureId
+                                     """;
+            
+            return connection.ExecuteAsync(sqlUpdate, new { igPictureId, igUserId, pictureId, deleted });
         }
     }
 }

@@ -28,3 +28,11 @@ public class AppInfo
     public string? TopRatedLabel { get; init; }
     public string? LowRatedLabel { get; init; }
 }
+
+public class PictureData
+{
+    public ulong PictureId { get; init; }
+    public string FileName { get; init; }
+    public long? IgPictureId { get; init; }
+    public long? IgUserId { get; init; }
+}

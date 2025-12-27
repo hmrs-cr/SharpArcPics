@@ -9,7 +9,8 @@ public class IGBaseCommand : Command
         new ScanCommand(),
         new RemoveDuplicatesCommand(),
         new GetRandomCommand(),
-        new UpdateMetadataCommand()
+        new UpdateMetadataCommand(),
+        new SyncIgIdsCommand()
     ];
     
     protected IGBaseCommand(string name, string description) : base($"{name}", description)

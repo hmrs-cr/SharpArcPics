@@ -28,7 +28,9 @@ create table Pictures
 );
 
 
-ALTER TABLE Pictures ADD  INDEX idx_IgPictureId (IgPictureId),ADD  INDEX idx_IgUserId (IgUserId);
+ALTER TABLE Pictures 
+    ADD  INDEX idx_IgPictureId (IgPictureId),
+    ADD  INDEX idx_IgUserId (IgUserId);
 
 ALTER TABLE Pictures ADD UNIQUE (FileName);
 
