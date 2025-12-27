@@ -41,7 +41,7 @@ public class SyncIgIdsCommand: IGBaseCommand
         
         Console.WriteLine($"Scanning... Folder: '{directory}'");
         var total = await dbReadConnection.CountAllPictures();
-        Console.WriteLine($"Found {totalCount} records in DB");
+        Console.WriteLine($"Found {total} records in DB");
 
         await foreach (var picData in dbReadConnection.ScanAllPictures())
         {
