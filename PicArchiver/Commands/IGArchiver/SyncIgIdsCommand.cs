@@ -49,23 +49,33 @@ public class SyncIgIdsCommand: IGBaseCommand
                 var localFileExists = File.Exists(localFile);
                 long? newIgPictureId = null;
                 long? newIgUserId = null;
+
                 if (picData.IgPictureId != igFile.PictureId)
                 {
-                    newIgPictureId =  picData.IgPictureId;
+                    newIgPictureId = picData.IgPictureId;
                 }
 
                 if (picData.IgUserId != igFile.UserId)
                 {
-                    newIgUserId  = picData.IgUserId;
-                }
-
-                if (newIgPictureId.HasValue || newIgUserId.HasValue)
-                {
-                    await dbConnection.UpdateIgIds(pictureId: picData.PictureId, igPictureId: newIgPictureId, igUserId: newIgUserId, deleted: !localFileExists);
-                    Console.WriteLine($"UPDATED: '{picData.FileName}' => PID: {picData.IgPictureId?.ToString() ?? "NULL"} => {picData.IgUserId}, UID: {picData.IgUserId?.ToString() ?? "NULL"} => {picData.IgUserId}");
-                    updateCount++;
+                    newIgUserId = picData.IgUserId;
                 }
                 
+                await dbConnection.UpdateIgIds(pictureId: picData.PictureId, igPictureId: newIgPictureId,
+                    igUserId: newIgUserId, deleted: !localFileExists);
+                
+                var pidDiff = newIgPictureId.HasValue
+                    ? $"{picData.IgPictureId?.ToString() ?? "NULL"} => {newIgPictureId}"
+                    : "[NC]";
+                
+                var uidDiff = newIgUserId.HasValue
+                    ? $"{picData.IgUserId?.ToString() ?? "NULL"} => {newIgUserId}"
+                    : "[NC]";
+                
+                Console.WriteLine($"UPDATED: '{picData.FileName}' => PID: {pidDiff}, UID: {uidDiff}");
+                if (newIgPictureId.HasValue || newIgUserId.HasValue)
+                {
+                    updateCount++;
+                }
             }
             else
             {
