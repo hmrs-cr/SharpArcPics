@@ -31,7 +31,8 @@ public class SyncIgIdsCommand: IGBaseCommand
 
     private async Task SyncIdsInternalAsync(string directory, string connectionString)
     {
-        await using var dbConnection = new MySqlConnection(connectionString);
+        await using var dbReadConnection = new MySqlConnection(connectionString);
+        await using var dbWriteConnection = new MySqlConnection(connectionString);
         
         var invalidCount = 0;
         var totalCount = 0;
@@ -39,7 +40,7 @@ public class SyncIgIdsCommand: IGBaseCommand
         
         Console.WriteLine($"Scanning... Folder: {directory}");
 
-        await foreach (var picData in dbConnection.ScanAllPictures())
+        await foreach (var picData in dbReadConnection.ScanAllPictures())
         {
             totalCount++;
             var igFile = IgFile.Parse(picData.FileName);
@@ -60,7 +61,7 @@ public class SyncIgIdsCommand: IGBaseCommand
                     newIgUserId = picData.IgUserId;
                 }
                 
-                await dbConnection.UpdateIgIds(pictureId: picData.PictureId, igPictureId: newIgPictureId,
+                await dbWriteConnection.UpdateIgIds(pictureId: picData.PictureId, igPictureId: newIgPictureId,
                     igUserId: newIgUserId, deleted: !localFileExists);
                 
                 var pidDiff = newIgPictureId.HasValue
