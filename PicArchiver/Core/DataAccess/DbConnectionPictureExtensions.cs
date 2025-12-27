@@ -286,18 +286,18 @@ public static class DbConnectionPictureExtensions
 
         public IAsyncEnumerable<PictureData> ScanAllPictures()
         {
-            const string sql = "SELECT PictureId, FileName, IgPictureId, IgUserId FROM Pictures";
+            const string sql = "SELECT PictureId, FileName, IgPictureId, IgUserId, IsDeleted FROM Pictures";
             return ((DbConnection)connection).QueryUnbufferedAsync<PictureData>(sql);
         }
 
-        public Task<int> UpdateIgIds(ulong pictureId, long? igUserId, long? igPictureId, bool deleted)
+        public Task<int> UpdateIgIds(ulong pictureId, long? igUserId, long? igPictureId, bool? deleted)
         {
             const string sqlUpdate = """
                                      UPDATE 
                                          Pictures 
                                      SET IgPictureId = COALESCE(@igPictureId, IgPictureId),
                                          IgUserId = COALESCE(@igUserId, IgUserId),
-                                         IsDeleted = @deleted
+                                         IsDeleted = COALESCE(@deleted, IsDeleted)
                                      WHERE 
                                          PictureId = @pictureId
                                      """;

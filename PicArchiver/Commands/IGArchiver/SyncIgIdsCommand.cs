@@ -50,6 +50,7 @@ public class SyncIgIdsCommand: IGBaseCommand
                 var localFileExists = File.Exists(localFile);
                 long? newIgPictureId = null;
                 long? newIgUserId = null;
+                bool? newIsDeleted = null;
 
                 if (picData.IgPictureId != igFile.PictureId)
                 {
@@ -60,21 +61,27 @@ public class SyncIgIdsCommand: IGBaseCommand
                 {
                     newIgUserId = picData.IgUserId;
                 }
-                
-                await dbWriteConnection.UpdateIgIds(pictureId: picData.PictureId, igPictureId: newIgPictureId,
-                    igUserId: newIgUserId, deleted: !localFileExists);
-                
-                var pidDiff = newIgPictureId.HasValue
-                    ? $"{picData.IgPictureId?.ToString() ?? "NULL"} => {newIgPictureId}"
-                    : "[NC]";
-                
-                var uidDiff = newIgUserId.HasValue
-                    ? $"{picData.IgUserId?.ToString() ?? "NULL"} => {newIgUserId}"
-                    : "[NC]";
-                
-                Console.WriteLine($"UPDATED: '{picData.FileName}' => PID: {pidDiff}, UID: {uidDiff}");
-                if (newIgPictureId.HasValue || newIgUserId.HasValue)
+
+                if (!localFileExists != picData.IsDeleted)
                 {
+                    newIsDeleted = !picData.IsDeleted;
+                }
+                
+                if (newIgPictureId.HasValue || newIgUserId.HasValue || newIsDeleted.HasValue)
+                {
+                    await dbWriteConnection.UpdateIgIds(pictureId: picData.PictureId, igPictureId: newIgPictureId,
+                        igUserId: newIgUserId, deleted: newIsDeleted);
+                
+                    var pidDiff = newIgPictureId.HasValue
+                        ? $"{picData.IgPictureId?.ToString() ?? "NULL"} => {newIgPictureId}"
+                        : "[NC]";
+                
+                    var uidDiff = newIgUserId.HasValue
+                        ? $"{picData.IgUserId?.ToString() ?? "NULL"} => {newIgUserId}"
+                        : "[NC]";
+                
+                    Console.WriteLine($"UPDATED: '{picData.FileName}' => PID: {pidDiff}, UID: {uidDiff}, Exists: {localFileExists}");
+                    
                     updateCount++;
                 }
             }
