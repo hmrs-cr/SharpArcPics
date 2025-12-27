@@ -35,4 +35,5 @@ public class PictureData
     public string FileName { get; init; }
     public long? IgPictureId { get; init; }
     public long? IgUserId { get; init; }
+    public bool IsDeleted { get; init; }
 }
