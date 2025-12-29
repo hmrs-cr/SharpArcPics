@@ -57,12 +57,12 @@ public class SyncIgIdsCommand: IGBaseCommand
 
                 if (picData.IgPictureId != igFile.PictureId)
                 {
-                    newIgPictureId = picData.IgPictureId;
+                    newIgPictureId = igFile.PictureId;
                 }
 
                 if (picData.IgUserId != igFile.UserId)
                 {
-                    newIgUserId = picData.IgUserId;
+                    newIgUserId = igFile.UserId;
                 }
 
                 if (!localFileExists != picData.IsDeleted)
