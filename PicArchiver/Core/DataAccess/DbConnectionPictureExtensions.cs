@@ -292,7 +292,7 @@ public static class DbConnectionPictureExtensions
 
         public IAsyncEnumerable<PictureData> ScanAllPictures()
         {
-            const string sql = "SELECT PictureId, FileName, IgPictureId, IgUserId, IsDeleted FROM Pictures";
+            const string sql = "SELECT PictureId, FileName, IgPictureId, IgUserId, IsDeleted FROM Pictures where IgUserId is null";
             return ((DbConnection)connection).QueryUnbufferedAsync<PictureData>(sql);
         }
 
