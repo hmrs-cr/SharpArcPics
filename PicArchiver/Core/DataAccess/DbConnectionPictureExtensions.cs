@@ -8,6 +8,8 @@ namespace PicArchiver.Core.DataAccess;
 
 public static class DbConnectionPictureExtensions
 {
+    private const string QueryCondition = "where IgUserId is null and isDeleted = 0";
+    
     extension(IDbConnection connection)
     {
         public async Task<string?> GetPicturePath(ulong pictureId)
@@ -286,13 +288,13 @@ public static class DbConnectionPictureExtensions
         
         public async Task<int> CountAllPictures()
         {
-            const string sql = "SELECT Count(1) FROM Pictures";
+            const string sql = "SELECT Count(1) FROM Pictures " + QueryCondition;
             return await connection.ExecuteScalarAsync<int>(sql);
         }
 
         public IAsyncEnumerable<PictureData> ScanAllPictures()
         {
-            const string sql = "SELECT PictureId, FileName, IgPictureId, IgUserId, IsDeleted FROM Pictures where IgUserId is null";
+            const string sql = "SELECT PictureId, FileName, IgPictureId, IgUserId, IsDeleted FROM Pictures " + QueryCondition;
             return ((DbConnection)connection).QueryUnbufferedAsync<PictureData>(sql);
         }
 
