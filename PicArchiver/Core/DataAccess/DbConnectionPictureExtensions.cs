@@ -8,7 +8,7 @@ namespace PicArchiver.Core.DataAccess;
 
 public static class DbConnectionPictureExtensions
 {
-    private const string QueryCondition = "where IgUserId is null and isDeleted = 0";
+    private const string QueryCondition = "";
     
     extension(IDbConnection connection)
     {
