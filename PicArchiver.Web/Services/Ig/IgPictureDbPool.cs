@@ -1,16 +1,20 @@
 using System.Threading.Channels;
 using Microsoft.Extensions.Options;
 using PicArchiver.Commands.IGArchiver;
+using PicArchiver.Core.DataAccess;
 using PicArchiver.Core.Metadata;
 using PicArchiver.Core.Metadata.Loaders;
 using PicArchiver.Extensions;
+using PicArchiver.Web.Services.MySqlServices;
 
 namespace PicArchiver.Web.Services.Ig;
 
-public class IgPicturePool : IPictureProvider, IDisposable
+public class IgPictureDbPool : IPictureProvider, IDisposable
 {
     private readonly PictureProvidersConfig _config;
-    private readonly ILogger<IgPicturePool> _logger;
+    private readonly ILogger<IgPictureDbPool> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IConfiguration _configuration;
     private readonly Channel<string> _pool;
     private readonly int _minThreshold;
     private readonly int _maxCapacity;
@@ -26,13 +30,19 @@ public class IgPicturePool : IPictureProvider, IDisposable
     private readonly CancellationTokenSource _cts = new CancellationTokenSource();
     private bool _disposed;
 
-    public IgPicturePool(IOptions<PictureProvidersConfig> config, ILogger<IgPicturePool> logger)
+    public IgPictureDbPool(
+        IOptions<PictureProvidersConfig> config,
+        ILogger<IgPictureDbPool> logger,
+        IServiceScopeFactory scopeFactory,
+        IConfiguration configuration)
     {
         _config = config.Value;
         _logger = logger;
+        _scopeFactory = scopeFactory;
+        _configuration = configuration;
 
-        _minThreshold = 1500;
-        _maxCapacity = 2000;
+        _minThreshold = 7500;
+        _maxCapacity = 10000;
 
         // Configure Channel
         var options = new BoundedChannelOptions(_maxCapacity)
@@ -41,20 +51,9 @@ public class IgPicturePool : IPictureProvider, IDisposable
             SingleReader = false, // Multiple threads can read
             FullMode = BoundedChannelFullMode.Wait // If full, writer waits (though our logic prevents this)
         };
+        
         _pool = Channel.CreateBounded<string>(options);
-
-        // Initialize and start the dedicated background thread
-        _workerThread = new Thread(RefillLoop)
-        {
-            IsBackground = true, // Ensures thread dies if app closes
-            Name = "PoolRefillWorker",
-            Priority = ThreadPriority.BelowNormal // Let consumers have higher CPU priority
-        };
-        _workerThread.Start();
-
-        // Signal immediately to perform the initial fill
-        _refillSignal.Set();
-
+        _ = StartRefillPoolLoop();
         logger.LogInformation("IG Provider started. Pic Path: '{PicturesBasePath}'", _config.PicturesBasePath);
     }
 
@@ -65,53 +64,20 @@ public class IgPicturePool : IPictureProvider, IDisposable
     /// </summary>
     public async ValueTask<string> GetNextRandomValueAsync(CancellationToken ct = default)
     {
-        // 1. Try to read asynchronously
         var value = await _pool.Reader.ReadAsync(ct);
-
-        // 2. Check thresholds
-        // We only signal if the count dropped below min.
-        // ChannelReader.Count is efficient enough for this check.
-        var currentCount = _pool.Reader.Count;
-        if (currentCount < _minThreshold)
-        {
-            // Wake up the background thread!
-            // Set() is non-blocking and very fast. If already signaled, it does nothing.
-            _refillSignal.Set();
-        }
-
         return value;
     }
 
-    public async IAsyncEnumerable<string> GetPictureSetPaths(ulong setId)
+    public IAsyncEnumerable<string> GetPictureSetPaths(ulong setId)
     {
-        var setPath = Path.Combine(_config.PicturesBasePath, $"{setId}");
-        if (Directory.Exists(setPath))
-        {
-            foreach (var file in Directory.EnumerateFiles(setPath, "*.*", SearchOption.TopDirectoryOnly))
-            {
-                if (IgMetadataProvider.IsValidFilePath(file))
-                {
-                    yield return file;
-                }
-            }
-        }
+        // TODO: Implement
+        throw new  NotImplementedException();
     }
 
-    public async IAsyncEnumerable<string> GetPictureSetPaths(string setId)
+    public IAsyncEnumerable<string> GetPictureSetPaths(string setId)
     {
-        foreach (var file in Directory.EnumerateFiles(_config.PicturesBasePath, "*.*", SearchOption.AllDirectories))
-        {
-            if (IgMetadataProvider.IsValidFilePath(file) && Path.GetFileName(file.AsSpan()).StartsWith(setId) &&
-                Path.GetDirectoryName(file) is { } directoryName)
-            {
-                foreach (var file2 in Directory.EnumerateFiles(directoryName, "*.*", SearchOption.TopDirectoryOnly))
-                {
-                    yield return file2;
-                }
-
-                yield break;
-            }
-        }
+        // TODO: Implement
+        throw new  NotImplementedException();
     }
 
     public ulong GetPictureIdFromPath(string fullPicturePath) => fullPicturePath.ComputeFileNameHash();
@@ -145,53 +111,56 @@ public class IgPicturePool : IPictureProvider, IDisposable
     /// <summary>
     /// The logic running on the dedicated thread.
     /// </summary>
-    private void RefillLoop()
+    private async Task StartRefillPoolLoop()
     {
         while (!_cts.IsCancellationRequested)
         {
             try
             {
-                // 1. WAIT here until a consumer signals that the pool is low.
-                // This blocks the thread with zero CPU usage until _refillSignal.Set() is called.
-                _refillSignal.WaitOne();
-
-                // 2. Validation check after waking up
                 if (_cts.IsCancellationRequested) 
                     break;
 
-                // 3. Fill logic
+                // Fill logic
                 var currentCount = _pool.Reader.Count;
                 var needed = _maxCapacity - currentCount;
 
-                if (needed <= 0) 
+                if (needed <= 0)
+                {
+                    await Task.Delay(1000, _cts.Token); 
                     continue;
-                
+                }
+
                 if (_logger.IsEnabled(LogLevel.Debug))
                     _logger.LogDebug("Refilling {needed} items...", needed);
-                    
+
+                using var serviceScope = _scopeFactory.CreateScope();
+                var connectionAccessor = new BasicMySqlConnectionAccessor(serviceScope.ServiceProvider, _configuration);
+                using var dbConnection = connectionAccessor.DbConnection;
                 for (var i = 0; i < needed; i++)
                 {
                     // Stop if disposed mid-loop
                     if (_cts.IsCancellationRequested) 
                         break;
 
-                    var picturePath = GetRandomCommand.GetRandom(_config.PicturesBasePath);
-                    // Write to channel (TryWrite is efficient for Bounded channels)
-                    // If false (full), we just stop trying.
-                    if (picturePath != null && IgMetadataProvider.IsValidFilePath(picturePath))
-                    {   
-                        if (!_pool.Writer.TryWrite(picturePath))
+                    var fileName = await dbConnection.GetRandomPictureFileName();
+                    if (fileName != null)
+                    {
+                        var picturePath = Path.Join(_config.PicturesBasePath, fileName);
+                        if (IgMetadataProvider.IsValidFilePath(picturePath))
                         {
-                            break;
+                            if (!_pool.Writer.TryWrite(picturePath))
+                            {
+                                break;
+                            }
                         }
                     }
                 }
+                
                 if (_logger.IsEnabled(LogLevel.Debug))
                     _logger.LogDebug("Refill complete. Going back to sleep.");
             }
             catch (Exception ex)
             {
-                // Log exception (don't crash the background thread)
                 _logger.LogError(ex, "Failed to refill.");
             }
         }
@@ -204,12 +173,7 @@ public class IgPicturePool : IPictureProvider, IDisposable
         
         _disposed = true;
 
-        _cts.Cancel(); // Tell loop to stop
-        _refillSignal.Set(); // Wake up thread so it can check the token and exit
-        
-        _workerThread.Join(1000); 
-        
+        _cts.Cancel(); // Tell loop to stop 
         _cts.Dispose();
-        _refillSignal.Dispose();
     }
 }

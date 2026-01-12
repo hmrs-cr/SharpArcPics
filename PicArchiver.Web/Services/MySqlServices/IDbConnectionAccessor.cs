@@ -8,26 +8,27 @@ public interface IDbConnectionAccessor
     public IDbConnection DbConnection { get; }
 }
 
-public class HttpContextMySqlConnectionAccessor : IDbConnectionAccessor
+public class BasicMySqlConnectionAccessor : IDbConnectionAccessor
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IServiceProvider? _serviceProvider;
     private readonly string _connectionString;
-
-    public HttpContextMySqlConnectionAccessor(IHttpContextAccessor httpContextAccessor, IConfiguration configuration)
+    
+    public BasicMySqlConnectionAccessor(IConfiguration configuration)
     {
         _connectionString = configuration.GetConnectionString("PicVoterMySql") ?? 
                             throw new InvalidOperationException("No MySQL Connection configured");
-        
-        _httpContextAccessor = httpContextAccessor;
     }
-
-    public IDbConnection DbConnection => GetDbConnection();
-
-    private IDbConnection GetDbConnection()
+    
+    public BasicMySqlConnectionAccessor(IServiceProvider serviceProvider, IConfiguration configuration) : this(configuration)
     {
-        var dbConnection = _httpContextAccessor.HttpContext?.RequestServices.GetRequiredService<IDbConnection>() ??
-            throw new InvalidOperationException("Not in a HttpContext");
-        
+        _serviceProvider = serviceProvider;
+    }
+    
+    public virtual IDbConnection DbConnection => GetDbConnection(_serviceProvider ?? throw new InvalidOperationException("Not in a DbContext"));
+    
+    protected IDbConnection GetDbConnection(IServiceProvider serviceProvider)
+    {
+        var dbConnection = serviceProvider.GetRequiredService<IDbConnection>();
         if (dbConnection.State == ConnectionState.Closed)
         {
             dbConnection.ConnectionString = _connectionString;
@@ -35,6 +36,20 @@ public class HttpContextMySqlConnectionAccessor : IDbConnectionAccessor
         
         return dbConnection;
     }
+}
+
+public class HttpContextMySqlConnectionAccessor : BasicMySqlConnectionAccessor
+{
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public HttpContextMySqlConnectionAccessor(IHttpContextAccessor httpContextAccessor, IConfiguration configuration) :
+        base(configuration)
+    {
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    public override IDbConnection DbConnection => 
+        GetDbConnection(_httpContextAccessor.HttpContext?.RequestServices ?? throw new InvalidOperationException("Not in a HttpContext"));
 }
 
 public static class RegistrationExtensions

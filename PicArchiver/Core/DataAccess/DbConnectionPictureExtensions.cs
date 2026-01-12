@@ -312,5 +312,15 @@ public static class DbConnectionPictureExtensions
             
             return connection.ExecuteAsync(sqlUpdate, new { igPictureId, igUserId, pictureId, deleted });
         }
+
+        public async Task<string?> GetRandomPictureFileName()
+        {
+            const string sql = """
+                               SELECT IgUserId INTO @UserId FROM picvoterdb.ValidIgUserIds LIMIT 1;
+                               SELECT CONCAT(IgUserId, '/', FileName) fn FROM Pictures WHERE IgUserId = @UserId AND IsDeleted = 0 ORDER BY RAND() LIMIT 1;
+                               """;
+
+            return await connection.ExecuteScalarAsync<string>(sql);
+        }
     }
 }

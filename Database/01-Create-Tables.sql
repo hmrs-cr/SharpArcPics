@@ -125,3 +125,7 @@ create table UserFavorites
             on delete cascade
 );
 
+CREATE VIEW ValidIgUserIds AS
+SELECT IguserId  FROM picvoterdb.IgUserNames igun
+WHERE (select count(1) FROM Pictures where IgUserId = igun.IgUserId and IsDeleted = 0) > 0
+ORDER BY RAND()
