@@ -105,7 +105,7 @@ public class SyncIgIdsCommand: IGBaseCommand
                 : "[NC]";
 
             Console.WriteLine(
-                $"UPDATED [{++updateCount}/{total}]: '{updateRecord.PicData.FileName}' \t \t => PID: {pidDiff}, UID: {uidDiff}, Exists: {updateRecord.LocalFileExists}");
+                $"UPDATED [{++updateCount}/{updateList.Count}]: '{updateRecord.PicData.FileName}' \t \t => PID: {pidDiff}, UID: {uidDiff}, Exists: {updateRecord.LocalFileExists}");
         }
         
         Console.WriteLine($"SCANNED/TOTAL: {totalCount}/{total}");
