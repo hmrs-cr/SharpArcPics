@@ -316,11 +316,27 @@ public static class DbConnectionPictureExtensions
         public async Task<string?> GetRandomPictureFileName()
         {
             const string sql = """
-                               SELECT IgUserId INTO @UserId FROM picvoterdb.ValidIgUserIds LIMIT 1;
-                               SELECT CONCAT(IgUserId, '/', FileName) fn FROM Pictures WHERE IgUserId = @UserId AND IsDeleted = 0 ORDER BY RAND() LIMIT 1;
+                               SELECT CONCAT(IgUserId, '/', FileName) AS fn 
+                               FROM Pictures 
+                               WHERE IgUserId = (SELECT IgUserId FROM ValidIgUserIds LIMIT 1) 
+                                 AND IsDeleted = 0 
+                               ORDER BY RAND() 
+                               LIMIT 1;
                                """;
 
             return await connection.ExecuteScalarAsync<string>(sql);
+        }
+        
+        public async Task<IEnumerable<ulong>> GetPictureIdsForUser(ulong userId)
+        {
+            const string sql = "SELECT PictureId From Pictures WHERE IgUserId = @UserId and IsDeleted = 0 ORDER BY FileName DESC";
+            return await connection.QueryAsync<ulong>(sql, new { UserId = userId });
+        }
+        
+        public async Task<IEnumerable<ulong>> GetPictureIdsForUser(string userName)
+        {
+            const string sql = "SELECT PictureId From Pictures WHERE IgUserId = (SELECT IgUserId FROM IgUserNames WHERE IgUserName = @UserName LIMIT 1) and IsDeleted = 0 ORDER BY FileName DESC";
+            return await connection.QueryAsync<ulong>(sql, new { UserName = userName });
         }
     }
 }

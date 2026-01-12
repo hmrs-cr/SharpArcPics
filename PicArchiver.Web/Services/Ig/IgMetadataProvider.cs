@@ -19,8 +19,8 @@ public class IgMetadataProvider : IMetadataProvider
     {
         return !fileName.EndsWith(".mp4", StringComparison.InvariantCultureIgnoreCase) &&
                !fileName.EndsWith(IgFile.MetadataExtension) &&
-               !File.GetAttributes(fileName).HasFlag(FileAttributes.Hidden) &&
-               File.Exists(fileName);
+               File.Exists(fileName) &&
+               !File.GetAttributes(fileName).HasFlag(FileAttributes.Hidden);
     }
 
     public async ValueTask<PictureStats> SetMetadata(PictureStats pictureData)

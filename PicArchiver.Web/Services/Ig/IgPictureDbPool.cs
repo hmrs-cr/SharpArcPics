@@ -14,6 +14,7 @@ public class IgPictureDbPool : IPictureProvider, IDisposable
     private readonly PictureProvidersConfig _config;
     private readonly ILogger<IgPictureDbPool> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IDbConnectionAccessor _connectionAccessor;
     private readonly IConfiguration _configuration;
     private readonly Channel<string> _pool;
     private readonly int _minThreshold;
@@ -34,11 +35,13 @@ public class IgPictureDbPool : IPictureProvider, IDisposable
         IOptions<PictureProvidersConfig> config,
         ILogger<IgPictureDbPool> logger,
         IServiceScopeFactory scopeFactory,
+        IDbConnectionAccessor connectionAccessor,
         IConfiguration configuration)
     {
         _config = config.Value;
         _logger = logger;
         _scopeFactory = scopeFactory;
+        _connectionAccessor = connectionAccessor;
         _configuration = configuration;
 
         _minThreshold = 7500;
@@ -68,16 +71,22 @@ public class IgPictureDbPool : IPictureProvider, IDisposable
         return value;
     }
 
-    public IAsyncEnumerable<string> GetPictureSetPaths(ulong setId)
+    public async IAsyncEnumerable<string> GetPictureSetIds(ulong setId)
     {
-        // TODO: Implement
-        throw new  NotImplementedException();
+        var ids = await _connectionAccessor.DbConnection.GetPictureIdsForUser(setId);
+        foreach (var id in ids)
+        {
+            yield return id.ToString();
+        }
     }
 
-    public IAsyncEnumerable<string> GetPictureSetPaths(string setId)
+    public async IAsyncEnumerable<string> GetPictureSetIds(string setId)
     {
-        // TODO: Implement
-        throw new  NotImplementedException();
+        var ids = await _connectionAccessor.DbConnection.GetPictureIdsForUser(setId);
+        foreach (var id in ids)
+        {
+            yield return id.ToString();
+        }
     }
 
     public ulong GetPictureIdFromPath(string fullPicturePath) => fullPicturePath.ComputeFileNameHash();

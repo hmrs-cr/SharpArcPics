@@ -79,13 +79,11 @@ public class SqlPictureService : IPictureService
 
     public async Task<ICollection<string>> GetImageSet(string setId)
     {
-        var picSet = ulong.TryParse(setId, out var setIdl) ? this._pictureProvider.GetPictureSetPaths(setIdl) : _pictureProvider.GetPictureSetPaths(setId);
+        var picSet = ulong.TryParse(setId, out var setIdl) ? this._pictureProvider.GetPictureSetIds(setIdl) : _pictureProvider.GetPictureSetIds(setId);
         var result = new List<string>(32);
-        await foreach (var path in picSet.OrderByDescending(p => p))
+        await foreach (var pictureId in picSet)
         {
-            var pictureId = _pictureProvider.GetPictureIdFromPath(path);
-            await SavePicToDbAsync(pictureId, path);
-            result.Add($"{pictureId}");
+            result.Add(pictureId);
         }
 
         return result;
