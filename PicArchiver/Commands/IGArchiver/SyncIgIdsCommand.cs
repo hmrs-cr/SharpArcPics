@@ -88,29 +88,36 @@ public class SyncIgIdsCommand: IGBaseCommand
         Console.WriteLine($"CHANGES FOUND: {updateList.Count}");
         Console.WriteLine($"INVALID: {invalidCount}");
 
-        await using var dbWriteConnection = new MySqlConnection(connectionString);
-        var updateCount = 0;
-        foreach (var updateRecord in updateList)
+        if (updateList.Count == 0)
         {
-            await dbWriteConnection.UpdateIgIds(pictureId: updateRecord.PicData.PictureId,
-                igPictureId: updateRecord.NewIgPictureId,
-                igUserId: updateRecord.NewIgUserId, deleted: updateRecord.NewIsDeleted);
-
-            var pidDiff = updateRecord.NewIgPictureId.HasValue
-                ? $"{updateRecord.PicData.IgPictureId?.ToString() ?? "NULL"} => {updateRecord.NewIgPictureId}"
-                : "[NC]";
-
-            var uidDiff = updateRecord.NewIgUserId.HasValue
-                ? $"{updateRecord.PicData.IgUserId?.ToString() ?? "NULL"} => {updateRecord.NewIgUserId}"
-                : "[NC]";
-
-            Console.WriteLine(
-                $"UPDATED [{++updateCount}/{updateList.Count}]: '{updateRecord.PicData.FileName}' \t \t => PID: {pidDiff}, UID: {uidDiff}, Exists: {updateRecord.LocalFileExists}");
+            Console.WriteLine("Nothing to update");
         }
-        
-        Console.WriteLine($"SCANNED/TOTAL: {totalCount}/{total}");
-        Console.WriteLine($"UPDATED: {updateList.Count}");
-        Console.WriteLine($"INVALID: {invalidCount}");
+        else
+        {
+            await using var dbWriteConnection = new MySqlConnection(connectionString);
+            var updateCount = 0;
+            foreach (var updateRecord in updateList)
+            {
+                await dbWriteConnection.UpdateIgIds(pictureId: updateRecord.PicData.PictureId,
+                    igPictureId: updateRecord.NewIgPictureId,
+                    igUserId: updateRecord.NewIgUserId, deleted: updateRecord.NewIsDeleted);
+
+                var pidDiff = updateRecord.NewIgPictureId.HasValue
+                    ? $"{updateRecord.PicData.IgPictureId?.ToString() ?? "NULL"} => {updateRecord.NewIgPictureId}"
+                    : "[NC]";
+
+                var uidDiff = updateRecord.NewIgUserId.HasValue
+                    ? $"{updateRecord.PicData.IgUserId?.ToString() ?? "NULL"} => {updateRecord.NewIgUserId}"
+                    : "[NC]";
+
+                Console.WriteLine(
+                    $"UPDATED [{++updateCount}/{updateList.Count}]: '{updateRecord.PicData.FileName}' \t \t => PID: {pidDiff}, UID: {uidDiff}, Exists: {updateRecord.LocalFileExists}");
+            }
+
+            Console.WriteLine($"SCANNED/TOTAL: {totalCount}/{total}");
+            Console.WriteLine($"UPDATED: {updateList.Count}");
+            Console.WriteLine($"INVALID: {invalidCount}");
+        }
     }
 
     private record UpdateRecord(

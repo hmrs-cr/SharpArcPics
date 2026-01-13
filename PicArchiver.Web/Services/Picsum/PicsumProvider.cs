@@ -79,12 +79,12 @@ public class PicsumProvider : IPictureProvider
         return fullFilePath;
     }
 
-    public IAsyncEnumerable<string> GetPictureSetIds(ulong setId)
+    public Task<IEnumerable<string>> GetPictureSetIds(ulong setId)
     {
         throw new NotImplementedException();
     }
 
-    public IAsyncEnumerable<string> GetPictureSetIds(string setId)
+    public Task<IEnumerable<string>> GetPictureSetIds(string setId)
     {
         throw new NotImplementedException();
     }

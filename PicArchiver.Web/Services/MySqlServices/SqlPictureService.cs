@@ -80,13 +80,7 @@ public class SqlPictureService : IPictureService
     public async Task<ICollection<string>> GetImageSet(string setId)
     {
         var picSet = ulong.TryParse(setId, out var setIdl) ? this._pictureProvider.GetPictureSetIds(setIdl) : _pictureProvider.GetPictureSetIds(setId);
-        var result = new List<string>(32);
-        await foreach (var pictureId in picSet)
-        {
-            result.Add(pictureId);
-        }
-
-        return result;
+        return (await picSet).ToList();
     }
 
     public Task<ICollection<string>> GetDeletedIds()

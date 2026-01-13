@@ -6,8 +6,8 @@ public interface IPictureProvider
 {
     string PicturesBasePath { get; }
     ValueTask<string> GetNextRandomValueAsync(CancellationToken ct = default);
-    IAsyncEnumerable<string> GetPictureSetIds(ulong setId);
-    IAsyncEnumerable<string> GetPictureSetIds(string setId);
+    Task<IEnumerable<string>> GetPictureSetIds(ulong setId);
+    Task<IEnumerable<string>> GetPictureSetIds(string setId);
     ulong GetPictureIdFromPath(string fullPicturePath);
     
     PictureStats? CreatePictureStats(string? path, ulong pictureId);

@@ -241,7 +241,7 @@ public static class DbConnectionPictureExtensions
 
         public async Task<string?> GetVote(Guid userId, ulong pictureId)
         {
-            const string sql = "SELECT VoteDirection FROM PictureVotes WHERE UserID = @UserId AND PictureId  = @PictureId";
+            const string sql = "SELECT VoteDirection FROM PictureVotes WHERE UserID = @UserId AND PictureId  = @PictureId AND IsActive = 1";
             return await connection.ExecuteScalarAsync<string>(sql, new { UserId = userId, PictureId = pictureId });
         }
 
@@ -264,6 +264,7 @@ public static class DbConnectionPictureExtensions
                                INSERT INTO PictureVotes (UserId, PictureId, VoteDirection, IsActive)
                                     VALUES (@UserId, @PictureId, @VoteDirection, @IsActive)
                                ON DUPLICATE KEY UPDATE
+                                    VoteDirection = @VoteDirection,
                                     IsActive = @IsActive,
                                     DateTime = CURRENT_TIMESTAMP
                                """;
@@ -337,6 +338,17 @@ public static class DbConnectionPictureExtensions
         {
             const string sql = "SELECT PictureId From Pictures WHERE IgUserId = (SELECT IgUserId FROM IgUserNames WHERE IgUserName = @UserName LIMIT 1) and IsDeleted = 0 ORDER BY FileName DESC";
             return await connection.QueryAsync<ulong>(sql, new { UserName = userName });
+        }
+
+        public async Task<IEnumerable<ulong>> SearchPicturesInBoolMode(string query)
+        {
+            const string sql = """
+                               SELECT PictureId FROM Pictures
+                               WHERE IsDeleted = 0 AND MATCH(`Caption`,`Description`,`Clothing`,`Emotions`,`Objects`,`People`,`Race`,`Gender`) 
+                               AGAINST(@query IN BOOLEAN MODE) LIMIT 500;
+                               """;
+            
+            return await connection.QueryAsync<ulong>(sql, new { Query = query });
         }
     }
 }

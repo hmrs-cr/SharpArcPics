@@ -20,10 +20,6 @@ public class IgPictureDbPool : IPictureProvider, IDisposable
     private readonly int _minThreshold;
     private readonly int _maxCapacity;
 
-    // The signal to wake up the background thread.
-    // false = initial state (not signaled)
-    private readonly AutoResetEvent _refillSignal = new AutoResetEvent(false);
-
     // The single dedicated thread
     private readonly Thread _workerThread;
 
@@ -71,22 +67,19 @@ public class IgPictureDbPool : IPictureProvider, IDisposable
         return value;
     }
 
-    public async IAsyncEnumerable<string> GetPictureSetIds(ulong setId)
+    public async Task<IEnumerable<string>> GetPictureSetIds(ulong setId)
     {
         var ids = await _connectionAccessor.DbConnection.GetPictureIdsForUser(setId);
-        foreach (var id in ids)
-        {
-            yield return id.ToString();
-        }
+        return ids.Select(id => id.ToString());
     }
 
-    public async IAsyncEnumerable<string> GetPictureSetIds(string setId)
+    public async Task<IEnumerable<string>> GetPictureSetIds(string setId)
     {
-        var ids = await _connectionAccessor.DbConnection.GetPictureIdsForUser(setId);
-        foreach (var id in ids)
-        {
-            yield return id.ToString();
-        }
+        var ids = setId.Contains('+') || setId.Contains('-') 
+                                 ? await _connectionAccessor.DbConnection.SearchPicturesInBoolMode(setId) 
+                                 : await _connectionAccessor.DbConnection.GetPictureIdsForUser(setId);
+        
+        return ids.Select(id => id.ToString()); 
     }
 
     public ulong GetPictureIdFromPath(string fullPicturePath) => fullPicturePath.ComputeFileNameHash();
