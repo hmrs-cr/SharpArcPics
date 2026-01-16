@@ -177,10 +177,10 @@ public static partial class IgTagsMetadataLoaderExtensions
 {
     public enum Gender
     {
-        Unknown,
-        Masculine,
-        Feminine,
-        Both
+        Unknown = 0,
+        Masculine = 1,
+        Feminine = 2,
+        Both = 3
     };
     
     private static readonly Dictionary<Gender, IEnumerable<string>> GenderMappings = new()

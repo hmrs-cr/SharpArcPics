@@ -9,6 +9,12 @@ namespace PicArchiver.Core.DataAccess;
 public static class DbConnectionPictureExtensions
 {
     private const string QueryCondition = "";
+
+    private static readonly Dictionary<string, string> NamedQueries = new()
+    {
+        {"gender-masculine", $"SELECT PictureId FROM Pictures WHERE IsDeleted = 0 AND Gender = {(int)Gender.Masculine} LIMIT 10"},
+        {"gender-both", $"SELECT PictureId FROM Pictures WHERE  IsDeleted = 0 AND Gender = {(int)Gender.Both} LIMIT 10"}
+    };
     
     extension(IDbConnection connection)
     {
@@ -176,10 +182,16 @@ public static class DbConnectionPictureExtensions
             return await connection.ExecuteAsync(sql, new { UserId = userId, PictureId = pictureId });
         }
         
-        public async Task<int> DeletePicture(ulong pictureId)
+        public async Task<string?> DeletePicture(ulong pictureId)
         {
-            const string sql = "UPDATE Pictures p SET p.IsDeleted=1 WHERE PictureId = @PictureId";
-            return await connection.ExecuteAsync(sql, new { PictureId = pictureId });
+            const string sql = """
+                               UPDATE Pictures p SET p.IsDeleted = 1 WHERE PictureId = @PictureId;
+                               SELECT CONCAT(IgUserId, '/', FileName) AS fn 
+                               FROM Pictures 
+                               WHERE PictureId = @PictureId AND IsDeleted = 1
+                               """;
+            
+            return await connection.ExecuteScalarAsync<string>(sql, new { PictureId = pictureId });
         }
 
         public async Task<long> GetPictureViewCount(Guid? userId = null, ulong? pictureId = null)
@@ -326,6 +338,22 @@ public static class DbConnectionPictureExtensions
                                """;
 
             return await connection.ExecuteScalarAsync<string>(sql);
+        }
+
+        public async Task<IEnumerable<ulong>?> GetPictureIdsForQuery(string queryId)
+        {   var query = NamedQueries.GetValueOrDefault(queryId);
+            if (query == null)
+            {
+                return null;
+            }
+
+            var list = new List<ulong>();
+            var results = ((DbConnection)connection).QueryUnbufferedAsync<ulong>(query);
+            await foreach (var r in results)
+            {
+                list.Add(r);
+            }
+            return list;
         }
         
         public async Task<IEnumerable<ulong>> GetPictureIdsForUser(ulong userId)

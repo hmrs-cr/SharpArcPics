@@ -65,6 +65,14 @@ export class ApiService {
             headers: this.headers
         });
     }
+    
+    async deletePicture(id) {
+        const token = Math.floor(Math.random() * 999999999);
+        await fetch(`/picture/${id}?token=${token}`, {
+            method: 'DELETE',
+            headers: this.headers
+        });
+    }
 
     async getFavorites() {
         const res = await fetch('/user/favs', { headers: this.headers });

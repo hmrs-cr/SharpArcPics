@@ -148,6 +148,12 @@ class App {
         if (prev) this.ui.renderImage(prev);
     }
 
+    async handleDelete() {
+        const current = this.state.currentPicture;
+        if (!current) return;
+        await this.api.deletePicture(current.id);    
+    }
+    
     async handleVote(type) {
         const current = this.state.currentPicture;
         if (!current) return;
@@ -204,6 +210,7 @@ class App {
             if (e.key === 'ArrowUp') this.handleVote('up'); else
             if (e.key === 'ArrowDown') this.handleVote('down');  else
             if (e.key === 'Escape') this.ui.closeAllModals(); else
+            if (e.key === 'Backspace' && e.ctrlKey) this.handleDelete(); else
             if (e.key === 's' || e.key === 'S') this.ui.els.author.click(); else
             if (e.key === 'f' || e.key === 'F') this.openSetModal('my-favs'); else
             if (e.key === 't' || e.key === 'T') this.openSetModal('toprated'); else

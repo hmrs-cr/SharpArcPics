@@ -75,11 +75,18 @@ public class IgPictureDbPool : IPictureProvider, IDisposable
 
     public async Task<IEnumerable<string>> GetPictureSetIds(string setId)
     {
-        var ids = setId.Contains('+') || setId.Contains('-') 
+        var ids = setId.StartsWith('+') || setId.StartsWith('-') 
                                  ? await _connectionAccessor.DbConnection.SearchPicturesInBoolMode(setId) 
-                                 : await _connectionAccessor.DbConnection.GetPictureIdsForUser(setId);
+                                 : await QueryPictureIds(setId);
         
         return ids.Select(id => id.ToString()); 
+    }
+
+    private async Task<IEnumerable<ulong>> QueryPictureIds(string query)
+    {
+        var result = await _connectionAccessor.DbConnection.GetPictureIdsForQuery(query) ?? 
+                                      await _connectionAccessor.DbConnection.GetPictureIdsForUser(query);
+        return result;
     }
 
     public ulong GetPictureIdFromPath(string fullPicturePath) => fullPicturePath.ComputeFileNameHash();
@@ -92,9 +99,10 @@ public class IgPictureDbPool : IPictureProvider, IDisposable
         var igFile = IgFile.Parse(path);
         if (!igFile.IsValid)
             return null;
-
+        
         var userIdStr = $"{igFile.UserId}";
-        var fullFilePath = Path.Combine(_config.PicturesBasePath, userIdStr, igFile.FileName);
+        var isFullPath = path.StartsWith(_config.PicturesBasePath) && path.EndsWith(igFile.FileName);
+        var fullFilePath = isFullPath ? path : Path.Combine(_config.PicturesBasePath, userIdStr, igFile.FileName);
         if (!File.Exists(fullFilePath))
         {
             fullFilePath = Path.Combine(_config.PicturesIncomingBasePath, userIdStr, igFile.FileName);
