@@ -38,7 +38,7 @@ public class SqlPictureService : IPictureService
         {
             var fullPicturePath = await this._pictureProvider.GetNextRandomValueAsync();
             var pictureId = _pictureProvider.GetPictureIdFromPath(fullPicturePath);;
-            var result = await GetPictureData(pictureId, requestUserId, true);
+            var result = await GetPictureData(pictureId, fullPicturePath, requestUserId, true);
             if (result != null)
             {
                 if (result.Views > 0)
@@ -93,16 +93,35 @@ public class SqlPictureService : IPictureService
         return Task.FromResult<ICollection<string>>([]);
     }
 
+    private string? _deletedPicturesFolder;
+    
     public async Task<bool> DeletePicture(ulong pictureId)
     {
         var result = await _connectionAccessor.DbConnection.DeletePicture(pictureId);
-        return result == 1;
+        var deleted = !string.IsNullOrEmpty(result);
+        if (deleted)
+        {
+            var fullFilePath = Path.Combine(_pictureProvider.PicturesBasePath, result);
+            if (File.Exists(fullFilePath))
+            {
+                _deletedPicturesFolder ??= Path.Combine(_pictureProvider.PicturesBasePath, "_DELETED_PICTURES");
+                Directory.CreateDirectory(_deletedPicturesFolder);
+                File.Move(fullFilePath, Path.Combine(_deletedPicturesFolder, Path.GetFileName(result)));
+            }
+        }
+        
+        return deleted;
     }
 
     public async Task<PictureStats?> GetPictureData(ulong pictureId, Guid? requestUserId, bool onlyIfNotViewed = false)
     {
         var path = await _connectionAccessor.DbConnection.GetPicturePath(pictureId);
-        var result = _pictureProvider.CreatePictureStats(path, pictureId);
+        return await GetPictureData(pictureId, path, requestUserId, onlyIfNotViewed);
+    }
+    
+    private async Task<PictureStats?> GetPictureData(ulong pictureId, string? knownPath, Guid? requestUserId, bool onlyIfNotViewed = false)
+    {
+        var result = _pictureProvider.CreatePictureStats(knownPath, pictureId);
         if (result != null)
         {
             if (requestUserId.HasValue)
