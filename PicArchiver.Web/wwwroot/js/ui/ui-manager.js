@@ -23,7 +23,8 @@ export class UIManager {
         this.audio = {
             like: new Audio('/media/audio/like.mp3'),
             unlike: new Audio('/media/audio/unlike.mp3'),
-            fav: new Audio('/media/audio/fav.mp3')
+            fav: new Audio('/media/audio/fav.mp3'),
+            del: new Audio('/media/audio/del.mp3')
         };
         
         this.init();

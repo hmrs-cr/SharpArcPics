@@ -7,6 +7,10 @@ export class ApiService {
     get headers() {
         return { 'uid': this.userId || '' };
     }
+    
+    get token() {
+        return Math.floor(Math.random() * 999999999);
+    }
 
     async ensureUser() {
         if (this.userId) {
@@ -67,11 +71,13 @@ export class ApiService {
     }
     
     async deletePicture(id) {
-        const token = Math.floor(Math.random() * 999999999);
-        await fetch(`/picture/${id}?token=${token}`, {
+        const token = this.token;
+        const response = await fetch(`/picture/${id}?token=${token}`, {
             method: 'DELETE',
             headers: this.headers
         });
+
+        return response.ok;
     }
 
     async getFavorites() {

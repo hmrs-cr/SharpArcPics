@@ -13,7 +13,8 @@ public static class DbConnectionPictureExtensions
     private static readonly Dictionary<string, string> NamedQueries = new()
     {
         {"gender-masculine", $"SELECT PictureId FROM Pictures WHERE IsDeleted = 0 AND Gender = {(int)Gender.Masculine} LIMIT 10"},
-        {"gender-both", $"SELECT PictureId FROM Pictures WHERE  IsDeleted = 0 AND Gender = {(int)Gender.Both} LIMIT 10"}
+        {"gender-both", $"SELECT PictureId FROM Pictures WHERE  IsDeleted = 0 AND Gender = {(int)Gender.Both} LIMIT 10"},
+        {"recently-added", "SELECT PictureId FROM Pictures WHERE IsDeleted = 0 ORDER BY DateAdded DESC LIMIT 250"}
     };
     
     extension(IDbConnection connection)
@@ -288,13 +289,15 @@ public static class DbConnectionPictureExtensions
         public async Task<IEnumerable<ulong>> GetMostVotedPictures(string direction)
         {
             const string sqlBase = """
-                               SELECT PictureId, SUM(IF(VoteDirection = 'down', -1, 1)) AS Votes FROM PictureVotes
-                               GROUP BY PictureId
+                               SELECT pv.PictureId, SUM(IF(VoteDirection = 'down', -1, 1)) AS Votes FROM PictureVotes pv
+                               JOIN Pictures p ON pv.PictureId = p.PictureId
+                               WHERE p.IsDeleted = 0
+                               GROUP BY pv.PictureId
                                ORDER BY Votes
                                """;
 
-            const string sqlDown = sqlBase + " LIMIT 100";
-            const string sqlUp = sqlBase + " DESC LIMIT 100";
+            const string sqlDown = sqlBase + " LIMIT 250";
+            const string sqlUp = sqlBase + " DESC LIMIT 250";
 
             return await connection.QueryAsync<ulong>(direction == "up" ? sqlUp : sqlDown);
         }

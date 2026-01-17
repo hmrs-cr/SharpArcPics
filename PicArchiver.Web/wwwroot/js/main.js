@@ -97,7 +97,7 @@ class App {
             }
         }
         if (!token) {
-            token = Math.floor(Math.random() * 999999999);
+            token = this.api.token;
         }
         
         const rawData = await this.api.getNextPicture(token, specificId);
@@ -151,13 +151,17 @@ class App {
     async handleDelete() {
         const current = this.state.currentPicture;
         if (!current) return;
-        await this.api.deletePicture(current.id);    
+        const deleted = await this.api.deletePicture(current.id);
+        if (deleted)
+        {
+            this.ui.playAudio('del');
+            this.loadNextImage();
+        }
     }
     
     async handleVote(type) {
         const current = this.state.currentPicture;
         if (!current) return;
-
         const isUp = type === 'up';
         const isFav = type === 'fav';
 
@@ -183,7 +187,8 @@ class App {
         this.ui.updateButtons(current);
 
         // API Call
-        const token = Math.floor(Math.random() * 999999999);
+        const token = this.api.token;
+        current.token = token;
         await this.api.vote(current.id, type, method, token);
 
         if (isFav) this.updateFavoritesList();
@@ -213,8 +218,8 @@ class App {
             if (e.key === 'Backspace' && e.ctrlKey) this.handleDelete(); else
             if (e.key === 's' || e.key === 'S') this.ui.els.author.click(); else
             if (e.key === 'f' || e.key === 'F') this.openSetModal('my-favs'); else
-            if (e.key === 't' || e.key === 'T') this.openSetModal('toprated'); else
-            if (e.key === 'l' || e.key === 'L') this.openSetModal('lowrated'); else
+            if (e.key === 't' || e.key === 'T') this.openSetModal('top-rated'); else
+            if (e.key === 'l' || e.key === 'L') this.openSetModal('low-rated'); else
             if (e.key === 'r' || e.key === 'r') this.ui.goHome(); else
             if (e.key === 'm' || e.key === 'M') {
                 const currentPicture = this.state.currentPicture;
@@ -242,8 +247,8 @@ class App {
         window.addEventListener('click', (e) => e.target.id?.endsWith('Modal') ? this.ui.closeAllModals() : null);
         document.getElementById('closeInfoModal').onclick = () => this.ui.closeAllModals();
         document.getElementById('menuFavs').addEventListener('click', (e) => {this.openSetModal('my-favs');});
-        document.getElementById('menuTop').addEventListener('click', async (e) => {this.openSetModal('toprated');});
-        document.getElementById('menuLow').addEventListener('click', async (e) => {this.openSetModal('lowrated');});
+        document.getElementById('menuTop').addEventListener('click', async (e) => {this.openSetModal('top-rated');});
+        document.getElementById('menuLow').addEventListener('click', async (e) => {this.openSetModal('low-rated');});
         
         
         document.getElementById('infoBtn').addEventListener('click', (e) => {
@@ -276,8 +281,8 @@ class App {
     updateMessages() {
         this.ui.updateLabelText('menu-random', this.messages.menuRandom);
         this.ui.updateLabelText('menu-favs-label', this.messages.modalTitles['my-favs']);
-        this.ui.updateLabelText('menu-top-label', this.messages.modalTitles['toprated']);
-        this.ui.updateLabelText('menu-low-label', this.messages.modalTitles['lowrated']);
+        this.ui.updateLabelText('menu-top-label', this.messages.modalTitles['top-rated']);
+        this.ui.updateLabelText('menu-low-label', this.messages.modalTitles['low-rated']);
     }
 }
 

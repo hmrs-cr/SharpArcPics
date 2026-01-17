@@ -3,8 +3,8 @@ export class Messages {
         this.menuRandom = '🏠 Random';
         this.modalTitles = {
             'my-favs': '❤️ My Favorites ',
-            'toprated': '😍 Top Rated',
-            'lowrated': '😕 Low Rated',
+            'top-rated': '😍 Top Rated',
+            'low-rated': '😕 Low Rated',
         }
     }
 }

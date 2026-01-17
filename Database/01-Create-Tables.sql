@@ -30,6 +30,7 @@ create table Pictures
 
 ALTER TABLE Pictures 
     ADD  INDEX idx_IgPictureId (IgPictureId),
+    ADD  INDEX idx_Pictures_DateAdded (DateAdded),
     ADD  INDEX idx_IgUserId (IgUserId);
 
 ALTER TABLE Pictures
