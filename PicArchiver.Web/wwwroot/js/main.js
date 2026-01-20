@@ -245,7 +245,6 @@ class App {
 
         // Modals
         window.addEventListener('click', (e) => e.target.id?.endsWith('Modal') ? this.ui.closeAllModals() : null);
-        document.getElementById('closeInfoModal').onclick = () => this.ui.closeAllModals();
         document.getElementById('menuFavs').addEventListener('click', (e) => {this.openSetModal('my-favs');});
         document.getElementById('menuTop').addEventListener('click', async (e) => {this.openSetModal('top-rated');});
         document.getElementById('menuLow').addEventListener('click', async (e) => {this.openSetModal('low-rated');});

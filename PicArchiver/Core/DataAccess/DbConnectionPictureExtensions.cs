@@ -22,8 +22,23 @@ public static class DbConnectionPictureExtensions
         public async Task<string?> GetPicturePath(ulong pictureId)
         {
             const string sql = "SELECT FileName FROM Pictures WHERE PictureID = @PictureId AND IsDeleted = 0";
-
+            
             return await connection.QueryFirstOrDefaultAsync<string>(sql,
+                new { PictureId = pictureId });
+        }
+
+        public async Task<PictureMetaData?> GetPictureMetaData(ulong pictureId)
+        {
+            const string sqlWithMetadata = """
+                                           SELECT 
+                                               FileName, 
+                                               Description, 
+                                               CONCAT(Clothing, ', ', Emotions, ', ', Objects, ', ', People, ', ', Race) Keywords, 
+                                               DateAdded
+                                           FROM Pictures WHERE PictureID = @PictureId AND IsDeleted = 0
+                                           """;
+
+            return await connection.QueryFirstOrDefaultAsync<PictureMetaData>(sqlWithMetadata,
                 new { PictureId = pictureId });
         }
         

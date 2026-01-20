@@ -3,13 +3,16 @@ export class UIManager {
         this.els = {
             img: document.getElementById('display-image'),
             author: document.getElementById('meta-author'),
+            description: document.getElementById('detail-description'),
+            keywords: document.getElementById('detail-keywords'),
+            date: document.getElementById('detail-date'),
+            backupDate: document.getElementById('detail-backup-date'),
             btnUp: document.getElementById('btnUp'),
             btnDown: document.getElementById('btnDown'),
             btnFav: document.getElementById('btnFav'),
             sidebar: document.getElementById('sidebar'),
             sidebarOverlay: document.getElementById('sidebarOverlay'),
             modals: {
-                info: document.getElementById('infoModal'),
                 about: document.getElementById('aboutModal'),
                 fav: document.getElementById('favModal')
             },
@@ -42,11 +45,16 @@ export class UIManager {
     }
 
     renderImage(data) {
+        console.log(data)
         this.els.img.src = data.blobUrl;
         this.els.img.alt = data.description || 'A picture!';
         document.title = this.els.img.alt;
         this.els.author.innerText = data.otherNames ? `${data.author} [...]` : data.author;
         this.els.author.href = data.sourceUrl;
+        this.els.description.innerText = data.description;
+        this.els.keywords.innerText = data.keywords;
+        this.els.date.innerText = data.date;
+        this.els.backupDate.innerText = data.backupDate;
         this.els.img.onload = () => this.els.img.classList.add('loaded');
         this.updateButtons(data);
 
@@ -174,5 +182,17 @@ export class UIManager {
         } else if ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.setAttribute('data-theme', 'dark');
         }
+
+        const infoBtn = document.getElementById('infoBtn');
+        const detailsPanel = document.getElementById('details-panel');
+        const closeDetailsBtn = document.getElementById('closeDetailsPanel');
+        
+        infoBtn.addEventListener('click', () => {
+            detailsPanel.classList.add('active');
+        });
+        
+        closeDetailsBtn.addEventListener('click', () => {
+            detailsPanel.classList.remove('active');
+        });
     }
 }

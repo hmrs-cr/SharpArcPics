@@ -37,3 +37,11 @@ public class PictureData
     public long? IgUserId { get; init; }
     public bool IsDeleted { get; init; }
 }
+
+public class PictureMetaData
+{
+    public required string FileName { get; init; }
+    public string? Description { get; init; } 
+    public string? Keywords {get; init; } 
+    public DateTime? DateAdded { get; init; }
+}

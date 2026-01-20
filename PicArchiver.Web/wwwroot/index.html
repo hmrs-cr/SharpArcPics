@@ -67,6 +67,49 @@
     <div class="image-wrapper">
         <div class="loader"></div>
         <img id="display-image" src="" alt="Tap to load new image"/>
+        <div class="details-panel" id="details-panel">
+            <div class="sidebar-header">
+                <span class="sidebar-title">Details</span>
+                <div class="icon-btn" id="closeDetailsPanel" style="width:32px; height:32px; border:none; box-shadow:none; background:transparent;">
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </div>
+            </div>
+            <div class="detail-row">
+                <span  id="detail-description">A young woman is lying on a lawn chair, enjoying a sunbath. The location appears to be a rooftop terrace, with synthetic lawn. In the background, a white wall and blue skies speckled with clouds are visible.</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Keywords</span>
+                <span  id="detail-keywords">...</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Author</span>
+                <span class="detail-val" id="detail-author">...</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Date</span>
+                <span class="detail-val" id="detail-date">...</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Backup Date</span>
+                <span class="detail-val" id="detail-backup-date">...</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Views</span>
+                <span  id="detail-views">...</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Likes</span>
+                <span  id="detail-likes">...</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Dislikes</span>
+                <span  id="detail-dislikes">...</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Favorites</span>
+                <span  id="detail-favs">...</span>
+            </div>
+        </div>
     </div>
 
     <div id="vote-panel" class="bottom-panel desk-only">
@@ -90,28 +133,6 @@
                 <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             </button>
         </div>
-    </div>
-</div>
-
-<!-- Info Modal -->
-<div id="infoModal" class="modal">
-    <div class="modal-content">
-        <span class="close-btn" id="closeInfoModal">&times;</span>
-        <h2 style="margin-bottom: 1rem;">Image Details</h2>
-        <div class="detail-row">
-            <span class="detail-label">Author</span>
-            <span class="detail-val" id="modal-author">...</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">Other Usernames</span>
-            <span class="detail-val" id="modal-other-usernames">...</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">Image ID</span>
-            <span class="detail-val" id="modal-id">...</span>
-        </div>
-        <a href="#" id="view-more-link" class="detail-link">View more...</a>
-        <a href="#" id="modal-link" class="detail-link" target="_blank">View on Source</a>
     </div>
 </div>
 

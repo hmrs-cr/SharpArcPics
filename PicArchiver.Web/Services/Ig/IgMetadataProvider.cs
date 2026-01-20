@@ -53,6 +53,31 @@ public class IgMetadataProvider : IMetadataProvider
         pictureData.Metadata["IG_PostTimestamp"] = igFile.Timestamp.ToString();
         pictureData.DownloadName = $"{igFile.UserName}{pictureData.Ext}";
         pictureData.SourceUrl = $"https://www.instagram.com/{igFile.UserName}/";
+
+        if (pictureData.Description != null)
+        {
+            pictureData.Metadata["Description"] = pictureData.Description;
+        }
+
+        if (pictureData.Keywords != null)
+        {
+            pictureData.Metadata["Keywords"] = pictureData.Keywords;
+        }
+
+        if (pictureData.Autor != null)
+        {
+            pictureData.Metadata["Autor"] = pictureData.Autor;
+        }
+
+        if (pictureData.Date != null)
+        {
+            pictureData.Metadata["Date"] = DateTimeOffset.FromUnixTimeSeconds(igFile.Timestamp).ToString("s");
+        }
+
+        if (pictureData.BackupDate != null)
+        {
+            pictureData.Metadata["BackupDate"] = pictureData.BackupDate.Value.ToString("s");
+        }
         
         return pictureData;
     }

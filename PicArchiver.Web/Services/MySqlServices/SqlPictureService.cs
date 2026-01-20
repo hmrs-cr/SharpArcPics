@@ -6,7 +6,7 @@ using PicArchiver.Web.Endpoints.Filters;
 namespace PicArchiver.Web.Services.MySqlServices;
 
 public class SqlPictureService : IPictureService
-{   
+{
     private readonly IMetadataProvider _metadataProvider;
     private readonly IPictureProvider _pictureProvider;
     private readonly IContentTypeProvider _contentTypeProvider;
@@ -29,7 +29,7 @@ public class SqlPictureService : IPictureService
         _httpContextAccessor = httpContextAccessor;
         _connectionAccessor = connectionAccessor;
     }
-    
+
     public async Task<PictureStats?> GetRandomPictureData(Guid requestUserId)
     {
         requestUserId = _httpContextAccessor.HttpContext.EnsureValidUserSession(requestUserId);
@@ -37,7 +37,8 @@ public class SqlPictureService : IPictureService
         while (maxRetries-- > 0)
         {
             var fullPicturePath = await this._pictureProvider.GetNextRandomValueAsync();
-            var pictureId = _pictureProvider.GetPictureIdFromPath(fullPicturePath);;
+            var pictureId = _pictureProvider.GetPictureIdFromPath(fullPicturePath);
+            ;
             var result = await GetPictureData(pictureId, fullPicturePath, requestUserId, true);
             if (result != null)
             {
@@ -49,8 +50,9 @@ public class SqlPictureService : IPictureService
                             pictureId, maxRetries);
                     continue;
                 }
-                
-                return result;
+
+                var metadata = await _connectionAccessor.DbConnection.GetPictureMetaData(pictureId);
+                return result.AssignMetadata(metadata);
             }
 
             return await SavePicturePath(pictureId, fullPicturePath);
@@ -64,13 +66,13 @@ public class SqlPictureService : IPictureService
         var picPath = await _connectionAccessor.DbConnection.GetPicturePath(pictureId);
         return _pictureProvider.CreatePictureStats(picPath, pictureId)?.FullFilePath;
     }
-    
+
     public async Task<ICollection<string>> GetTopRatedPicturesIds()
     {
         var result = await _connectionAccessor.DbConnection.GetMostVotedPictures("up");
         return result.Select(f => $"{f}").ToList();
     }
-    
+
     public async Task<ICollection<string>> GetLowRatedPicturesIds()
     {
         var result = await _connectionAccessor.DbConnection.GetMostVotedPictures("down");
@@ -79,7 +81,9 @@ public class SqlPictureService : IPictureService
 
     public async Task<ICollection<string>> GetImageSet(string setId)
     {
-        var picSet = ulong.TryParse(setId, out var setIdl) ? this._pictureProvider.GetPictureSetIds(setIdl) : _pictureProvider.GetPictureSetIds(setId);
+        var picSet = ulong.TryParse(setId, out var setIdl)
+            ? this._pictureProvider.GetPictureSetIds(setIdl)
+            : _pictureProvider.GetPictureSetIds(setId);
         return (await picSet).ToList();
     }
 
@@ -94,7 +98,7 @@ public class SqlPictureService : IPictureService
     }
 
     private string? _deletedPicturesFolder;
-    
+
     public async Task<bool> DeletePicture(ulong pictureId)
     {
         var result = await _connectionAccessor.DbConnection.DeletePicture(pictureId);
@@ -109,17 +113,24 @@ public class SqlPictureService : IPictureService
                 File.Move(fullFilePath, Path.Combine(_deletedPicturesFolder, Path.GetFileName(result)));
             }
         }
-        
+
         return deleted;
     }
 
     public async Task<PictureStats?> GetPictureData(ulong pictureId, Guid? requestUserId, bool onlyIfNotViewed = false)
     {
-        var path = await _connectionAccessor.DbConnection.GetPicturePath(pictureId);
-        return await GetPictureData(pictureId, path, requestUserId, onlyIfNotViewed);
+        var metadata = await _connectionAccessor.DbConnection.GetPictureMetaData(pictureId);
+        if (metadata == null)
+        {
+            return null;
+        }
+
+        return (await GetPictureData(pictureId, metadata.FileName, requestUserId, onlyIfNotViewed))
+            ?.AssignMetadata(metadata);
     }
-    
-    private async Task<PictureStats?> GetPictureData(ulong pictureId, string? knownPath, Guid? requestUserId, bool onlyIfNotViewed = false)
+
+    private async Task<PictureStats?> GetPictureData(ulong pictureId, string? knownPath, Guid? requestUserId,
+        bool onlyIfNotViewed = false)
     {
         var result = _pictureProvider.CreatePictureStats(knownPath, pictureId);
         if (result != null)
@@ -127,9 +138,10 @@ public class SqlPictureService : IPictureService
             if (requestUserId.HasValue)
             {
                 requestUserId = _httpContextAccessor.HttpContext.EnsureValidUserSession(requestUserId.Value);
-                var views = await _connectionAccessor.DbConnection.GetPictureViewCount(userId: requestUserId, pictureId: pictureId);
+                var views = await _connectionAccessor.DbConnection.GetPictureViewCount(userId: requestUserId,
+                    pictureId: pictureId);
                 if (views > 0 && onlyIfNotViewed)
-                {      
+                {
                     result.Views = 1;
                     return result;
                 }
@@ -139,35 +151,37 @@ public class SqlPictureService : IPictureService
                     // My First view
                     return await this.SetMetadatada(result);
                 }
-                
+
                 var voteDirection = await _connectionAccessor.DbConnection.GetVote(requestUserId.Value, pictureId);
                 var isDowvoted = voteDirection == "down";
                 var isUpvoted = voteDirection == "up";
-                
-                result.Favs = await _connectionAccessor.DbConnection.GetPictureFavoriteCount(pictureId: pictureId, userId: requestUserId);
+
+                result.Favs =
+                    await _connectionAccessor.DbConnection.GetPictureFavoriteCount(pictureId: pictureId,
+                        userId: requestUserId);
                 result.UpVotes = Convert.ToUInt32(isUpvoted);
                 result.DownVotes = Convert.ToUInt32(isDowvoted);
                 result.Views = views;
             }
-            
+
             return await this.SetMetadatada(result);
         }
-        
+
         return null;
     }
 
-    private string? GetContentType(string ext) => 
+    private string? GetContentType(string ext) =>
         this._contentTypeProvider.TryGetContentType(ext, out var contentType) ? contentType : null;
 
-    public Task<int> Upvote(ulong pictureId, Guid requestUserId, bool remove = false)=> 
+    public Task<int> Upvote(ulong pictureId, Guid requestUserId, bool remove = false) =>
         this.Vote(pictureId, requestUserId, true, remove);
-    
-    public Task<int> Downvote(ulong pictureId, Guid requestUserId, bool remove = false) => 
+
+    public Task<int> Downvote(ulong pictureId, Guid requestUserId, bool remove = false) =>
         this.Vote(pictureId, requestUserId, false, remove);
 
     public async Task<int> Favorite(ulong pictureId, Guid requestUserId, bool remove = false)
     {
-        requestUserId =  _httpContextAccessor.HttpContext.EnsureValidUserSession(requestUserId);
+        requestUserId = _httpContextAccessor.HttpContext.EnsureValidUserSession(requestUserId);
         var result = await _connectionAccessor.DbConnection.MarkPicturesAsFavorite(
             userId: requestUserId, pictureId: pictureId, remove);
         return result;

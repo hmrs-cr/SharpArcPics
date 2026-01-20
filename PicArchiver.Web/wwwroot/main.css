@@ -117,7 +117,39 @@ body {
     display: flex; flex-direction: column;
     padding: 2rem 1rem; box-sizing: border-box;
 }
-.sidebar.active { left: 0; }
+
+.sidebar.active {
+    left: 0; 
+}
+
+.details-panel {
+    position: fixed;
+    top: 0;
+    right: -350px; /* Hide off-screen to the right */
+    width: 350px;
+    height: 100%;
+    background: var(--sidebar-bg);
+    box-shadow: -5px 0 15px var(--shadow); /* Shadow on the left side */
+    z-index: 50;
+    transition: right 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 1rem;
+    box-sizing: border-box;
+}
+
+/* Slide it in */
+.details-panel.active {
+    right: 0;
+}
+
+/* Optional: Ensure the panel is responsive on small screens */
+@media (max-width: 400px) {
+    .details-panel {
+        width: 85%;
+        right: -85%;
+    }
+}
 
 .sidebar-header {
     display: flex; justify-content: space-between; align-items: center;
@@ -156,6 +188,11 @@ img {
 }
 img.loaded { opacity: 1; }
 img:active { transform: scale(0.98); }
+
+.details-panel {
+    display: flex;
+    max-width: 25%; max-height: 100%;
+}
 
 /* Side Nav Buttons */
 .nav-arrow {
