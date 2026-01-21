@@ -11,12 +11,6 @@ public record PictureStats(string FullFilePath, ulong PictureId)
     public long DownVotes { get; set; }
     public long Favs { get; set; }
     public long Views { get; set; }
-    
-    public string? Description { get; set; }
-    public string? Keywords { get; set; }
-    public DateTime? Date { get; set; }
-    public DateTime? BackupDate { get; set; }
-    public string? Autor { get; set; }
 
     public string? DownloadName { get; set; }
     public string? MimeType { get; set; }
@@ -32,18 +26,34 @@ public record PictureStats(string FullFilePath, ulong PictureId)
     {
         if (metaData != null)
         {
-            Description = metaData.Description;
-            Keywords = metaData.Keywords;
-            BackupDate = metaData.DateAdded;
-            
             if (metaData.Description != null)
             {
                 Metadata["Description"] = metaData.Description;
             }
 
-            if (metaData.Keywords != null)
+            if (metaData.Clothing != null)
             {
-                Metadata["Keywords"] = metaData.Keywords;
+                Metadata["Clothing"] = metaData.Clothing;
+            }
+            
+            if (metaData.Emotions != null)
+            {
+                Metadata["Emotions"] = metaData.Emotions;
+            }
+            
+            if (metaData.Objects != null)
+            {
+                Metadata["Objects"] = metaData.Objects;
+            }
+            
+            if (metaData.People != null)
+            {
+                Metadata["People"] = metaData.People;
+            }
+            
+            if (metaData.Race != null)
+            {
+                Metadata["Race"] = metaData.Race;
             }
 
             /*if (Autor != null)

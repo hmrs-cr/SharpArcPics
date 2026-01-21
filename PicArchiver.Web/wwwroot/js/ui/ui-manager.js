@@ -4,7 +4,10 @@ export class UIManager {
             img: document.getElementById('display-image'),
             author: document.getElementById('meta-author'),
             description: document.getElementById('detail-description'),
-            keywords: document.getElementById('detail-keywords'),
+            emotions: document.getElementById('detail-emotions'),
+            objects: document.getElementById('detail-objects'),
+            people: document.getElementById('detail-people'),
+            clothing: document.getElementById('detail-clothing'),
             date: document.getElementById('detail-date'),
             backupDate: document.getElementById('detail-backup-date'),
             btnUp: document.getElementById('btnUp'),
@@ -43,16 +46,31 @@ export class UIManager {
             this.els.btnDown.classList.remove('active');
         }
     }
+    
+    splitIntoLinks(text) {
+        const wordsArray = text.split(',').map(word => word.trim());
+        const hyperlinksArray = wordsArray.map(word => {
+            if (word) {
+                const url = `/?picset=${encodeURIComponent('+' + word.replaceAll(' ', '+'))}`;
+                return `<a target="_blank" href="${url}">${word}</a>`;
+            }
+            return '';
+        });
+
+       return hyperlinksArray.filter(link => link).join(', ');
+    }
 
     renderImage(data) {
         console.log(data)
         this.els.img.src = data.blobUrl;
         this.els.img.alt = data.description || 'A picture!';
-        document.title = this.els.img.alt;
         this.els.author.innerText = data.otherNames ? `${data.author} [...]` : data.author;
         this.els.author.href = data.sourceUrl;
         this.els.description.innerText = data.description;
-        this.els.keywords.innerText = data.keywords;
+        this.els.clothing.innerHTML = this.splitIntoLinks(data.clothing);
+        this.els.emotions.innerText = data.emotions;
+        this.els.objects.innerText = data.objects;
+        this.els.people.innerHTML = `${data.people}, ${this.splitIntoLinks(data.race)}`;
         this.els.date.innerText = data.date;
         this.els.backupDate.innerText = data.backupDate;
         this.els.img.onload = () => this.els.img.classList.add('loaded');

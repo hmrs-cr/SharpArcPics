@@ -56,7 +56,14 @@ export class ApiService {
                 upvoted: Number(res.headers.get('Upvoted')),
                 downvoted: Number(res.headers.get('Downvoted')),
                 sourceUrl: res.headers.get('SourceUrl'),
-                description: res.headers.get('Description')
+                description: res.headers.get('Description'),
+                clothing: res.headers.get('clothing'),
+                emotions: res.headers.get('emotions'),  
+                objects: res.headers.get('objects'),  
+                people: res.headers.get('people'),
+                race: res.headers.get('race'),
+                date: res.headers.get('Date')     ,
+                backupDate: res.headers.get('backupdate')                
             }
         };
     }

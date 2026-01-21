@@ -33,9 +33,16 @@ public static class DbConnectionPictureExtensions
                                            SELECT 
                                                FileName, 
                                                Description, 
-                                               CONCAT(Clothing, ', ', Emotions, ', ', Objects, ', ', People, ', ', Race) Keywords, 
+                                               Clothing,
+                                               Emotions,
+                                               Objects,
+                                               People,
+                                               Race,
                                                DateAdded
-                                           FROM Pictures WHERE PictureID = @PictureId AND IsDeleted = 0
+                                           FROM 
+                                               Pictures 
+                                           WHERE 
+                                               PictureID = @PictureId AND IsDeleted = 0
                                            """;
 
             return await connection.QueryFirstOrDefaultAsync<PictureMetaData>(sqlWithMetadata,

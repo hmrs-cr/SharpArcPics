@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.StaticFiles;
 using PicArchiver.Web.Endpoints.Filters;
 using PicArchiver.Web.Services;
@@ -151,7 +152,7 @@ internal static class PictureEndpoints
 
         foreach (var metadata in pictureData.Metadata)
         {
-            context.Response.Headers[metadata.Key] = metadata.Value;
+            context.Response.Headers[metadata.Key] = metadata.Value.SanitizeHeaderValue();
         }
 
         context.Response.Headers.Append("InternalId", pictureData.PictureId.ToString());
@@ -164,5 +165,29 @@ internal static class PictureEndpoints
 
         return Results.File(pictureData.FullFilePath, contentType: pictureData.MimeType,
             fileDownloadName: pictureData.DownloadName, enableRangeProcessing: true);
+    }
+}
+
+
+public static class HttpHeaderSanitizer
+{
+    private static readonly Regex InvalidHeaderCharRegex = new Regex(@"[^\u0020-\u007E\u0009]", RegexOptions.Compiled, TimeSpan.FromSeconds(1.5));
+
+   public static string SanitizeHeaderValue(this string headerValue)
+    {
+        if (string.IsNullOrEmpty(headerValue))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            return InvalidHeaderCharRegex.Replace(headerValue, string.Empty);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            // Handle cases where a malicious input might cause a timeout
+            return string.Empty;
+        }
     }
 }

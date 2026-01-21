@@ -42,6 +42,11 @@ public class PictureMetaData
 {
     public required string FileName { get; init; }
     public string? Description { get; init; } 
-    public string? Keywords {get; init; } 
+    public string? Clothing {get; init; } 
+    public string? Emotions {get; init; } 
+    public string? Objects  {get; init; } 
+    public string? People  {get; init; } 
+    
+    public string? Race  {get; init; } 
     public DateTime? DateAdded { get; init; }
 }

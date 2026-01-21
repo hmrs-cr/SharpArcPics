@@ -344,6 +344,15 @@ p { margin: 0.25rem 0 0 0; font-size: 0.85rem; opacity: 0.7; }
 .detail-label { font-weight: 600; opacity: 0.8; }
 .detail-val { opacity: 0.9; text-align: right; }
 
+a,
+a:link,
+a:visited,
+a:hover,
+a:active,
+a:focus {
+    color: inherit;
+}
+
 .detail-link {
     display: block; margin-top: 1.5rem;
     text-align: center; background: var(--accent); color: white;
