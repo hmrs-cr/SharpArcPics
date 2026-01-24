@@ -55,6 +55,11 @@ public record PictureStats(string FullFilePath, ulong PictureId)
             {
                 Metadata["Race"] = metaData.Race;
             }
+            
+            if (metaData.AuthorNames != null)
+            {
+                Metadata["AuthorNames"] = metaData.AuthorNames;
+            }
 
             /*if (Autor != null)
             {

@@ -4,6 +4,7 @@ export class UIManager {
             img: document.getElementById('display-image'),
             author: document.getElementById('meta-author'),
             description: document.getElementById('detail-description'),
+            authors: document.getElementById('detail-author'),
             emotions: document.getElementById('detail-emotions'),
             objects: document.getElementById('detail-objects'),
             people: document.getElementById('detail-people'),
@@ -71,6 +72,7 @@ export class UIManager {
         this.els.emotions.innerText = data.emotions;
         this.els.objects.innerText = data.objects;
         this.els.people.innerHTML = `${data.people}, ${this.splitIntoLinks(data.race)}`;
+        this.els.authors.innerText = data.authors;
         this.els.date.innerText = data.date;
         this.els.backupDate.innerText = data.backupDate;
         this.els.img.onload = () => this.els.img.classList.add('loaded');

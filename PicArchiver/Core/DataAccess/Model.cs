@@ -46,7 +46,7 @@ public class PictureMetaData
     public string? Emotions {get; init; } 
     public string? Objects  {get; init; } 
     public string? People  {get; init; } 
-    
     public string? Race  {get; init; } 
+    public string? AuthorNames  {get; init; } 
     public DateTime? DateAdded { get; init; }
 }

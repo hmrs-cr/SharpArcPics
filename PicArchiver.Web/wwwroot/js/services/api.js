@@ -61,6 +61,7 @@ export class ApiService {
                 emotions: res.headers.get('emotions'),  
                 objects: res.headers.get('objects'),  
                 people: res.headers.get('people'),
+                authors: res.headers.get('AuthorNames'),
                 race: res.headers.get('race'),
                 date: res.headers.get('Date')     ,
                 backupDate: res.headers.get('backupdate')                

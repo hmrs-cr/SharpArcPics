@@ -38,9 +38,13 @@ public static class DbConnectionPictureExtensions
                                                Objects,
                                                People,
                                                Race,
+                                               (SELECT GROUP_CONCAT(IgUserName SEPARATOR ', ')
+                                               FROM IgUserNames
+                                               WHERE IgUserId = p.IgUserId
+                                               GROUP BY IgUserId) AuthorNames,
                                                DateAdded
                                            FROM 
-                                               Pictures 
+                                               Pictures p
                                            WHERE 
                                                PictureID = @PictureId AND IsDeleted = 0
                                            """;
